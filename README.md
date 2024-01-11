@@ -1,4 +1,4 @@
-[![CI](https://github.com/mangrovedao/mangrove.js/actions/workflows/node.js.yml/badge.svg)](https://github.com/mangrovedao/mangrove.js/actions/workflows/node.js.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove.js/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove.js)
+[![CI](https://github.com/mangrovedao/mangrove.js/actions/workflows/ci.yml/badge.svg)](https://github.com/mangrovedao/mangrove.js/actions/workflows/ci.yml) [![Coverage Status](https://coveralls.io/repos/github/mangrovedao/mangrove.js/badge.svg)](https://coveralls.io/github/mangrovedao/mangrove.js)
 
 This repo contains the SDK for developing TypeScript (and JavaScript) apps using the Mangrove.
 
@@ -12,7 +12,7 @@ If you are looking for the Mangrove developer documentation, the main site to go
 
 For Linux or macOS everything should work out of the box, if you are using Windows, then we recommend installing everything from within WSL2 and expect some quirks.
 
-1. [Node.js](https://nodejs.org/en/) 14.14+, we recommend installation through [nvm](https://github.com/nvm-sh/nvm#installing-and-updating), e.g.:
+1. [Node.js](https://nodejs.org/en/) 18+, we recommend installation through [nvm](https://github.com/nvm-sh/nvm#installing-and-updating), e.g.:
 
    ```shell
    $ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
@@ -20,7 +20,7 @@ For Linux or macOS everything should work out of the box, if you are using Windo
    $ nvm install --lts
    ```
 
-2. [Yarn 2](https://yarnpkg.com/getting-started/install), with Node.js >= 16.10:
+2. Enable [Yarn 2](https://yarnpkg.com/getting-started/install):
 
    ```shell
    $ corepack enable
@@ -86,7 +86,7 @@ $ yarn test
 
 ## Yarn usage details
 
-⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2+. Currently (November 2021), most examples and much tool support is implicitly engineered towards Yarn 1.
+⚠️&nbsp; Be aware that when googling Yarn commands, it's often not clear whether the results pertain to Yarn 1 (aka 'Classic') or Yarn 2+. Many examples online and a considerable amount of tool support is still implicitly engineered towards Yarn 1.
 
 ### Lifecycle scripts and Yarn 2
 

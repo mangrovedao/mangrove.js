@@ -16,7 +16,11 @@ const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const mgv = await Mangrove.connect({ signer: wallet });
 
 // Choose a market
-const market = await mgv.market({ base: "WETH", quote: "USDC" });
+const market = await mgv.market({
+  base: "WETH",
+  quote: "USDT",
+  tickSpacing: 1,
+});
 
 // Initialize KandelStrategies for strategy management
 const kandelStrategies = new KandelStrategies(mgv);
@@ -39,17 +43,21 @@ const minQuotePerOffer = await kandelStrategies.seeder.getMinimumVolume({
   onAave: false,
 });
 
-// Calculate a candidate distribution with the recommended minimum volumes given the price range and the default ratio
-const minDistribution = distributionGenerator.calculateMinimumDistribution({
-  priceParams: {
-    minPrice: 900,
-    maxPrice: 1100,
-    ratio: config.ratio,
-  },
-  midPrice: 1000,
-  minimumBasePerOffer: minBasePerOffer,
-  minimumQuotePerOffer: minQuotePerOffer,
-});
+// Calculate a candidate distribution with the recommended minimum volumes given the price range and a price ratio of roughly 1% (it gets converted to an offset in ticks between prices, and some precision is lost)
+// The price points are generated outwards from the mid price, and the default step size for the market is used.
+const minDistribution =
+  await distributionGenerator.calculateMinimumDistribution({
+    distributionParams: {
+      minPrice: 900,
+      maxPrice: 1100,
+      priceRatio: 1.01,
+      midPrice: 1000,
+      generateFromMid: true,
+      stepSize: config.stepSize,
+    },
+    minimumBasePerOffer: minBasePerOffer,
+    minimumQuotePerOffer: minQuotePerOffer,
+  });
 
 // Output information about the minimum distribution
 const minVolumes = minDistribution.getOfferedVolumeForDistribution();
@@ -59,26 +67,25 @@ console.log("Minimum quote volume:", minVolumes.requiredQuote.toString());
 
 // Recalculate the distribution based on desired base and quote amounts, which should be at least the recommended.
 const finalDistribution =
-  distributionGenerator.recalculateDistributionFromAvailable({
+  await distributionGenerator.recalculateDistributionFromAvailable({
     distribution: minDistribution,
     availableBase: 3,
     availableQuote: 3000,
   });
 const offeredVolumes = finalDistribution.getOfferedVolumeForDistribution();
 
-// Inspect the final distribution's offers
-console.log(finalDistribution.offers);
+// Inspect the final distribution's offers - their raw ticks are shown along with their price - and initially dead offers can be seen with 0 gives.
+console.log(finalDistribution.getOffersWithPrices());
 
 // Prepare seed data for deploying a Kandel instance
 const seed = {
   onAave: false,
   market,
   liquiditySharing: false,
-  gaspriceFactor: config.gaspriceFactor,
 };
 
 // Deploy a Kandel instance with the specified seed data (the offers are later populated based on the above distribution)
-const { kandelPromise } = await kandelStrategies.seeder.sow(seed);
+const { result: kandelPromise } = await kandelStrategies.seeder.sow(seed);
 const kandelInstance = await kandelPromise;
 
 // Approve Kandel instance to use our funds
@@ -87,13 +94,21 @@ const approvalTxs = await kandelInstance.approveIfHigher();
 // Wait for approval transactions (one for base, one for quote) to be mined
 const approvalReceipts = await Promise.all(approvalTxs.map((x) => x?.wait()));
 
+// To mint test tokens the following can be used
+await (
+  await market.base.contract.mint(
+    market.base.toUnits(offeredVolumes.requiredBase),
+  )
+).wait();
+await (
+  await market.quote.contract.mint(
+    market.quote.toUnits(offeredVolumes.requiredQuote),
+  )
+).wait();
+
 // Populate the Kandel instance according to our desired distribution (can be multiple transactions if there are many price points)
-// This is with the default spread for the market.
-const populateTxs = await kandelInstance.populate({
+const populateTxs = await kandelInstance.populateGeometricDistribution({
   distribution: finalDistribution,
-  parameters: {
-    spread: config.spread,
-  },
   depositBaseAmount: offeredVolumes.requiredBase,
   depositQuoteAmount: offeredVolumes.requiredQuote,
 });
@@ -111,7 +126,7 @@ console.log(
   "Kandel balance of base =",
   await kandelInstance.getBalance("asks"),
   "and quote =",
-  await kandelInstance.getBalance("bids")
+  await kandelInstance.getBalance("bids"),
 );
 
 // Retrieve deployed Kandels owned by the wallet via the farm which detects Kandels by inspecting events from the seeder.
@@ -138,5 +153,5 @@ console.log(
   "Kandel balance of base =",
   await kandelInstance.getBalance("asks"),
   "and quote =",
-  await kandelInstance.getBalance("bids")
+  await kandelInstance.getBalance("bids"),
 );

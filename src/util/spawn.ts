@@ -9,6 +9,7 @@ export type spawnParams = {
   forkBlockNumber?: number;
   host: string;
   port: number | string;
+  gasLimit?: number;
   pipe: boolean;
 };
 
@@ -25,6 +26,10 @@ export const spawn = async (params: spawnParams, mnemonic: string) => {
     params.forkBlockNumber !== undefined
       ? ["--fork-block-number", params.forkBlockNumber.toString()]
       : [];
+  const gasLimitArgs =
+    params.gasLimit !== undefined
+      ? ["--gas-limit", params.gasLimit.toString()]
+      : [];
   const args = [
     "--host",
     params.host,
@@ -37,6 +42,7 @@ export const spawn = async (params: spawnParams, mnemonic: string) => {
   ]
     .concat(chainIdArgs)
     .concat(forkUrlArgs)
+    .concat(gasLimitArgs)
     .concat(blockNumberArgs);
   const anvil = childProcess.spawn("anvil", args);
 

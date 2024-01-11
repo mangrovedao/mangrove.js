@@ -28,8 +28,7 @@ export async function deal(dealParams: {
     url: dealParams.url,
     env: env,
     provider: dealParams.provider,
-    script: "GetTokenDealSlot",
-    coreDir: CORE_DIR,
+    script: CORE_DIR + "/script/lib/GetTokenDealSlot.sol:GetTokenDealSlot",
     pipe: false,
     stateCache: false,
     stateCacheFile: "",
@@ -55,17 +54,17 @@ export async function deal(dealParams: {
   if (dealParams.internalAmount !== undefined) {
     if (dealParams.amount !== undefined) {
       throw new Error(
-        "Cannot specify both amount (display units) and internal amount (internal units). Please pick one."
+        "Cannot specify both amount (display units) and internal amount (internal units). Please pick one.",
       );
     }
   } else if (dealParams.amount !== undefined) {
     dealParams.internalAmount = ethers.utils.parseUnits(
       `${dealParams.amount}`,
-      decimals
+      decimals,
     );
   } else {
     throw new Error(
-      "Must specify one of dealParams.amount, dealParams.internalAmount."
+      "Must specify one of dealParams.amount, dealParams.internalAmount.",
     );
   }
 
@@ -73,6 +72,6 @@ export async function deal(dealParams: {
   await devNode.setStorageAt(
     dealParams.token,
     slot,
-    ethers.utils.hexZeroPad(dealParams.internalAmount.toHexString(), 32)
+    ethers.utils.hexZeroPad(dealParams.internalAmount.toHexString(), 32),
   );
 }

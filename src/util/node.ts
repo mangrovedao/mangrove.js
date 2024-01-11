@@ -20,8 +20,6 @@ const LOCAL_MNEMONIC =
   "test test test test test test test test test test test junk";
 const DUMPFILE = "mangroveJsNodeState.dump";
 
-const CORE_DIR = path.parse(require.resolve("@mangrovedao/mangrove-core")).dir;
-
 import type { MarkRequired } from "ts-essentials";
 import yargs from "yargs";
 import { JsonRpcProvider } from "@ethersproject/providers";
@@ -43,6 +41,7 @@ type inputDeployParams = {
   stateCache?: boolean;
   targetContract?: string;
   script?: string;
+  root?: string;
   url?: string;
   pipe?: boolean;
   setMulticallCodeIfAbsent?: boolean;
@@ -56,6 +55,7 @@ export type inputServerParamsTypeOnly = {
   deploy?: boolean;
   forkUrl?: string;
   forkBlockNumber?: number;
+  gasLimit?: number;
 };
 
 export type inputServerParamsType = inputServerParamsTypeOnly &
@@ -86,6 +86,7 @@ export type partialComputeArgvType = {
   forkUrl?: string;
   "fork-block-number"?: number;
   forkBlockNumber?: number;
+  gasLimit?: number;
   "chain-id"?: number;
   chainId?: number;
   pipe: boolean;
@@ -181,6 +182,11 @@ export const builder = (yargs: yargs.Argv<{}>) => {
       default: false,
       type: "boolean",
     })
+    .option("gas-limit", {
+      describe: "The block gas limit",
+      type: "number",
+      default: 30_000_000,
+    })
     .option("set-multicall-code-if-absent", {
       describe: "Set Multicall code if absent",
       default: true,
@@ -197,7 +203,7 @@ export const builder = (yargs: yargs.Argv<{}>) => {
 
 const computeArgv = async (
   params: inputServerParamsType,
-  ignoreCmdLineArgs = false
+  ignoreCmdLineArgs = false,
 ): Promise<partialComputeArgvType> => {
   // ignore command line if not main module, but still read from env vars
   // note: this changes yargs' default precedence, which is (high to low):
@@ -228,7 +234,7 @@ const deploy = async (params: deployParams) => {
   } catch (err: any) {
     throw new Error(
       "Could not get chain id, is the anvil node running?\nOriginal error: \n" +
-        err.toString()
+        err.toString(),
     );
   }
 
@@ -244,7 +250,6 @@ const deploy = async (params: deployParams) => {
       script: params.script,
       provider: params.provider,
       targetContract: params.targetContract,
-      coreDir: CORE_DIR,
       mnemonic,
       stateCache: params.stateCache,
       stateCacheFile,
@@ -301,7 +306,7 @@ const connect = async (params: computeArgvType | serverParamsType) => {
       const blockNumberAfterRevert = await params.provider.getBlockNumber();
       if (blockNumberAfterRevert != snapshotBlockNumber) {
         throw Error(
-          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`
+          `evm_revert did not revert to expected block number ${snapshotBlockNumber} but to ${blockNumberAfterRevert}. Snapshots are deleted when reverting - did you take a new snapshot after the last revert?`,
         );
       }
     },
@@ -325,14 +330,14 @@ export const node = async (argv: inputServerParamsType): Promise<nodeType> => {
 
 /* Return node actions from generated yargs parameters */
 export const nodeWithComputedArgv = async (
-  params: partialComputeArgvType
+  params: partialComputeArgvType,
 ): Promise<nodeType> => {
   // if node is initialized with a URL, host/port
   if (params.url === undefined) {
     params.url = `http://${params.host}:${params.port}`;
   } else if (params.spawn) {
     throw new Error(
-      "spawn and url params are incompatible. If you want to spawn a node, set host and port (not url); or keep url and set spawn to false."
+      "spawn and url params are incompatible. If you want to spawn a node, set host and port (not url); or keep url and set spawn to false.",
     );
   }
 

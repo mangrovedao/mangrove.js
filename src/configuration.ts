@@ -1,9 +1,10 @@
-import loadedAddressesByNetwork from "./constants/addresses.json";
 import loadedTokens from "./constants/tokens.json";
 import loadedBlockManagerOptionsByNetwork from "./constants/blockManagerOptionsByNetwork.json";
 import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttpProviderOptionsByNetwork.json";
 import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSocketOptionsByNetwork.json";
 import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
+import loadedMangroveOrderConfiguration from "./constants/mangroveOrder.json";
+import contractPackageVersions from "./constants/contractPackageVersions.json";
 
 import { ethers } from "ethers";
 import Big from "big.js";
@@ -13,30 +14,34 @@ import {
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
 import { Bigish, Provider, typechain } from "./types";
-import mgvCore from "@mangrovedao/mangrove-core";
+import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
+import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
-import moize from "moize";
+import semver from "semver";
 
 // Make keys optional at all levels of T
 export type RecursivePartial<T> = {
   [P in keyof T]?: T[P] extends (infer U)[]
     ? RecursivePartial<U>[]
     : T[P] extends object | undefined
-    ? RecursivePartial<T[P]>
-    : T[P];
+      ? RecursivePartial<T[P]>
+      : T[P];
 };
 
 export type network = string;
 export type address = string;
+export type tokenId = string;
 export type tokenSymbol = string;
 
 export type NamedAddresses = Record<string, address>;
 export type AddressesConfig = Record<network, NamedAddresses>;
 
 export type TokenConfig = {
+  symbol?: tokenSymbol;
   decimals?: number;
+  displayName?: string;
   displayedDecimals?: number;
   displayedAsPriceDecimals?: number;
   cashness?: number;
@@ -82,24 +87,26 @@ export type KandelNetworkConfiguration = {
  * @param aaveEnabled Whether AaveKandel should be allowed to be used.
  * @param minimumBasePerOfferFactor Additional factor for the minimum amount of base token that should be offered per offer to stay above density requirements.
  * @param minimumQuotePerOfferFactor Additional factor for the minimum amount of quote token that should be offered per offer to stay above density requirements.
- * @param spread The default spread used when transporting funds from an offer to its dual.
- * @param ratio The default ratio of the geometric progression of prices.
+ * @param stepSize The default step size used when transporting funds from an offer to its dual.
+ * @param baseQuoteTickOffset The default baseQuoteTickOffset number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
  */
 export type KandelMarketConfiguration = {
   aaveEnabled: boolean;
   minimumBasePerOfferFactor: Big;
   minimumQuotePerOfferFactor: Big;
-  spread: number;
-  ratio: Big;
+  stepSize: number;
+  baseQuoteTickOffset: number;
 };
 
 export type KandelRawMarketConfiguration = Omit<
   KandelMarketConfiguration,
-  "minimumBasePerOfferFactor" | "minimumQuotePerOfferFactor" | "ratio"
+  | "minimumBasePerOfferFactor"
+  | "minimumQuotePerOfferFactor"
+  | "baseQuoteTickOffset"
 > & {
   minimumBasePerOfferFactor: Bigish;
   minimumQuotePerOfferFactor: Bigish;
-  ratio: Bigish;
+  baseQuoteTickOffset: number;
 };
 
 export type KandelAllConfigurationFields = KandelNetworkConfiguration &
@@ -109,17 +116,38 @@ export type PartialKandelAllConfigurationFields =
   Partial<KandelAllConfigurationFields>;
 export type PartialMarketConfig = PartialKandelAllConfigurationFields;
 export type PartialNetworkConfig = PartialKandelAllConfigurationFields & {
-  markets?: Record<tokenSymbol, Record<tokenSymbol, PartialMarketConfig>>; // base symbol -> quote symbol -> market config
+  markets?: Record<
+    tokenId,
+    Record<tokenId, Record<number, PartialMarketConfig>>
+  >; // base ID -> quote ID -> tickSpacing -> market config
 };
 
 export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
   networks?: Record<network, PartialNetworkConfig>;
 };
 
+/** Mangrove order configuration for a specific chain.
+ * @param restingOrderGasreq The gasreq for a resting order using the MangroveOrder contract.
+ * @param restingOrderGaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
+ * @param takeGasOverhead The overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove.
+ */
+export type MangroveOrderNetworkConfiguration = {
+  restingOrderGasreq: number;
+  restingOrderGaspriceFactor: number;
+  takeGasOverhead: number;
+};
+
+export type PartialMangroveOrderConfiguration =
+  Partial<MangroveOrderNetworkConfiguration> & {
+    networks?: Record<network, Partial<MangroveOrderNetworkConfiguration>>;
+  };
+
 export type Configuration = {
   addressesByNetwork: AddressesConfig;
   tokenDefaults: TokenDefaults;
-  tokens: Record<tokenSymbol, TokenConfig>;
+  tokens: Record<tokenId, TokenConfig>;
+  tokenSymbolDefaultIdsByNetwork: Record<tokenSymbol, Record<network, tokenId>>;
+  mangroveOrder: PartialMangroveOrderConfiguration;
   reliableEventSubscriber: ReliableEventSubscriberConfig;
   kandel: PartialKandelConfiguration;
 };
@@ -169,7 +197,7 @@ export const addressesConfiguration = {
   watchAddress: (
     network: string,
     name: string,
-    callback: (address: string) => void
+    callback: (address: string) => void,
   ) => {
     let networkWatchers = addressWatchers.get(network);
     if (networkWatchers === undefined) {
@@ -204,165 +232,286 @@ export const addressesConfiguration = {
       }
     }
   },
+};
+
+/// TOKENS
+
+function getOrCreateTokenConfig(tokenId: tokenId): TokenConfig {
+  let tokenConfig = config.tokens[tokenId];
+  if (tokenConfig === undefined) {
+    config.tokens[tokenId] = tokenConfig = {};
+  }
+  return tokenConfig;
+}
+
+function getOrCreateDefaultIdsForSymbol(
+  symbol: tokenSymbol,
+): Record<network, tokenId> {
+  let defaultIdsForSymbol = config.tokenSymbolDefaultIdsByNetwork[symbol];
+  if (defaultIdsForSymbol === undefined) {
+    config.tokenSymbolDefaultIdsByNetwork[symbol] = defaultIdsForSymbol = {};
+  }
+  return defaultIdsForSymbol;
+}
+
+export const tokensConfiguration = {
+  /**
+   * Returns true if the given token ID has been registered; otherwise, false.
+   */
+  isTokenIdRegistered(tokenId: tokenId): boolean {
+    return config.tokens[tokenId] !== undefined;
+  },
 
   /**
-   * Gets the name of an address on the current network.
+   * Gets the default token ID for a given symbol and network if
+   * (1) any has been registered or
+   * (2) if there is only one token with that symbol or
+   * (3) if there are no tokens with that symbol, then the symbol itself.
    *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   * If no default is registered and there are multiple tokens with that symbol an error is thrown.
    */
-  getNameFromAddress: (
+  getDefaultIdForSymbolOnNetwork(
+    tokenSymbol: tokenSymbol,
+    network: network,
+  ): tokenId {
+    const registeredDefault =
+      getOrCreateDefaultIdsForSymbol(tokenSymbol)[network];
+    if (registeredDefault !== undefined) {
+      return registeredDefault;
+    }
+
+    // Loop through config.tokens to find the first token with the given symbol on the given network
+    let foundTokenId: tokenId | undefined;
+    for (const [tokenId, tokenConfig] of Object.entries(config.tokens)) {
+      if (
+        tokenConfig.symbol === tokenSymbol &&
+        addressesConfiguration.getAddress(tokenId, network) !== undefined
+      ) {
+        if (foundTokenId !== undefined) {
+          // If we already found a token with that symbol, we cannot decide which one is the default
+          throw Error(
+            `No default token ID registered for symbol ${tokenSymbol} and multiple tokens defined on network ${network} with that symbol`,
+          );
+        }
+        foundTokenId = tokenId;
+      }
+    }
+    return foundTokenId ?? tokenSymbol;
+  },
+
+  /**
+   * Gets the token ID of an address on the given network.
+   */
+  getTokenIdFromAddress: (
     address: string,
-    network: string
-  ): string | undefined => {
+    network: string,
+  ): tokenId | undefined => {
     const networkAddresses = config.addressesByNetwork[network];
     address = ethers.utils.getAddress(address); // normalize
 
     if (networkAddresses) {
       for (const [name, candidateAddress] of Object.entries(
-        networkAddresses
+        networkAddresses,
       ) as any) {
         if (candidateAddress == address) {
-          return name;
+          if (tokensConfiguration.isTokenIdRegistered(name)) {
+            return name;
+          }
         }
       }
     }
     return undefined;
   },
-};
-
-/// TOKENS
-
-function getOrCreateTokenConfig(tokenName: string) {
-  let tokenConfig = config.tokens[tokenName];
-  if (tokenConfig === undefined) {
-    config.tokens[tokenName] = tokenConfig = {};
-  }
-  return tokenConfig;
-}
-
-export const tokensConfiguration = {
-  /**
-   * Read decimals for `tokenName`.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  getDecimals: (tokenName: string): number | undefined => {
-    return config.tokens[tokenName]?.decimals;
-  },
 
   /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
+   * Read decimals for `tokenId`. Fails if the decimals are not in the configuration.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimalsOrFail: (tokenName: string): number => {
-    const decimals = tokensConfiguration.getDecimals(tokenName);
+  getDecimals: (tokenId: tokenId): number => {
+    const decimals = getOrCreateTokenConfig(tokenId).decimals;
     if (decimals === undefined) {
-      throw Error(`No decimals on record for token ${tokenName}`);
+      throw Error(`No decimals on record for token ${tokenId}`);
     }
 
     return decimals;
   },
 
   /**
-   * Read decimals for `tokenName` on given network.
+   * Read decimals for `tokenId` on given network.
    * If not found in the local configuration, fetch them from the current network and save them
    */
   getOrFetchDecimals: async (
-    tokenName: string,
-    provider: Provider
+    tokenId: tokenId,
+    provider: Provider,
   ): Promise<number> => {
-    const decimals = tokensConfiguration.getDecimals(tokenName);
+    const decimals = tokensConfiguration.getDecimals(tokenId);
     if (decimals !== undefined) {
       return decimals;
     }
 
-    return tokensConfiguration.fetchDecimals(tokenName, provider);
+    return tokensConfiguration.fetchDecimals(tokenId, provider);
   },
 
   /**
-   * Read chain for decimals of `tokenName` on current network and save them
+   * Read chain for decimals of `tokenId` on current network and save them
    */
   fetchDecimals: async (
-    tokenName: string,
-    provider: Provider
+    tokenId: tokenId,
+    provider: Provider,
   ): Promise<number> => {
     const network = await eth.getProviderNetwork(provider);
     const token = typechain.IERC20__factory.connect(
-      addressesConfiguration.getAddress(tokenName, network.name),
-      provider
+      addressesConfiguration.getAddress(tokenId, network.name),
+      provider,
     );
     const decimals = await token.decimals();
-    tokensConfiguration.setDecimals(tokenName, decimals);
+    tokensConfiguration.setDecimals(tokenId, decimals);
     return decimals;
   },
 
   /**
-   * Read chain for decimals of `address` on current network
+   * Read symbol for `tokenId`.
+   * To read symbol directly onchain, use `fetchSymbol`.
    */
-  fetchDecimalsFromAddress: moize(
-    async (address: string, provider: Provider): Promise<number> => {
-      const token = typechain.IERC20__factory.connect(address, provider);
-      return token.decimals();
-    }
-  ),
+  getSymbol: (tokenId: tokenId): tokenSymbol | undefined => {
+    return getOrCreateTokenConfig(tokenId).symbol;
+  },
 
   /**
-   * Read displayed decimals for `tokenName`.
+   * Read symbol for `tokenId` on given network.
+   * If not found in the local configuration, fetch them from the current network and save them
    */
-  getDisplayedDecimals: (tokenName: string): number => {
+  getOrFetchSymbol: async (
+    tokenId: tokenId,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const symbol = tokensConfiguration.getSymbol(tokenId);
+    if (symbol !== undefined) {
+      return symbol;
+    }
+
+    return tokensConfiguration.fetchSymbol(tokenId, provider);
+  },
+
+  /**
+   * Read chain for symbol of `tokenId` on current network and save them
+   */
+  fetchSymbol: async (
+    tokenId: tokenId,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const network = await eth.getProviderNetwork(provider);
+    const address = addressesConfiguration.getAddress(tokenId, network.name);
+    const symbol = await tokensConfiguration.fetchSymbolFromAddress(
+      address,
+      provider,
+    );
+    tokensConfiguration.setSymbol(tokenId, symbol);
+    return symbol;
+  },
+
+  /**
+   * Read chain for symbol of `address` on current network.
+   */
+  fetchSymbolFromAddress: async (
+    address: address,
+    provider: Provider,
+  ): Promise<tokenSymbol> => {
+    const token = typechain.IERC20__factory.connect(address, provider);
+    return await token.symbol();
+  },
+
+  /**
+   * Read display name for `tokenId`.
+   */
+  getDisplayName: (tokenId: tokenId): string | undefined => {
+    return getOrCreateTokenConfig(tokenId).displayName;
+  },
+
+  /**
+   * Read displayed decimals for `tokenId`.
+   */
+  getDisplayedDecimals: (tokenId: tokenId): number => {
     return (
-      config.tokens[tokenName]?.displayedDecimals ||
+      getOrCreateTokenConfig(tokenId).displayedDecimals ||
       config.tokenDefaults.defaultDisplayedDecimals
     );
   },
 
   /**
-   * Read displayed decimals for `tokenName` when displayed as a price.
+   * Read displayed decimals for `tokenId` when displayed as a price.
    */
-  getDisplayedPriceDecimals: (tokenName: string): number => {
+  getDisplayedPriceDecimals: (tokenId: tokenId): number => {
     return (
-      config.tokens[tokenName]?.displayedAsPriceDecimals ||
+      getOrCreateTokenConfig(tokenId).displayedAsPriceDecimals ||
       config.tokenDefaults.defaultDisplayedPriceDecimals
     );
   },
 
   /** Get the cashness of a token. See {@link setCashness} for details.
    */
-  getCashness: (tokenName: string): number | undefined => {
-    return config.tokens[tokenName]?.cashness;
+  getCashness: (tokenId: tokenId): number | undefined => {
+    return getOrCreateTokenConfig(tokenId).cashness;
   },
 
   /**
-   * Set decimals for `tokenName`.
+   * Set the default token ID for a given symbol and network.
    */
-  setDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).decimals = dec;
+  setDefaultIdForSymbolOnNetwork(
+    tokenSymbol: tokenSymbol,
+    network: network,
+    tokenId: tokenId,
+  ): void {
+    getOrCreateDefaultIdsForSymbol(tokenSymbol)[network] = tokenId;
   },
 
   /**
-   * Set displayed decimals for `tokenName`.
+   * Set decimals for `tokenId`.
    */
-  setDisplayedDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).displayedDecimals = dec;
+  setDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).decimals = dec;
   },
 
   /**
-   * Set displayed decimals for `tokenName` when displayed as a price.
+   * Set symbol for `tokenId`.
    */
-  setDisplayedPriceDecimals: (tokenName: string, dec: number): void => {
-    getOrCreateTokenConfig(tokenName).displayedAsPriceDecimals = dec;
+  setSymbol: (tokenId: tokenId, symbol: tokenSymbol): void => {
+    getOrCreateTokenConfig(tokenId).symbol = symbol;
+  },
+
+  /**
+   * Set display name for `tokenId`.
+   */
+  setDisplayName: (tokenId: tokenId, displayName: string): void => {
+    getOrCreateTokenConfig(tokenId).displayName = displayName;
+  },
+
+  /**
+   * Set displayed decimals for `tokenId`.
+   */
+  setDisplayedDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).displayedDecimals = dec;
+  },
+
+  /**
+   * Set displayed decimals for `tokenId` when displayed as a price.
+   */
+  setDisplayedPriceDecimals: (tokenId: tokenId, dec: number): void => {
+    getOrCreateTokenConfig(tokenId).displayedAsPriceDecimals = dec;
   },
 
   /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
    * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
    */
-  setCashness: (tokenName: string, cashness: number) => {
-    getOrCreateTokenConfig(tokenName).cashness = cashness;
+  setCashness: (tokenId: tokenId, cashness: number) => {
+    getOrCreateTokenConfig(tokenId).cashness = cashness;
   },
 };
 
 /// RELIABLE EVENT SUBSCRIBER
 
 export const reliableEventSubscriberConfiguration = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getLogsTimeout: (network: string): number => {
     return 20_000; // 20 seconds
   },
@@ -374,7 +523,7 @@ export const reliableEventSubscriberConfiguration = {
   },
 
   getReliableHttpProviderOptions: (
-    network: string
+    network: string,
   ): Omit<ReliableHttpProvider.Options, "onError"> => {
     return (
       config.reliableEventSubscriber.reliableHttpProviderOptionsByNetwork[
@@ -384,13 +533,50 @@ export const reliableEventSubscriberConfiguration = {
   },
 
   getReliableWebSocketOptions: (
-    network: string
+    network: string,
   ): Omit<ReliableWebsocketProvider.Options, "wsUrl"> => {
     return (
       config.reliableEventSubscriber.reliableWebSocketOptionsByNetwork[
         network
       ] ?? config.reliableEventSubscriber.defaultReliableWebSocketOptions
     );
+  },
+};
+
+/// MANGROVE ORDER
+
+export const mangroveOrderConfiguration = {
+  /** Gets the gasreq for a resting order using the MangroveOrder contract. */
+  getRestingOrderGasreq: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.restingOrderGasreq ??
+      config.mangroveOrder.restingOrderGasreq;
+    if (!value) {
+      throw Error("No restingOrderGasreq configured");
+    }
+    return value;
+  },
+
+  /** Gets the factor to multiply the gasprice by. This is used to ensure that the offers do not fail to be reposted even if Mangrove's gasprice increases up to this. */
+  getRestingOrderGaspriceFactor: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.restingOrderGaspriceFactor ??
+      config.mangroveOrder.restingOrderGaspriceFactor;
+    if (!value) {
+      throw Error("No restingOrderGaspriceFactor configured");
+    }
+    return value;
+  },
+
+  /** Gets the overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove. */
+  getTakeGasOverhead: (network: string) => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.takeGasOverhead ??
+      config.mangroveOrder.takeGasOverhead;
+    if (!value) {
+      throw Error("No takeGasOverhead configured");
+    }
+    return value;
   },
 };
 
@@ -412,7 +598,8 @@ export function resetConfiguration(): void {
       defaultDisplayedDecimals: 2,
       defaultDisplayedPriceDecimals: 6,
     },
-    tokens: clone(loadedTokens as Record<tokenSymbol, TokenConfig>),
+    tokens: clone(loadedTokens as Record<tokenId, TokenConfig>),
+    tokenSymbolDefaultIdsByNetwork: {},
     reliableEventSubscriber: {
       defaultBlockManagerOptions: {
         maxBlockCached: 50,
@@ -426,7 +613,7 @@ export function resetConfiguration(): void {
         loadedBlockManagerOptionsByNetwork as Record<
           network,
           BlockManager.Options
-        >
+        >,
       ),
       defaultReliableHttpProviderOptions: {
         estimatedBlockTimeMs: 2000,
@@ -435,7 +622,7 @@ export function resetConfiguration(): void {
         loadedReliableHttpProviderOptionsByNetwork as Record<
           network,
           Omit<ReliableHttpProvider.Options, "onError">
-        >
+        >,
       ),
       defaultReliableWebSocketOptions: {
         pingIntervalMs: 10000,
@@ -446,45 +633,148 @@ export function resetConfiguration(): void {
         loadedReliableWebSocketOptionsByNetwork as Record<
           network,
           Omit<ReliableWebsocketProvider.Options, "wsUrl">
-        >
+        >,
       ),
     },
+    mangroveOrder: clone(
+      loadedMangroveOrderConfiguration as PartialMangroveOrderConfiguration,
+    ),
     kandel: clone(loadedKandelConfiguration as PartialKandelConfiguration),
   };
 
   // Load addresses in the following order:
-  // 1. loaded addresses
-  // 2. mangrove-core addresses
+  // 1. context-addresses addresses
+  // 2. mangrove-deployments addresses
   // Last loaded address is used
+  readContextAddressesAndTokens();
+  readMangroveDeploymentAddresses();
+}
 
-  for (const [network, networkAddresses] of Object.entries(
-    loadedAddressesByNetwork
-  )) {
-    for (const [name, address] of Object.entries(networkAddresses) as any) {
-      if (address) {
-        addressesConfiguration.setAddress(name, address, network);
+function readMangroveDeploymentAddresses() {
+  // Note: Consider how to expose other deployments than the primary
+  const mgvCoreVersionPattern = createContractVersionPattern(
+    contractPackageVersions["mangrove-core"],
+  );
+  // Note: Make this configurable?
+  const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvCoreContractsDeployments =
+    mgvDeployments.getCoreContractsVersionDeployments({
+      version: mgvCoreVersionPattern,
+      released: mgvCoreReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
+
+  const mgvStratsVersionPattern = createContractVersionPattern(
+    contractPackageVersions["mangrove-strats"],
+  );
+  // Note: Make this configurable?
+  const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
+  const mgvStratsContractsDeployments =
+    mgvDeployments.getStratsContractsVersionDeployments({
+      version: mgvStratsVersionPattern,
+      released: mgvStratsReleasedFilter,
+    });
+  readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
+}
+
+function createContractVersionPattern(contractPackageVersion: string) {
+  const preleaseComponents = semver.prerelease(contractPackageVersion);
+  if (preleaseComponents === null) {
+    // For release versions of contract packages, we match any deployment of the same major version, _excluding_ prereleases.
+    return `^${semver.major(contractPackageVersion)}.0.0`;
+  } else {
+    // For pre-release versions of contract packages, we match any deployment of the same major version, _including_ prereleases.
+    // This is achieved by replacing the last prelease component by 0 and using the caret '^' pattern.
+    // This pattern is equivalent to '>= x.y.z-0 < x+1.0.0'.
+    // Examples:
+    //   2.0.0-alpha.1 => ^2.0.0-alpha.0
+    //   2.0.0-4       => ^2.0.0-0
+    const patternPreleaseComponents = [...preleaseComponents];
+    patternPreleaseComponents[patternPreleaseComponents.length - 1] = "0";
+    return `^${semver.major(contractPackageVersion)}.${semver.minor(
+      contractPackageVersion,
+    )}.${semver.patch(contractPackageVersion)}-${patternPreleaseComponents.join(
+      ".",
+    )}`;
+  }
+}
+
+function readVersionDeploymentsAddresses(
+  contractsDeployments: mgvDeployments.VersionDeployments[],
+) {
+  for (const contractDeployments of contractsDeployments) {
+    for (const [networkId, networkDeployments] of Object.entries(
+      contractDeployments.networkAddresses,
+    )) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(
+        contractDeployments.deploymentName ?? contractDeployments.contractName,
+        networkDeployments.primaryAddress,
+        networkName,
+      );
+    }
+  }
+}
+
+function readContextAddressesAndTokens() {
+  readContextMulticallAddresses();
+  readContextErc20Tokens();
+  readContextAaveAddresses();
+}
+
+function readContextMulticallAddresses() {
+  const allMulticallAddresses = contextAddresses.getAllMulticallAddresses();
+  for (const [addressId, role] of Object.entries(allMulticallAddresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
+    }
+  }
+}
+
+function readContextErc20Tokens() {
+  for (const [, erc20] of Object.entries(contextAddresses.getAllErc20s())) {
+    for (const [networkId, networkInstances] of Object.entries(
+      erc20.networkInstances,
+    )) {
+      const networkName = eth.getNetworkName(+networkId);
+      for (const [erc20InstanceId, erc20Instance] of Object.entries(
+        networkInstances,
+      )) {
+        tokensConfiguration.setDecimals(erc20InstanceId, erc20.decimals);
+        tokensConfiguration.setSymbol(erc20InstanceId, erc20.symbol);
+
+        addressesConfiguration.setAddress(
+          erc20InstanceId,
+          erc20Instance.address,
+          networkName,
+        );
+
+        if (erc20Instance.default) {
+          tokensConfiguration.setDefaultIdForSymbolOnNetwork(
+            erc20.symbol,
+            networkName,
+            erc20InstanceId,
+          );
+
+          // Also register the default instance as the token symbol for convenience
+          addressesConfiguration.setAddress(
+            erc20.symbol,
+            erc20Instance.address,
+            networkName,
+          );
+        }
       }
     }
   }
+}
 
-  let mgvCoreAddresses: any[] = [];
-
-  if (mgvCore.addresses.deployed || mgvCore.addresses.context) {
-    if (mgvCore.addresses.deployed) {
-      mgvCoreAddresses.push(mgvCore.addresses.deployed);
-    }
-    if (mgvCore.addresses.context) {
-      mgvCoreAddresses.push(mgvCore.addresses.context);
-    }
-  } else {
-    mgvCoreAddresses.push(mgvCore.addresses);
-  }
-
-  mgvCoreAddresses = mgvCoreAddresses.flatMap((o) => Object.entries(o));
-
-  for (const [network, networkAddresses] of mgvCoreAddresses) {
-    for (const { name, address } of networkAddresses as any) {
-      addressesConfiguration.setAddress(name, address, network);
+function readContextAaveAddresses() {
+  const allAaveV3Addresses = contextAddresses.getAllAaveV3Addresses();
+  for (const [addressId, role] of Object.entries(allAaveV3Addresses)) {
+    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
+      const networkName = eth.getNetworkName(+networkId);
+      addressesConfiguration.setAddress(addressId, address, networkName);
     }
   }
 }
@@ -507,6 +797,7 @@ export const configuration = {
   tokens: tokensConfiguration,
   reliableEventSubscriber: reliableEventSubscriberConfiguration,
   kandel: kandelConfiguration,
+  mangroveOrder: mangroveOrderConfiguration,
   resetConfiguration,
   updateConfiguration,
 };

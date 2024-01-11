@@ -7,16 +7,9 @@ import childProcess from "child_process";
 export function execForgeCmd(
   command: string,
   env: any,
-  coreDir: string,
   pipe?: any,
-  handler?: any
+  handler?: any,
 ) {
-  // Foundry needs these RPC urls specified in foundry.toml to be available, else it complains
-  env = {
-    ...env,
-    FOUNDRY_PROFILE: "no_env_vars",
-  };
-
   if (typeof pipe === "undefined") {
     pipe = true;
   }
@@ -31,7 +24,6 @@ export function execForgeCmd(
       {
         encoding: "utf8",
         env: env,
-        cwd: coreDir,
       },
       (error, stdout, stderr) => {
         if (pipe || error) {
@@ -47,7 +39,7 @@ export function execForgeCmd(
         } else {
           ok(stdout);
         }
-      }
+      },
     );
   });
   return scriptPromise;
@@ -59,7 +51,7 @@ export async function runScript(params: {
   script: string;
   env?: NodeJS.ProcessEnv;
   mnemonic?: eth.Mnemonic;
-  coreDir: string;
+  root?: string;
   pipe: boolean;
   stateCache: boolean;
   stateCacheFile: string;
@@ -81,7 +73,7 @@ export async function runScript(params: {
         : ""
     } \
     --broadcast -vvv \
-    --root ${params.coreDir} \
+    ${params.root ? `--root ${params.root}` : ""} \
     ${
       params.targetContract ? `--target-contract ${params.targetContract}` : ""
     } \
@@ -92,12 +84,7 @@ export async function runScript(params: {
   // this dumps the private-key but it is a test mnemonic
   console.log(forgeScriptCmd);
   const env = params.env ? { ...process.env, ...params.env } : process.env;
-  const ret = await execForgeCmd(
-    forgeScriptCmd,
-    env,
-    params.coreDir,
-    params.pipe
-  );
+  const ret = await execForgeCmd(forgeScriptCmd, env, params.pipe);
 
   if (params.stateCache) {
     const stateData = await params.provider.send("anvil_dumpState", []);

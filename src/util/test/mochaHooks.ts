@@ -92,45 +92,18 @@ export const mochaHooks = {
     // @ts-ignore
     mgv.provider.pollingInterval = 10;
     await mgv.fundMangrove(10, hook.accounts.deployer.address);
-    // await mgv.contract["fund()"]({ value: mgv.toUnits(10,18) });
-
-    const localConfig = await (
-      await mgv.market({ base: tokenA.name, quote: tokenB.name })
-    ).config();
-    await mgv.contract
-      .activate(
-        tokenA.address,
-        tokenB.address,
-        500,
-        tokenA.toUnits(localConfig.asks.density),
-        localConfig.asks.offer_gasbase
-      )
-      .then((tx) => tx.wait());
-
-    // Density should be >0, otherwise the tests will fail
-    await mgv.contract
-      .activate(
-        tokenB.address,
-        tokenA.address,
-        500,
-        localConfig.bids.density.gt(0)
-          ? tokenB.toUnits(localConfig.bids.density)
-          : 1,
-        localConfig.bids.offer_gasbase
-      )
-      .then((tx) => tx.wait());
 
     await tokenA.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18)
+      mgv.nativeToken.toUnits(10),
     );
     await tokenB.contract.mintTo(
       hook.accounts.tester.address,
-      mgv.toUnits(10, 18)
+      mgv.nativeToken.toUnits(10),
     );
 
     const tx = await mgv.fundMangrove(10, mgv.getAddress("SimpleTestMaker"));
-    // making sure that last one is mined before snapshotting, anvil may snapshot too early otherwise
+    // making sure that last one is mined before snapshot is taken, anvil may snapshot too early otherwise
     await tx.wait();
     mgv.disconnect();
     await hook.server.snapshot();
@@ -169,6 +142,7 @@ export const mochaHooks = {
         Object.keys(result.pending).length ||
         Object.keys(result.queued).length
       ) {
+        // Since we do not always explicitly wait for txs to be mined there can easily be txs still to be mined, and this seems to interfere with revert/snapshot, so we wait for them to complete.
         console.log("txpool_content not empty... waiting...");
         console.log(JSON.stringify(result));
         await sleep(200);

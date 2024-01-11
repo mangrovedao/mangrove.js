@@ -2,7 +2,7 @@ import loglevel from "loglevel";
 
 export function createConsoleLogger(
   loggingEnabled: () => boolean,
-  logLevel: string
+  logLevel: string,
 ) {
   const l = loglevel.getLogger(Symbol());
   const logLevelNum = (loglevel.levels as any)[logLevel.toUpperCase()];

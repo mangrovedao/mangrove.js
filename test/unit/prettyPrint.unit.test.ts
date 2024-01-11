@@ -11,18 +11,25 @@ describe("PrettyPrint Unit test suite", () => {
       const prettyPrint = new PrettyPrint();
       //Arrange
       const spyPrint = spy(prettyPrint);
+
+      const tick = 31;
+      const price = Big(1.2);
+      const gives = Big(12);
+      const wants = price.mul(gives);
+
       const offer: Market.Offer = {
         id: 1,
-        prev: 2,
-        next: 3,
+        prevAtTick: 2,
+        nextAtTick: 3,
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(21),
-        gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        gasbase: 0,
+        gives,
+        tick,
+        price,
+        wants,
+        volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -36,7 +43,7 @@ describe("PrettyPrint Unit test suite", () => {
       assert.equal(4, secArg.length);
       assert.equal(secArg[0], "id");
       assert.equal(secArg[1], "maker");
-      assert.equal(secArg[2], "volume");
+      assert.equal(secArg[2], "gives");
       assert.equal(secArg[3], "price");
     });
 
@@ -44,18 +51,25 @@ describe("PrettyPrint Unit test suite", () => {
       const prettyPrint = new PrettyPrint();
       //Arrange
       const spyPrint = spy(prettyPrint);
+
+      const tick = 31;
+      const price = Big(1.2);
+      const gives = Big(12);
+      const wants = price.mul(gives);
+
       const offer: Market.Offer = {
         id: 1,
-        prev: 2,
-        next: 3,
+        prevAtTick: 2,
+        nextAtTick: 3,
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(21),
+        gasbase: 0,
         gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        tick,
+        price,
+        wants,
+        volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer];
 
@@ -72,27 +86,34 @@ describe("PrettyPrint Unit test suite", () => {
     });
   });
 
-  describe("prettypPrint", () => {
+  describe("prettyPrint", () => {
     it("prints the offers using the given filter", async function () {
       //Arrange
       const prettyPrint = new PrettyPrint();
+
+      const tick = 31;
+      const price = Big(1.2);
+      const gives = Big(12);
+      const wants = price.mul(gives);
+
       const offer: Market.Offer = {
         id: 1,
-        prev: 2,
-        next: 3,
+        prevAtTick: 2,
+        nextAtTick: 3,
         gasprice: 4,
         maker: "maker",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(21),
-        gives: new Big(12),
-        volume: new Big(13),
-        price: new Big(31),
+        gasbase: 0,
+        gives,
+        tick,
+        wants,
+        price,
+        volume: new Big(42),
       };
       const offers: Iterable<Market.Offer> = [offer, offer];
 
       //Act
-      prettyPrint.prettyPrint(offers, ["id", "next", "wants"]);
+      prettyPrint.prettyPrint(offers, ["id", "next", "gives"]);
       //Assert
     });
   });

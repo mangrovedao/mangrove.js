@@ -4,6 +4,8 @@ import { Big } from "big.js";
 import { expect } from "chai";
 import { describe, it } from "mocha";
 import { Market } from "../../src";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
+import { TokenCalculations } from "../../src/token";
 
 describe("Market unit tests suite", () => {
   describe("getGivesWantsForVolumeAtPrice", () => {
@@ -15,7 +17,7 @@ describe("Market unit tests suite", () => {
       const { gives, wants } = Market.getGivesWantsForVolumeAtPrice(
         "asks",
         volume,
-        price
+        price,
       );
       // Assert
       assert.equal(volume, gives);
@@ -30,7 +32,7 @@ describe("Market unit tests suite", () => {
       const { gives, wants } = Market.getGivesWantsForVolumeAtPrice(
         "bids",
         volume,
-        price
+        price,
       );
       // Assert
       assert.equal(volume, wants);
@@ -80,18 +82,6 @@ describe("Market unit tests suite", () => {
     });
   });
 
-  describe("getPrice", () => {
-    it("returns quoteVolume divided by baseVolume", async function () {
-      // Arrange
-      const gives = Big(12);
-      const wants = Big(13);
-      // Act
-      const result = Market.getPrice("bids", gives, wants);
-      // Assert
-      assert.ok(result && gives.div(wants).eq(result));
-    });
-  });
-
   describe("getBaseQuoteVolumes", () => {
     it("returns gives as baseVolume and wants as quoteVolume", async function () {
       // Arrange
@@ -117,18 +107,25 @@ describe("Market unit tests suite", () => {
 
   describe("getDisplayDecimalsForPriceDifferences", () => {
     function makeOfferWithPrice(price: number) {
+      const gives = Big(1);
+      const priceBig = Big(price);
       return {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 1,
         maker: "",
         gasreq: 1,
-        offer_gasbase: 1,
-        wants: Big(1),
-        gives: Big(1),
-        volume: Big(1),
+        gasbase: 1000,
+        gives,
+        wants: priceBig.mul(gives).round(),
+        tick: new TickPriceHelper("asks", {
+          base: new TokenCalculations(0, 0),
+          quote: new TokenCalculations(0, 0),
+          tickSpacing: 1,
+        }).tickFromRawRatio(priceBig, "roundDown"),
         price: Big(price),
+        volume: Big(42),
       };
     }
 

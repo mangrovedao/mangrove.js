@@ -1,121 +1,80 @@
 import Big from "big.js";
 import * as ethers from "ethers";
+import { BaseContract, BigNumber } from "ethers";
 import { LogDescription } from "ethers/lib/utils";
 import Market from "../market";
-import MgvToken from "../mgvtoken";
+import Semibook from "../semibook";
+import Token from "../token";
 import {
   OfferFailEvent,
+  OfferFailWithPosthookDataEvent,
   OfferSuccessEvent,
+  OfferSuccessWithPosthookDataEvent,
   OfferWriteEvent,
   OrderCompleteEvent,
-  PosthookFailEvent,
+  OrderStartEvent,
 } from "../types/typechain/Mangrove";
 import {
+  MangroveOrderStartEvent,
   NewOwnedOfferEvent,
-  OrderSummaryEvent,
 } from "../types/typechain/MangroveOrder";
-import UnitCalculations from "./unitCalculations";
-import { BaseContract, BigNumber } from "ethers";
 import { logger } from "./logger";
-
-type RawOfferData = {
-  id: BigNumber;
-  prev: BigNumber;
-  gasprice: BigNumber;
-  maker: string;
-  gasreq: BigNumber;
-  wants: BigNumber;
-  gives: BigNumber;
-};
+import { CleanStartEvent } from "../types/typechain/IMangrove";
 
 type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
 
 export type OrderResultWithOptionalSummary = Optional<
-  Market.OrderResult,
+  Market.DirtyOrderResult,
   "summary"
 >;
 
 class TradeEventManagement {
-  rawOfferToOffer(
-    market: Market,
-    ba: Market.BA,
-    raw: RawOfferData
-  ): Market.OfferSlim {
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
-
-    const gives = outbound_tkn.fromUnits(raw.gives);
-    const wants = inbound_tkn.fromUnits(raw.wants);
-
-    const { baseVolume } = Market.getBaseQuoteVolumes(ba, gives, wants);
-    const price = Market.getPrice(ba, gives, wants);
-
-    const id = this.#rawIdToId(raw.id);
-    if (id === undefined) throw new Error("Offer ID is 0");
+  createCleanSummaryFromEvent(event: CleanStartEvent): Market.CleanSummary {
     return {
-      id,
-      prev: this.#rawIdToId(raw.prev),
-      gasprice: raw.gasprice.toNumber(),
-      maker: raw.maker,
-      gasreq: raw.gasreq.toNumber(),
-      gives: gives,
-      wants: wants,
-      volume: baseVolume,
-      price: price,
+      olKeyHash: event.args.olKeyHash,
+      taker: event.args.taker,
+      offersToBeCleaned: event.args.offersToBeCleaned.toNumber(),
     };
-  }
-
-  #rawIdToId(rawId: BigNumber): number | undefined {
-    const id = rawId.toNumber();
-    return id === 0 ? undefined : id;
   }
 
   createSummaryFromEvent(
     event: {
       args: {
-        takerGot: ethers.BigNumber;
-        takerGave: ethers.BigNumber;
-        penalty: ethers.BigNumber;
-        feePaid?: ethers.BigNumber;
+        olKeyHash: string;
+        taker: string;
+        fillOrKill?: boolean;
+        tick?: BigNumber;
+        maxTick?: BigNumber;
+        fillVolume: BigNumber;
+        fillWants: boolean;
+        restingOrder?: boolean;
+        restingOrderId?: number;
       };
     },
-    got: MgvToken,
-    gave: MgvToken,
-    partialFillFunc: (
-      takerGotWithFee: ethers.BigNumber,
-      takerGave: ethers.BigNumber
-    ) => boolean
-  ): Market.Summary {
+    fillToken: Token,
+  ): Market.OrderSummary {
+    if (
+      (!event.args.tick && !event.args.maxTick) ||
+      (event.args.tick && event.args.maxTick)
+    ) {
+      throw new Error("Exactly one of tick or maxTick must be provided");
+    }
     return {
-      got: got.fromUnits(event.args.takerGot),
-      gave: gave.fromUnits(event.args.takerGave),
-      partialFill: partialFillFunc(
-        event.args.takerGot.add(event.args.feePaid ?? ethers.BigNumber.from(0)),
-        event.args.takerGave
-      ),
-      bounty: UnitCalculations.fromUnits(event.args.penalty, 18),
-      feePaid:
-        "feePaid" in event.args && event.args.feePaid !== undefined
-          ? UnitCalculations.fromUnits(event.args.feePaid, 18)
-          : Big(0),
+      taker: event.args.taker,
+      olKeyHash: event.args.olKeyHash,
+      fillOrKill: event.args.fillOrKill,
+      tick: event.args.tick?.toNumber() ?? event.args.maxTick?.toNumber() ?? 0,
+      fillVolume: fillToken.fromUnits(event.args.fillVolume),
+      fillWants: event.args.fillWants,
+      restingOrder: event.args.restingOrder,
+      restingOrderId: event.args.restingOrderId,
+      partialFill: false,
+      totalGot: Big(0),
+      totalGave: Big(0),
     };
   }
-  createSummaryFromOrderCompleteEvent(
-    evt: OrderCompleteEvent,
-    got: MgvToken,
-    gave: MgvToken,
-    partialFillFunc: (
-      takerGotWithFee: ethers.BigNumber,
-      takerGave: ethers.BigNumber
-    ) => boolean
-  ) {
-    return this.createSummaryFromEvent(evt, got, gave, partialFillFunc);
-  }
 
-  createSuccessFromEvent(
-    evt: OfferSuccessEvent,
-    got: MgvToken,
-    gave: MgvToken
-  ) {
+  createSuccessFromEvent(evt: OfferSuccessEvent, got: Token, gave: Token) {
     const success = {
       offerId: evt.args.id.toNumber(),
       got: got.fromUnits(evt.args.takerWants),
@@ -124,23 +83,22 @@ class TradeEventManagement {
     return success;
   }
 
-  createTradeFailureFromEvent(
-    evt: OfferFailEvent,
-    got: MgvToken,
-    gave: MgvToken
-  ) {
+  createTradeFailureFromEvent(evt: OfferFailEvent, got: Token, gave: Token) {
     const tradeFailure = {
       offerId: evt.args.id.toNumber(),
       reason: evt.args.mgvData,
       FailToDeliver: got.fromUnits(evt.args.takerWants),
       volumeGiven: gave.fromUnits(evt.args.takerGives),
+      penalty: evt.args.penalty,
     };
     return tradeFailure;
   }
 
-  createPosthookFailureFromEvent(evt: PosthookFailEvent) {
+  createPosthookFailureFromEvent(
+    evt: OfferFailWithPosthookDataEvent | OfferSuccessWithPosthookDataEvent,
+  ) {
     const posthookFailure = {
-      offerId: evt.args.offerId.toNumber(),
+      offerId: evt.args.id.toNumber(),
       reason: evt.args.posthookData,
     };
     return posthookFailure;
@@ -148,149 +106,224 @@ class TradeEventManagement {
 
   createOfferWriteFromEvent(
     market: Market,
-    evt: OfferWriteEvent
+    evt: OfferWriteEvent,
   ): { ba: Market.BA; offer: Market.OfferSlim } | undefined {
     // ba can be both since we get offer writes both from updated orders and from posting a resting order, where the outbound is what taker gives
     let ba: Market.BA = "asks";
-    let { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     // If no match, try flipping
-    if (outbound_tkn.address != evt.args.outbound_tkn) {
+    if (market.mgv.getOlKeyHash(market.getOLKey(ba)) != evt.args.olKeyHash) {
       ba = "bids";
-      const bidsOutIn = market.getOutboundInbound(ba);
-      outbound_tkn = bidsOutIn.outbound_tkn;
-      inbound_tkn = bidsOutIn.inbound_tkn;
+      if (market.mgv.getOlKeyHash(market.getOLKey(ba)) != evt.args.olKeyHash) {
+        logger.debug("OfferWrite for unknown market!", {
+          contextInfo: "tradeEventManagement",
+          base: market.base.id,
+          quote: market.quote.id,
+          tickSpacing: market.tickSpacing,
+          data: {
+            olKeyHash: evt.args.olKeyHash,
+          },
+        });
+
+        return undefined;
+      }
     }
 
-    if (
-      outbound_tkn.address != evt.args.outbound_tkn ||
-      inbound_tkn.address != evt.args.inbound_tkn
-    ) {
-      logger.debug("OfferWrite for unknown market!", {
-        contextInfo: "tradeEventManagement",
-        base: market.base.name,
-        quote: market.quote.name,
-        data: {
-          outbound_tkn: evt.args.outbound_tkn,
-          inbound_tkn: evt.args.inbound_tkn,
-        },
-      });
-
-      return undefined;
-    }
-
-    return { ba, offer: this.rawOfferToOffer(market, ba, evt.args) };
+    const offer = market.getSemibook(ba).rawOfferSlimToOfferSlim(evt.args);
+    return { ba, offer };
   }
 
   createSummaryFromOrderSummaryEvent(
-    evt: OrderSummaryEvent,
-    got: MgvToken,
-    gave: MgvToken,
-    partialFillFunc: (
-      takerGotWithFee: ethers.BigNumber,
-      takerGave: ethers.BigNumber
-    ) => boolean
-  ): Market.Summary {
+    evt: MangroveOrderStartEvent,
+    fillToken: Token,
+  ): Market.OrderSummary {
     return this.createSummaryFromEvent(
       {
         args: {
-          takerGot: evt.args.takerGot,
-          takerGave: evt.args.takerGave,
-          penalty: evt.args.bounty,
-          feePaid: evt.args.fee,
+          olKeyHash: evt.args.olKeyHash,
+          taker: evt.args.taker,
+          fillOrKill: evt.args.fillOrKill,
+          tick: evt.args.tick,
+          fillVolume: evt.args.fillVolume,
+          fillWants: evt.args.fillWants,
+          restingOrder: evt.args.restingOrder,
+          restingOrderId: Semibook.rawIdToId(evt.args.offerId),
         },
       },
-      got,
-      gave,
-      partialFillFunc
+      fillToken,
     );
   }
 
-  createRestingOrderFromEvent(
+  createRestingOrderFromIdAndBA(
     ba: Market.BA,
-    evt: NewOwnedOfferEvent,
-    taker: string,
-    currentRestingOrder: Market.OfferSlim | undefined,
+    offerId: number | undefined,
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[],
-    pivotId: number
   ) {
-    if (evt.args.owner === taker) {
-      ba = ba === "bids" ? "asks" : "bids";
-      currentRestingOrder =
-        offerWrites.find(
-          (x) => x.ba == ba && x.offer.id === this.#rawIdToId(evt.args.offerId)
-        )?.offer ?? currentRestingOrder;
-      if (currentRestingOrder) {
-        currentRestingOrder.pivotId = pivotId;
-      }
-    }
-    return currentRestingOrder;
+    ba = ba === "bids" ? "asks" : "bids";
+    return offerWrites.find((x) => x.ba == ba && x.offer.id === offerId)?.offer;
   }
 
   createPartialFillFunc(
     fillWants: boolean,
-    takerWants: ethers.ethers.BigNumber,
-    takerGives: ethers.ethers.BigNumber
+    fillVolume: ethers.ethers.BigNumber,
   ) {
     return (takerGotWithFee: ethers.BigNumber, takerGave: ethers.BigNumber) =>
-      fillWants ? takerGotWithFee.lt(takerWants) : takerGave.lt(takerGives);
+      fillWants ? takerGotWithFee.lt(fillVolume) : takerGave.lt(fillVolume);
   }
 
+  private numberOfOrderStart = 0;
+
   resultOfMangroveEventCore(
-    receipt: ethers.ContractReceipt,
     evt: ethers.Event | LogDescription,
     ba: Market.BA,
     partialFillFunc: (
-      takerGotWithFee: ethers.BigNumber,
-      takerGave: ethers.BigNumber
+      takerGotWithFee: BigNumber,
+      takerGave: BigNumber,
     ) => boolean,
+    fillWants: boolean,
     result: OrderResultWithOptionalSummary,
-    market: Market
+    market: Market,
   ) {
-    if (evt.args?.taker && receipt.from !== evt.args.taker) return;
-
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
-      case "OrderComplete": {
-        //last OrderComplete is ours so it overrides previous summaries if any
-        result.summary = this.createSummaryFromOrderCompleteEvent(
-          evt as OrderCompleteEvent,
-          outbound_tkn,
-          inbound_tkn,
-          partialFillFunc
+      case "CleanStart": {
+        if (this.numberOfOrderStart > 0) {
+          break;
+        }
+        result.cleanSummary = this.createCleanSummaryFromEvent(
+          evt as CleanStartEvent,
         );
         break;
       }
+      case "CleanComplete": {
+        if (this.numberOfOrderStart > 0) {
+          break;
+        }
+        //last CleanComplete is ours so it overrides previous summaries if any
+        if (
+          result.cleanSummary != undefined &&
+          "offersToBeCleaned" in result.cleanSummary
+        ) {
+          result.cleanSummary.offersCleaned = result.tradeFailures.length;
+          result.cleanSummary.bounty = result.tradeFailures.reduce(
+            (acc, current) => acc.add(current.penalty ?? 0),
+            BigNumber.from(0),
+          );
+        }
+        break;
+      }
+      case "OrderStart": {
+        this.numberOfOrderStart++;
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
+        result.summary = this.createSummaryFromEvent(
+          evt as OrderStartEvent,
+          fillWants ? inbound_tkn : outbound_tkn,
+        );
+        break;
+      }
+      case "OrderComplete": {
+        if (this.numberOfOrderStart > 1) {
+          this.numberOfOrderStart--;
+          break;
+        }
+        this.numberOfOrderStart--;
+        //last OrderComplete is ours so it overrides previous summaries if any
+        if (result.summary != undefined && "tick" in result.summary) {
+          result.summary.fee = outbound_tkn.fromUnits(
+            (evt as OrderCompleteEvent).args.fee,
+          );
+          result.summary.totalGot = result.successes
+            .reduce((acc, current) => acc.add(current.got), Big(0))
+            .sub(result.summary.fee);
+          result.summary.totalGave = result.successes.reduce(
+            (acc, current) => acc.add(current.gave),
+            Big(0),
+          );
+          result.summary.partialFill = partialFillFunc(
+            outbound_tkn.toUnits(
+              result.summary.totalGot.add(result.summary.fee),
+            ),
+            inbound_tkn.toUnits(result.summary.totalGave),
+          );
+          result.summary.bounty = result.tradeFailures.reduce(
+            (acc, current) => acc.add(current.penalty ?? 0),
+            BigNumber.from(0),
+          );
+        }
+
+        break;
+      }
       case "OfferSuccess": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.successes.push(
           this.createSuccessFromEvent(
             evt as OfferSuccessEvent,
             outbound_tkn,
-            inbound_tkn
-          )
+            inbound_tkn,
+          ),
+        );
+        break;
+      }
+      case "OfferSuccessWithPosthookData": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
+        result.posthookFailures.push(
+          this.createPosthookFailureFromEvent(
+            evt as OfferSuccessWithPosthookDataEvent,
+          ),
+        );
+        result.successes.push(
+          this.createSuccessFromEvent(
+            evt as OfferSuccessEvent,
+            outbound_tkn,
+            inbound_tkn,
+          ),
         );
         break;
       }
       case "OfferFail": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.tradeFailures.push(
           this.createTradeFailureFromEvent(
             evt as OfferFailEvent,
             outbound_tkn,
-            inbound_tkn
-          )
+            inbound_tkn,
+          ),
         );
         break;
       }
-      case "PosthookFail": {
+      case "OfferFailWithPosthookData": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         result.posthookFailures.push(
-          this.createPosthookFailureFromEvent(evt as PosthookFailEvent)
+          this.createPosthookFailureFromEvent(
+            evt as OfferFailWithPosthookDataEvent,
+          ),
+        );
+        result.tradeFailures.push(
+          this.createTradeFailureFromEvent(
+            evt as OfferFailEvent,
+            outbound_tkn,
+            inbound_tkn,
+          ),
         );
         break;
       }
       case "OfferWrite": {
+        if (this.numberOfOrderStart > 1) {
+          break;
+        }
         const offerWrite = this.createOfferWriteFromEvent(
           market,
-          evt as OfferWriteEvent
+          evt as OfferWriteEvent,
         );
         if (offerWrite) {
           result.offerWrites.push(offerWrite);
@@ -303,42 +336,57 @@ class TradeEventManagement {
     }
   }
 
+  private numberOfMangroveOrderStart = 0;
+
   resultOfMangroveOrderEventCore(
     receipt: ethers.ContractReceipt,
     evt: ethers.Event | LogDescription,
     ba: Market.BA,
-    partialFillFunc: (
-      takerGotWithFee: ethers.BigNumber,
-      takerGave: ethers.BigNumber
-    ) => boolean,
+    fillWants: boolean,
     result: OrderResultWithOptionalSummary,
     market: Market,
-    pivotId: number
   ) {
     if (evt.args?.taker && receipt.from !== evt.args.taker) return;
 
     const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
     const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
     switch (name) {
-      case "OrderSummary": {
-        //last OrderSummary is ours so it overrides previous summaries if any
-        result.summary = this.createSummaryFromOrderSummaryEvent(
-          evt as OrderSummaryEvent,
-          outbound_tkn,
-          inbound_tkn,
-          partialFillFunc
-        );
+      case "MangroveOrderStart": {
+        this.numberOfMangroveOrderStart++;
+        if (this.numberOfMangroveOrderStart > 1) {
+          break;
+        }
+        //first MangroveOrderStart is ours so we make sure only to write that
+        result.summary = {
+          ...result.summary,
+          ...this.createSummaryFromOrderSummaryEvent(
+            evt as MangroveOrderStartEvent,
+            fillWants ? inbound_tkn : outbound_tkn,
+          ),
+          totalGot: result.summary!.totalGot,
+          totalGave: result.summary!.totalGave,
+          partialFill: result.summary!.partialFill,
+        };
         break;
       }
       case "NewOwnedOffer": {
-        result.restingOrder = this.createRestingOrderFromEvent(
-          ba,
-          evt as NewOwnedOfferEvent,
-          receipt.from,
-          result.restingOrder,
-          result.offerWrites,
-          pivotId
-        );
+        // last NewOwnedOffer is ours if MangroveOrderStart did not have an offerId
+        if (this.numberOfMangroveOrderStart > 1) {
+          break;
+        }
+        if (
+          result.summary !== undefined &&
+          "fee" in result.summary &&
+          result.summary?.restingOrderId === undefined
+        ) {
+          result.restingOrderId = Semibook.rawIdToId(
+            (evt as NewOwnedOfferEvent).args.offerId,
+          );
+        }
+        break;
+      }
+      case "MangroveOrderComplete": {
+        this.numberOfMangroveOrderStart--;
         break;
       }
       default: {
@@ -349,7 +397,7 @@ class TradeEventManagement {
 
   getContractEventsFromReceipt(
     receipt: ethers.ContractReceipt,
-    contract: BaseContract
+    contract: BaseContract,
   ) {
     const parseLogs =
       receipt.to === contract.address
@@ -368,21 +416,20 @@ class TradeEventManagement {
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
-    market: Market
+    fillVolume: ethers.BigNumber,
+    market: Market,
   ) {
     for (const evt of this.getContractEventsFromReceipt(
       receipt,
-      market.mgv.contract
+      market.mgv.contract,
     )) {
       this.resultOfMangroveEventCore(
-        receipt,
         evt,
         ba,
-        this.createPartialFillFunc(fillWants, wants, gives),
+        this.createPartialFillFunc(fillWants, fillVolume),
+        fillWants,
         result,
-        market
+        market,
       );
     }
   }
@@ -392,31 +439,33 @@ class TradeEventManagement {
     receipt: ethers.ContractReceipt,
     ba: Market.BA,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
     market: Market,
-    pivotId: number
   ) {
     for (const evt of this.getContractEventsFromReceipt(
       receipt,
-      market.mgv.orderContract
+      market.mgv.orderContract,
     )) {
       this.resultOfMangroveOrderEventCore(
         receipt,
         evt,
         ba,
-        this.createPartialFillFunc(fillWants, wants, gives),
+        fillWants,
         result,
         market,
-        pivotId
       );
     }
   }
 
   isOrderResult(
-    result: OrderResultWithOptionalSummary
+    result: OrderResultWithOptionalSummary,
   ): result is Market.OrderResult {
     return result.summary !== undefined;
+  }
+
+  isCleanResult(
+    result: OrderResultWithOptionalSummary,
+  ): result is Market.OrderResult {
+    return result.cleanSummary !== undefined;
   }
 }
 

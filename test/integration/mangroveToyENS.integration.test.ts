@@ -51,12 +51,12 @@ describe("Mangrove functionality", () => {
       // setup mangrove addresses watcher
       const deferredMangroveAddressChanged = new Deferred();
       configuration.addresses.watchAddress("local", "Mangrove", () =>
-        deferredMangroveAddressChanged.resolve()
+        deferredMangroveAddressChanged.resolve(),
       );
 
       // create new entry
       const ens = connectToToyENSContract(
-        mgv.signer as any as ethers.providers.JsonRpcProvider
+        mgv.signer as any as ethers.providers.JsonRpcProvider,
       );
 
       // watch for new entry

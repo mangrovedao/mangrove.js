@@ -1,12 +1,15 @@
 import Mangrove from "./mangrove";
 import KandelSeeder from "./kandel/kandelSeeder";
 import KandelFarm from "./kandel/kandelFarm";
-import KandelInstance from "./kandel/kandelInstance";
 import Market from "./market";
 import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
-import KandelDistributionGenerator from "./kandel/kandelDistributionGenerator";
-import KandelPriceCalculation from "./kandel/kandelPriceCalculation";
+import GeometricKandelDistributionGenerator from "./kandel/geometricKandel/geometricKandelDistributionGenerator";
 import KandelConfiguration from "./kandel/kandelConfiguration";
+import GeometricKandelLib from "./kandel/geometricKandel/geometricKandelLib";
+import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelInstance";
+import GeometricKandelDistributionHelper from "./kandel/geometricKandel/geometricKandelDistributionHelper";
+import GeneralKandelDistributionHelper from "./kandel/generalKandelDistributionHelper";
+import configuration from "./configuration";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -46,26 +49,37 @@ class KandelStrategies {
     address: string;
     market:
       | Market
-      | ((baseAddress: string, quoteAddress: string) => Promise<Market>);
+      | ((
+          baseAddress: string,
+          quoteAddress: string,
+          tickSpacing: number,
+        ) => Promise<Market>);
   }) {
     const market =
       params.market ??
-      ((baseAddress: string, quoteAddress: string) => {
-        const baseToken = this.mgv.getNameFromAddress(baseAddress);
+      ((baseAddress: string, quoteAddress: string, tickSpacing: number) => {
+        const baseToken = configuration.tokens.getTokenIdFromAddress(
+          baseAddress,
+          this.mgv.network.name,
+        );
         if (!baseToken) {
           throw new Error(`Unknown token at address ${baseAddress}`);
         }
-        const quoteToken = this.mgv.getNameFromAddress(quoteAddress);
+        const quoteToken = configuration.tokens.getTokenIdFromAddress(
+          quoteAddress,
+          this.mgv.network.name,
+        );
         if (!quoteToken) {
           throw new Error(`Unknown token at address ${quoteAddress}`);
         }
         return this.mgv.market({
           base: baseToken,
           quote: quoteToken,
+          tickSpacing,
         });
       });
 
-    return KandelInstance.create({
+    return GeometricKandelInstance.create({
       address: params.address,
       signer: this.mgv.signer,
       market,
@@ -74,15 +88,17 @@ class KandelStrategies {
 
   /** Creates a generator for generating Kandel distributions for the given market.
    * @param market The market to calculate for.
-   * @param precision The precision used for Kandel instances. Must match the deployed Kandel contract's PRECISION() value.
    * @returns A new KandelDistributionGenerator.
    */
-  public generator(market: Market, precision?: number) {
-    precision ??= 5; // TODO should be fetched from chain via seeder, but currently it requires at least 1 kandel instance.
-
-    return new KandelDistributionGenerator(
-      new KandelDistributionHelper(market.base.decimals, market.quote.decimals),
-      new KandelPriceCalculation(precision)
+  public generator(market: Market) {
+    return new GeometricKandelDistributionGenerator(
+      new GeometricKandelDistributionHelper(market),
+      new GeneralKandelDistributionHelper(new KandelDistributionHelper(market)),
+      new GeometricKandelLib({
+        address: market.mgv.getAddress("KandelLib"),
+        market: market,
+        signer: market.mgv.signer,
+      }),
     );
   }
 }

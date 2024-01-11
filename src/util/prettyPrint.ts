@@ -8,22 +8,21 @@ export type prettyPrintFilter = Array<
   | "gasprice"
   | "maker"
   | "gasreq"
-  | "offer_gasbase"
-  | "wants"
+  | "gasbase"
   | "gives"
-  | "volume"
   | "price"
+  | "tick"
 >;
 // type Writable<T> = -readonly T;
 class PrettyPrint {
   /** Pretty prints the current state of the asks of the market */
   consoleOffers(
     offers: Iterable<Market.Offer>,
-    filter?: prettyPrintFilter
+    filter?: prettyPrintFilter,
   ): void {
     const column = filter
       ? filter
-      : (["id", "maker", "volume", "price"] as const);
+      : (["id", "maker", "gives", "price"] as const);
     this.prettyPrint(offers, column as Writable<typeof column>);
   }
 
@@ -33,15 +32,14 @@ class PrettyPrint {
       return {
         id: obj.id,
         maker: obj.maker,
-        volume: obj.volume.toString(),
-        price: obj.price?.toString(),
-        wants: obj.wants.toString(),
+        tick: obj.tick,
         gives: obj.gives.toString(),
-        offer_gasbase: obj.offer_gasbase,
+        gasbase: obj.gasbase,
         gasreq: obj.gasreq,
         gasprice: obj.gasprice,
-        prev: obj.prev,
-        next: obj.next,
+        price: obj.price.toFixed(10),
+        prevAtTick: obj.prevAtTick,
+        nextAtTick: obj.nextAtTick,
       };
     });
     console.table(offersArray, filter);

@@ -5,7 +5,8 @@ import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
 import { toWei } from "../util/helpers";
 import { serverType } from "../../src/util/node";
 
-import { Mangrove } from "../../src";
+import { Mangrove, Token } from "../../src";
+import { configuration } from "../../src/configuration";
 
 import { Big } from "big.js";
 
@@ -32,7 +33,7 @@ describe("Mangrove integration tests suite", function () {
       provider: mgv.provider,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     (mgv.provider as any).pollingInterval = 10;
@@ -49,73 +50,78 @@ describe("Mangrove integration tests suite", function () {
 
   describe("getMarkets", function () {
     it("updates with mgvReader", async function () {
-      await mgvAdmin.contract.deactivate(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
-      await mgvAdmin.contract.deactivate(
-        mgv.getAddress("TokenB"),
-        mgv.getAddress("TokenA")
-      );
-      await mgv.readerContract.updateMarket(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
+      await mgvAdmin.contract.deactivate({
+        outbound_tkn: mgv.getTokenAddress("TokenA"),
+        inbound_tkn: mgv.getTokenAddress("TokenB"),
+        tickSpacing: 1,
+      });
+      await mgvAdmin.contract.deactivate({
+        outbound_tkn: mgv.getTokenAddress("TokenB"),
+        inbound_tkn: mgv.getTokenAddress("TokenA"),
+        tickSpacing: 1,
+      });
+      await mgv.readerContract.updateMarket({
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
+        tickSpacing: 1,
+      });
       const marketsBefore = await mgv.openMarkets();
       await mgvAdmin.contract.activate(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB"),
+        {
+          outbound_tkn: mgv.getTokenAddress("TokenA"),
+          inbound_tkn: mgv.getTokenAddress("TokenB"),
+          tickSpacing: 1,
+        },
         1,
         1,
-        1
+        1,
       );
-      await mgv.readerContract.updateMarket(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
+      await mgv.readerContract.updateMarket({
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
+        tickSpacing: 1,
+      });
       const markets = await mgv.openMarkets();
       assert.equal(
         markets.length - marketsBefore.length,
         1,
-        "1 market should have opened"
-      );
-    });
-
-    it("has reverse lookup of address", function () {
-      const address = mgv.getAddress("TokenA");
-      assert.equal(mgv.getNameFromAddress(address), "TokenA");
-      assert.equal(
-        mgv.getNameFromAddress("0xdeaddeaddeaddaeddeaddeaddeaddeaddeaddead"),
-        null
+        "1 market should have opened",
       );
     });
 
     it("gets correct market info and updates with cashness", async function () {
-      await mgv.readerContract.updateMarket(
-        mgv.getAddress("TokenA"),
-        mgv.getAddress("TokenB")
-      );
-      let marketData = await mgv.openMarketsData();
+      await mgv.readerContract.updateMarket({
+        tkn0: mgv.getTokenAddress("TokenA"),
+        tkn1: mgv.getTokenAddress("TokenB"),
+        tickSpacing: 1,
+      });
+      let marketData = await mgv.openMarkets();
       const tokenAData = {
-        address: mgv.getAddress("TokenA"),
+        address: mgv.getTokenAddress("TokenA"),
         decimals: 18,
-        name: "TokenA",
+        id: "TokenA",
         symbol: "TokenA",
       };
       const tokenBData = {
-        address: mgv.getAddress("TokenB"),
+        address: mgv.getTokenAddress("TokenB"),
         decimals: 6,
-        name: "TokenB",
+        id: "TokenB",
         symbol: "TokenB",
       };
-      assert.deepEqual(marketData[0].base, tokenAData);
-      assert.deepEqual(marketData[0].quote, tokenBData);
+      const tokenToData = (token: Token) => ({
+        address: token.address,
+        decimals: token.decimals,
+        id: token.id,
+        symbol: token.symbol,
+      });
+      assert.deepEqual(tokenToData(marketData[0].base), tokenAData);
+      assert.deepEqual(tokenToData(marketData[0].quote), tokenBData);
 
-      mgv.setCashness("TokenA", 1000000);
-      marketData = await mgv.openMarketsData();
+      configuration.tokens.setCashness("TokenA", 1000000);
+      marketData = await mgv.openMarkets();
 
-      assert.deepEqual(marketData[0].base, tokenBData);
-      assert.deepEqual(marketData[0].quote, tokenAData);
+      assert.deepEqual(tokenToData(marketData[0].base), tokenBData);
+      assert.deepEqual(tokenToData(marketData[0].quote), tokenAData);
     });
   });
   describe("node utils", () => {
@@ -131,6 +137,29 @@ describe("Mangrove integration tests suite", function () {
       // Assert
       const balance = await token.balanceOf(account);
       assert.equal(balance.toNumber(), amount);
+    });
+  });
+
+  describe("calculateOLKeyHash", () => {
+    it("agrees with hash generated and cached", async () => {
+      // Arrange
+      const olKey = {
+        outbound_tkn: (await mgv.token("TokenA")).address,
+        inbound_tkn: (await mgv.token("TokenB")).address,
+        tickSpacing: 1,
+      };
+      const cacheKey = `${olKey.outbound_tkn.toLowerCase()}_${olKey.inbound_tkn.toLowerCase()}_${
+        olKey.tickSpacing
+      }`;
+      const hashFromEmptyCache = mgv.getOlKeyHash(olKey);
+      const hashFromCache = mgv.olKeyStructToOlKeyHashMap.get(cacheKey);
+
+      // Act
+      const hash = mgv.calculateOLKeyHash(olKey);
+
+      // Assert
+      assert.equal(hash, hashFromEmptyCache);
+      assert.equal(hash, hashFromCache);
     });
   });
 });

@@ -2,7 +2,7 @@ import Mangrove from "../mangrove";
 import { typechain } from "../types";
 
 import TradeEventManagement from "../util/tradeEventManagement";
-import { PromiseOrValue } from "../types/typechain/common";
+import { OLKeyStruct } from "../types/typechain/Mangrove";
 
 /**
  * @title Repository for Kandel instances.
@@ -22,20 +22,20 @@ class KandelFarm {
 
     const kandelSeederAddress = Mangrove.getAddress(
       "KandelSeeder",
-      this.mgv.network.name
+      this.mgv.network.name,
     );
     this.kandelSeeder = typechain.KandelSeeder__factory.connect(
       kandelSeederAddress,
-      this.mgv.signer
+      this.mgv.signer,
     );
 
     const aaveKandelSeederAddress = Mangrove.getAddress(
       "AaveKandelSeeder",
-      this.mgv.network.name
+      this.mgv.network.name,
     );
     this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
       aaveKandelSeederAddress,
-      this.mgv.signer
+      this.mgv.signer,
     );
   }
 
@@ -43,44 +43,62 @@ class KandelFarm {
    * Gets all Kandels matching a given filter.
    * @param filter The filter to apply.
    * @param filter.owner The Kandel instance owner - the one who invoked sow.
-   * @param filter.base The base token for the Kandel instance.
-   * @param filter.quote The quote token for the Kandel instance.
+   * @param filter.baseQuoteOlKey The low-level identifier of the market for the Kandel instance. Takes precedence over baseQuoteOfferList if both are provided.
+   * @param filter.baseQuoteOfferList The identifier of the market for the Kandel instance using Mangrove token identifiers.
    * @param filter.onAave Whether the Kandel instance uses the Aave router.
    * @returns All kandels matching the filter.
    */
   public async getKandels(filter?: {
-    owner?: PromiseOrValue<string> | null;
-    base?: PromiseOrValue<string> | null;
-    quote?: PromiseOrValue<string> | null;
+    owner?: string | null;
+    baseQuoteOlKey?: OLKeyStruct | null;
+    baseQuoteOfferList?: {
+      base: string;
+      quote: string;
+      tickSpacing: number;
+    } | null;
     onAave?: boolean;
   }) {
-    const baseAddress = filter?.base
-      ? this.mgv.getAddress(await filter.base)
-      : null;
-    const quoteAddress = filter?.quote
-      ? this.mgv.getAddress(await filter.quote)
-      : null;
+    let olKey = filter?.baseQuoteOlKey;
+    if (!olKey) {
+      const offerList = filter?.baseQuoteOfferList;
+      if (offerList) {
+        const baseAddress = this.mgv.getTokenAddress(offerList.base);
+        const quoteAddress = this.mgv.getTokenAddress(offerList.quote);
+        const tickSpacing = offerList.tickSpacing ?? 0;
+        olKey = {
+          outbound_tkn: baseAddress,
+          inbound_tkn: quoteAddress,
+          tickSpacing,
+        };
+      }
+    }
+
+    const olKeyHash = olKey ? this.mgv.calculateOLKeyHash(olKey) : undefined;
+
     const kandels =
       filter?.onAave == null || filter.onAave == false
         ? (
             await this.kandelSeeder.queryFilter(
-              this.kandelSeeder.filters.NewKandel(
-                filter?.owner,
-                baseAddress,
-                quoteAddress
-              )
+              this.kandelSeeder.filters.NewKandel(filter?.owner, olKeyHash),
             )
           ).map(async (x) => {
-            const baseToken = await this.mgv.getTokenAndAddress(x.args.base);
-            const quoteToken = await this.mgv.getTokenAndAddress(x.args.quote);
+            const olKeyStruct = await this.mgv.getOlKeyStruct(
+              x.args.baseQuoteOlKeyHash,
+            );
+            const baseToken = await this.mgv.tokenFromAddress(
+              olKeyStruct!.outbound_tkn,
+            );
+            const quoteToken = await this.mgv.tokenFromAddress(
+              olKeyStruct!.inbound_tkn,
+            );
             return {
               kandelAddress: x.args.kandel,
               ownerAddress: x.args.owner,
               onAave: false,
               baseAddress: baseToken.address,
-              base: baseToken.token,
+              base: baseToken,
               quoteAddress: quoteToken.address,
-              quote: quoteToken.token,
+              quote: quoteToken,
             };
           })
         : [];
@@ -90,21 +108,27 @@ class KandelFarm {
             await this.aaveKandelSeeder.queryFilter(
               this.aaveKandelSeeder.filters.NewAaveKandel(
                 filter?.owner,
-                baseAddress,
-                quoteAddress
-              )
+                olKeyHash,
+              ),
             )
           ).map(async (x) => {
-            const baseToken = await this.mgv.getTokenAndAddress(x.args.base);
-            const quoteToken = await this.mgv.getTokenAndAddress(x.args.quote);
+            const olKeyStruct = await this.mgv.getOlKeyStruct(
+              x.args.baseQuoteOlKeyHash,
+            );
+            const baseToken = await this.mgv.tokenFromAddress(
+              olKeyStruct!.outbound_tkn,
+            );
+            const quoteToken = await this.mgv.tokenFromAddress(
+              olKeyStruct!.inbound_tkn,
+            );
             return {
               kandelAddress: x.args.aaveKandel,
               ownerAddress: x.args.owner,
               onAave: true,
               baseAddress: baseToken.address,
-              base: baseToken.token,
+              base: baseToken,
               quoteAddress: quoteToken.address,
-              quote: quoteToken.token,
+              quote: quoteToken,
             };
           })
         : [];

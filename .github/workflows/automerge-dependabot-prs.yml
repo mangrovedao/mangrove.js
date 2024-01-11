@@ -2,7 +2,7 @@ name: Dependabot auto-merging
 on:
   pull_request_target:
     branches:
-      - 'dependabot/**'
+      - "dependabot/**"
 permissions:
   pull-requests: write
   contents: write
@@ -13,9 +13,9 @@ jobs:
     steps:
       - name: Dependabot metadata
         id: dependabot-metadata
-        uses: dependabot/fetch-metadata@v1.5.1
+        uses: dependabot/fetch-metadata@v1.6.0
         with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"        
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Enable auto-merge for Dependabot PRs - for patches
         if: ${{steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch'}}

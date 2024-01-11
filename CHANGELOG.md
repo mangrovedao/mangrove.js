@@ -1,5 +1,40 @@
 # Next version
 
+- Cross-cutting
+  - Update licenses: All code is now licensed under the MIT License.
+  - feat!: Use the new Mangrove core protocol and strats from the new @mangrovedao/mangrove-core and @mangrovedao/mangrove-strats packages. See their changelogs for details.
+  - feat!: Make consequential changes to APIs to match those changes (not all changes mentioned)
+  - feat: Read addresses from @mangrovedao/mangrove-deployments and @mangrovedao/mangrove-context-addresses
+  - feat!: Round prices/ticks/volumes etc. according to maker or taker scenario due to precision of tick based core.
+- Core
+  - feat!: Introduce Density class to wrapping floating point density from core protocol.
+  - feat!: Remove pivotId since it is no longer needed.
+  - Allowance
+    - fix: increaseAllowance will not fail if allowance becomes larger than 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
+    - fix: increaseAllowance will consider large values infinite like other approval functions.
+    - fix: all token approval functions now cap the allowance to 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.
+  - fix!: rename offer_gasbase on offer structures to gasbase
+  - feat: The market order simulation used to estimate volumes and gas has been updated to match Mangrove v2's market order logic.
+  - feat!: The 'maxOffers' option in 'CacheContentOptions' has been replaced with a new option: 'targetNumberOfTicks'. When loading from chain, the cache will load until at least this number of ticks is in the cache. The default is 'Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS'.
+  - feat!: A new default value 'Semibook.DEFAULT_CHUNK_SIZE' has been introduced for 'CacheContentOptions.chunkSize'.
+  - feat!: Mangrove and Semibook configs are now cached on 'connect' and (for Semibook) updated by events. The methods to read configs are no longer async and naming has been made consistent: 'Mangrove.config()', 'Market.config()', and 'Semibook.config()'.
+  - feat!: 'Market.estimateVolume' now also estimates fees and returns it in a new 'estimatedFee' field. The existing 'estimatedVolume' field is exclusive of fees and thus represents the true amount the taker can expect to receive/pay.
+  - feat!: 'Mangrove.openMarkets' no longer connects to all markets, but returns a list of 'Market.Key's, optionally with the relevant offer list configuration attached to each. This is identical to the previous 'Mangrove.openMarketsData' which has been removed.
+- feat!: 'MgvToken' has been renamed to 'Token'.
+- feat!: 'Mangrove.toUnits|fromUnits' no longer accepts a token name/symbol as this was ambiguous. Instead, use 'Token.createToken' and call 'toUnits|fromUnits' on that.
+- feat!: Token 'name' was misused: Sometimes it was assumed to be a symbol and sometimes an ID. It has therefore been replaced by 'id' and 'symbol' in all relevant places. Configuration files have been converted to use the token instance ID's from the context-addresses package to avoid ambiguity among (1) different tokens with the same symbol and (2) multiple token instances such as 'USDC' (Circle issued) and 'USDC.e' (bridged from Ethereum).
+  - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. 'Mangrove.token()` will create an instance of the default token ID if found.
+- MangroveOrder
+  - feat: Add 'Market.updateRestingOrder' function which allows updating resting orders posted by 'MangroveOrder'
+  - feat: Add 'Market.retractRestingOrder' function for retracting resting orders posted by 'MangroveOrder'.
+  - feat: Calculate default offer provision for MangroveOrder based on a gasprice factor if provision is not provided.
+  - feat: Allow 'offerId' to be passed in to re-use an existing offer.
+- Kandel
+  - feat!: Introduce GeometricKandel classes
+  - feat!: Introduce 'populateGeometricDistribution' to populate geometric distribution respectively using reduced call data.
+  - feat!: Introduce 'populateGeneralDistribution' to populate arbitrary non-geometric distribution.
+  - feat!: Allow distribution parameters to be either price- or tick-based.
+
 # 1.4.30
 
 - bump: mangrove-core to v1.5.13
@@ -52,6 +87,16 @@
 # 1.4.18
 
 - Bump: reliable-event-subscriber to v1.1.29
+
+# 1.4.18-1
+
+- fix: Use new mgvConfig for mangrove-core and mangrove-strats
+- Add: mangrove-strats v0.0.2-0
+- Bump: mangrove-core to v1.5.8-1
+
+# 1.4.18-0
+
+- feat: mgvtoken add tokenFromAddress function
 - feat: `LiquidityProvider` getter from an `OfferLogic` instance.
 
 # 1.4.17

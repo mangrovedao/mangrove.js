@@ -1,15 +1,15 @@
 import * as ethers from "ethers";
 import { BigNumber } from "ethers"; // syntactic sugar
 import Mangrove from "./mangrove";
-import MgvToken from "./mgvtoken";
+import Token, { TokenCalculations } from "./token";
 import Semibook from "./semibook";
 import { Bigish, typechain } from "./types";
 import Trade from "./util/trade";
-
-let canConstructMarket = false;
-
-const MAX_MARKET_ORDER_GAS = 10000000;
-
+import * as TCM from "./types/typechain/Mangrove";
+import TradeEventManagement from "./util/tradeEventManagement";
+import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
+import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
+import configuration from "./configuration";
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
 big.js handles arbitrary precision decimals, which is what we want
@@ -17,97 +17,267 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
   github.com/MikeMcl/big.js/issues/45#issuecomment-104211175
 */
 import Big from "big.js";
+import { Density } from "./util/Density";
+
+let canConstructMarket = false;
+
+const MAX_MARKET_ORDER_GAS = 10000000;
 
 export const bookOptsDefault: Market.BookOptions = {
-  maxOffers: Semibook.DEFAULT_MAX_OFFERS,
+  targetNumberOfTicks: Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS,
+  chunkSize: Semibook.DEFAULT_CHUNK_SIZE,
 };
-
-import * as TCM from "./types/typechain/Mangrove";
-import TradeEventManagement from "./util/tradeEventManagement";
-import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
+  /** Parameters to identify a market on Mangrove.
+   * @param base The base token of the market, or a string identifying the base token.
+   * @param quote The quote token of the market, or a string identifying the quote token.
+   * @param tickSpacing The tick spacing of the market.
+   */
+  export type Key = {
+    base: string | Token;
+    quote: string | Token;
+    tickSpacing: number;
+  };
+
+  /** Values needed for converting between ticks/prices/volumes, is a subset of @see {@link KeyResolved} */
+  export type KeyResolvedForCalculation = {
+    base: TokenCalculations;
+    quote: TokenCalculations;
+    tickSpacing: number;
+  };
+
+  /**
+   * Parameters to identify a market on Mangrove - with resolved tokens.
+   * @param base The base token of the market.
+   * @param quote The quote token of the market.
+   * @param tickSpacing The tick spacing of the market.
+   */
+  export type KeyResolved = {
+    base: Token;
+    quote: Token;
+    tickSpacing: number;
+  };
+
+  /**
+   * Identifies the bids or asks offer list.
+   */
   export type BA = "bids" | "asks";
+
+  /**
+   * Identifies a type of order.
+   */
   export type BS = "buy" | "sell";
+
   export type MgvReader = typechain.MgvReader;
+
+  /**
+   * Result type for trade failures.
+   */
   export type Failure = {
     offerId: number;
     reason: string;
     FailToDeliver?: Big;
     volumeGiven?: Big;
+    penalty?: BigNumber;
   };
+
+  /**
+   * Result type for trade successes.
+   */
   export type Success = {
     offerId: number;
     got: Big;
     gave: Big;
   };
-  export type Summary = {
-    got: Big;
-    gave: Big;
+
+  /**
+   * A summary of the result of a trade.
+   */
+  export type OrderSummary = {
+    olKeyHash: string;
+    taker: string;
+    fillOrKill?: boolean;
+    tick: number;
+    fillVolume: Big;
+    fillWants: boolean;
+    restingOrder?: boolean;
+    restingOrderId?: number;
+    fee?: Big;
+    totalGot: Big;
+    totalGave: Big;
     partialFill: boolean;
-    bounty: Big;
-    feePaid: Big;
+    bounty?: BigNumber;
   };
-  export type OrderResult = {
+
+  /**
+   * A summary of the result of cleaning.
+   */
+  export type CleanSummary = {
+    olKeyHash: string;
+    taker: string;
+    offersToBeCleaned: number;
+    bounty?: BigNumber;
+    offersCleaned?: number;
+  };
+
+  /**
+   * Order results, with a summary field that may not be set.
+   */
+  export type DirtyOrderResult = {
     txReceipt: ethers.ContractReceipt;
-    summary: Summary;
+    summary?: OrderSummary;
+    cleanSummary?: CleanSummary;
     successes: Success[];
     tradeFailures: Failure[];
     posthookFailures: Failure[];
     offerWrites: { ba: Market.BA; offer: Market.OfferSlim }[];
     restingOrder?: Market.OfferSlim;
+    restingOrderId?: number;
   };
 
-  export type BookSubscriptionEvent =
-    | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
-    | ({ name: "OfferFail" } & TCM.OfferFailEvent)
-    | ({ name: "OfferSuccess" } & TCM.OfferSuccessEvent)
-    | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
-    | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent);
+  /**
+   * Order results, with a definite summary.
+   */
+  export type OrderResult = Omit<
+    DirtyOrderResult,
+    "summary" | "cleanSummary"
+  > & {
+    summary: OrderSummary;
+  };
+
+  /**
+   * Cleaning results, with a definite summary.
+   */
+  export type CleanResult = Omit<
+    DirtyOrderResult,
+    "summary" | "cleanSummary"
+  > & {
+    summary: CleanSummary;
+  };
+
+  /**
+   * Update resting order results.
+   *
+   * No data is returned, but the transaction may fail.
+   */
+  export type UpdateRestingOrderResult = void;
+
+  /**
+   * Retract resting order results.
+   *
+   * No data is returned, but the transaction may fail.
+   */
+  export type RetractRestingOrderResult = void;
+
+  /**
+   * A transaction that has been submitted to a market.
+   *
+   * Market operations return this type so that the caller can track the state of the
+   * low-level transaction that has been submitted as well as the result of the market operation.
+   */
+  export type Transaction<TResult> = {
+    /** The result of the market transaction.
+     *
+     * Resolves when the transaction has been included on-chain.
+     *
+     * Rejects if the transaction fails.
+     */
+    result: Promise<TResult>;
+
+    /** The low-level transaction that has been submitted to the chain. */
+    response: Promise<ethers.ContractTransaction>;
+  };
 
   export type OrderRoute = "Mangrove" | "MangroveOrder";
 
+  /**
+   * Parameters for trading on a market.
+   *
+   * The parameters specify the trade to be executed, and optionally a resting order to be created. These are the base parameters, which may be given:
+   *
+   * @param forceRoutingToMangroveOrder: whether to force routing to MangroveOrder, even if the market is not active.
+   * @param slippage the maximum slippage to accept, in % of the amount of quote token.
+   * @param fillOrKill whether to fill the order completely or not at all.
+   * @param expiryDate the expiry date of the order, in seconds since unix epoch.
+   * @param gasLowerBound the minimum gas to use for the trade.
+   * @param restingOrder whether to create a resting order, and if so, the parameters for the resting order.
+   *
+   * The remaining parameters specify the kind of trade to be executed in one of the following ways:
+   *
+   * * `{volume, limitPrice}` the volume of base token to buy or sell, and the limit price to accept.
+   * * `{total, limitPrice}` the total amount of quote token to spend or receive, and the limit price to accept.
+   * * `{maxTick, fillVolume, fillWants}` the maximum tick to accept, the volume of token to buy (if `fillWants=true`), or sell (if `fillWants=false`, and a boolean indicating whether to try to get all the tokens that the taker wants (`fillWants=true`), or, to sell all the token the taker gives (`fillWants=false`).
+   * * `{gives, wants, fillWants}` the amount of token to sell, the amount of token to buy, and a boolean indicating whether to try to get all the tokens that the taker wants (`fillWants=true`), or, to sell all the token the taker gives (`fillWants=false`).
+   */
   export type TradeParams = {
     forceRoutingToMangroveOrder?: boolean;
     slippage?: number;
     fillOrKill?: boolean;
     expiryDate?: number;
-    gasLowerBound?: ethers.ethers.BigNumberish;
-  } & ({ restingOrder?: RestingOrderParams } | { offerId?: number }) &
-    (
-      | { volume: Bigish; price: Bigish }
-      | { total: Bigish; price: Bigish }
-      | { wants: Bigish; gives: Bigish; fillWants?: boolean }
+    gasLowerBound?: ethers.BigNumberish;
+  } & {
+    restingOrder?: RestingOrderParams;
+  } & (
+      | { volume: Bigish; limitPrice: Bigish }
+      | { total: Bigish; limitPrice: Bigish }
+      | {
+          maxTick: number;
+          fillVolume: Bigish;
+          fillWants?: boolean;
+        }
+      | { gives: Bigish; wants: Bigish; fillWants?: boolean }
     );
 
   export type RestingOrderParams = {
-    provision: Bigish;
+    provision?: Bigish;
+    offerId?: number;
+    restingOrderGasreq?: number;
+    restingOrderGaspriceFactor?: number;
   };
 
-  export type SnipeParams = {
+  /** Parameters for updating an existing resting order. */
+  export type UpdateRestingOrderParams = {
+    offerId: number;
+  } & (
+    | { gives: Bigish }
+    | { tick: number }
+    | { gives: Bigish; tick: number }
+    | { price: Bigish }
+    | { volume: Bigish }
+    | { total: Bigish }
+    | { price: Bigish; volume: Bigish }
+    | { price: Bigish; total: Bigish }
+  ) &
+    Omit<RestingOrderParams, "offerId">;
+
+  /**
+   * Parameters for cleaning a set of offers.
+   * @param targets: an array of targets to clean, each target is an object with the following fields:
+   * * `offerId`: the offer to be cleaned
+   * * `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
+   * * `tick`: the tick of the offer to be cleaned
+   * * `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned.
+   * @param ba: bids or asks
+   * @param taker: the taker to impersonate, if not specified, the caller of the function will be used
+   */
+  export type CleanParams = {
     targets: {
       offerId: number;
       takerWants: Bigish;
-      takerGives: Bigish;
-      gasLimit?: number;
+      tick: number;
+      gasreq: number;
     }[];
     ba: Market.BA;
-    fillWants?: boolean;
-    requireOffersToFail?: boolean;
+    taker?: string;
   };
 
-  export type RawSnipeParams = {
+  export type RawCleanParams = {
     ba: Market.BA;
-    outboundTkn: string;
-    inboundTkn: string;
-    targets: [
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish,
-      Promise<ethers.ethers.BigNumberish> | ethers.ethers.BigNumberish
-    ][];
-    fillWants: boolean;
+    olKey: OLKeyStruct;
+    targets: MgvLib.CleanTargetStruct[];
+    taker: string;
   };
 
   /**
@@ -121,8 +291,15 @@ namespace Market {
     /** Whether `given` is the market's base or quote. */
     what: "base" | "quote";
   };
+
+  /**
+   * Specification of how much volume to (potentially) trade on the market, without specifying the direction of the trade.
+   */
   export type DirectionlessVolumeParams = Omit<VolumeParams, "to">;
 
+  /**
+   * Optional parameters for connecting to a Mangrove market - gives optional parameters for how the book cache behaves (see {@link Market.BookOptions}), and the timing of when the market is initialized.
+   */
   export type OptionalParams = {
     bookOptions: Market.BookOptions;
     noInit: boolean;
@@ -131,21 +308,22 @@ namespace Market {
   /**
    * Options that specify what the cache fetches and retains.
    *
-   * `maxOffers`, `desiredPrice`, and `desiredVolume` are mutually exclusive.
-   * If none of these are specified, the default is `maxOffers` = `Semibook.DEFAULT_MAX_OFFERS`.
+   * `targetNumberOfTicks`, `desiredPrice`, and `desiredVolume` are mutually exclusive.
+   * If none of these are specified, the default is `targetNumberOfTicks` = `Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS`.
    */
   export type CacheContentsOptions =
     | {
-        /** The maximum number of offers to store in the cache.
+        /** The number of ticks the cache should ideally hold.
          *
-         * `maxOffers, `desiredPrice`, and `desiredVolume` are mutually exclusive.
+         * When loading from chain, the cache will load until at least this number of ticks is in the cache.
+         *
+         * `targetNumberOfTicks, `desiredPrice`, and `desiredVolume` are mutually exclusive.
          */
-        maxOffers?: number;
+        targetNumberOfTicks?: number;
       }
     | {
         /** The price that is expected to be used in calls to the market.
          * The cache will initially contain all offers with this price or better.
-         * This can be useful in order to ensure a good pivot is readily available.
          */
         desiredPrice: Bigish;
       }
@@ -162,26 +340,34 @@ namespace Market {
   export type BookOptions = CacheContentsOptions & {
     /** The number of offers to fetch in one call.
      *
-     * Defaults to `maxOffers` if it is set and positive; Otherwise `Semibook.DEFAULT_MAX_OFFERS` is used. */
+     * Defaults to `Semibook.DEFAULT_CHUNK_SIZE`. */
     chunkSize?: number;
   };
 
+  /**
+   * Offers in the book cache.
+   */
   export type OfferSlim = {
     id: number;
-    prev: number | undefined;
     gasprice: number;
     maker: string;
     gasreq: number;
-    wants: Big;
+    tick: number;
+    price: Big;
     gives: Big;
+    wants: Big;
     volume: Big;
-    price: Big | undefined;
-    pivotId?: number;
   };
 
+  /**
+   * Offers in the book cache, with a given gasbase and pointers to the next and
+   * previous offer at the same tick; `undefined` means no such offer, ie, the
+   * offer is first or last at the tick.
+   */
   export type Offer = OfferSlim & {
-    next: number | undefined;
-    offer_gasbase: number;
+    nextAtTick: number | undefined;
+    prevAtTick: number | undefined;
+    gasbase: number;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -194,31 +380,100 @@ namespace Market {
     export type Details = _BookReturns[3];
   }
 
+  /**
+   * Type for events emitted by the Mangrove market.
+   */
+  export type BookSubscriptionEvent =
+    | ({ name: "OfferWrite" } & TCM.OfferWriteEvent)
+    | ({ name: "OfferFail" } & TCM.OfferFailEvent)
+    | ({ name: "OfferFailWithPosthookData" } & TCM.OfferFailEvent)
+    | ({ name: "OfferSuccess" } & TCM.OfferSuccessEvent)
+    | ({ name: "OfferSuccessWithPosthookData" } & TCM.OfferSuccessEvent)
+    | ({ name: "OfferRetract" } & TCM.OfferRetractEvent)
+    | ({ name: "SetActive" } & TCM.SetActiveEvent)
+    | ({ name: "SetFee" } & TCM.SetFeeEvent)
+    | ({ name: "SetGasbase" } & TCM.SetGasbaseEvent)
+    | ({ name: "SetDensity96X32" } & TCM.SetDensity96X32Event);
+
+  /**
+   * The arguments passed to a an order book event callback function - see {@link Market.subscribe}.
+   */
   export type BookSubscriptionCbArgument = {
     ba: Market.BA;
-    offerId?: number;
-    offer?: Offer; // if undefined, offer was not found/inserted in local cache
   } & (
-    | { type: "OfferWrite" }
     | {
-        type: "OfferFail";
-        taker: string;
-        takerWants: Big;
-        takerGives: Big;
-        mgvData: string;
+        type: "SetActive";
+        active: boolean;
       }
-    | { type: "OfferSuccess"; taker: string; takerWants: Big; takerGives: Big }
-    | { type: "OfferRetract" }
-    | { type: "SetGasbase" }
+    | {
+        type: "SetFee";
+        fee: number;
+      }
+    | {
+        type: "SetGasbase";
+        offerGasbase: number;
+      }
+    | {
+        type: "SetDensity96X32";
+        density: Density;
+      }
+    | ({
+        offerId?: number;
+        offer?: Offer; // if undefined, offer was not found/inserted in local cache
+      } & (
+        | { type: "OfferWrite" }
+        | {
+            type: "OfferFail";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+            mgvData: string;
+          }
+        | {
+            type: "OfferFailWithPosthookData";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+            mgvData: string;
+          }
+        | {
+            type: "OfferSuccess";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+          }
+        | {
+            type: "OfferSuccessWithPosthookData";
+            taker: string;
+            takerWants: Big;
+            takerGives: Big;
+          }
+        | { type: "OfferRetract" }
+      ))
   );
 
+  /**
+   * A callback function that is called when an order book event occurs.
+   */
   export type MarketCallback<T> = (
     cbArg: BookSubscriptionCbArgument,
     event?: BookSubscriptionEvent,
-    ethersLog?: ethers.providers.Log
+    ethersLog?: ethers.providers.Log,
   ) => T | Promise<T>;
+
+  /**
+   * A type for {@link MarketCallback} that is stored in a map.
+   */
   export type StorableMarketCallback = MarketCallback<any>;
+
+  /**
+   * A filter function that can be used to filter order book events.
+   */
   export type MarketFilter = MarketCallback<boolean>;
+
+  /**
+   * A subscription parameter that specifies how a subscription to order book events should behave.
+   */
   export type SubscriptionParam =
     | { type: "multiple" }
     | {
@@ -228,28 +483,41 @@ namespace Market {
         filter?: (...a: any[]) => boolean | Promise<boolean>;
       };
 
+  /**
+   * Order books - an asks semibook and a bids semibook.
+   */
   export type Book = { asks: Semibook; bids: Semibook };
 
+  /**
+   * A volume estimate for a trade.
+   */
   export type VolumeEstimate = {
+    maxTickMatched: number | undefined; // undefined iff no offers matched
     estimatedVolume: Big;
-    givenResidue: Big;
+    estimatedFee: Big;
+    remainingFillVolume: Big;
   };
 }
-// no unsubscribe yet
+
 /**
  * The Market class focuses on a Mangrove market.
  * On-chain, markets are implemented as two offer lists,
  * one for asks (base,quote), the other for bids (quote,base).
  *
  * Market initialization needs to store the network name, so you cannot
- * directly use the constructor. Instead of `new Market(...)`, do
+ * directly use the constructor. Instead of `new Market(...)`, do `await Market.connect(...)`.
  *
- * `await Market.connect(...)`
+ * @see {@link connect}
  */
 class Market {
   mgv: Mangrove;
-  base: MgvToken;
-  quote: MgvToken;
+  base: Token;
+  quote: Token;
+  tickSpacing: number;
+  /** The OLKey for the base, quote offer list */
+  olKeyBaseQuote: OLKeyStruct;
+  /** The OLKey for the quote, base offer list */
+  olKeyQuoteBase: OLKeyStruct;
   #subscriptions: Map<Market.StorableMarketCallback, Market.SubscriptionParam>;
   #asksSemibook: Semibook | undefined;
   #bidsSemibook: Semibook | undefined;
@@ -264,17 +532,32 @@ class Market {
   public minVolumeAsk?: Big;
   public minVolumeBid?: Big;
 
+  /**
+   * Connect to a market.
+   * @param params A set of parameters identifying the market on Mangrove to connect to.
+   * @returns A promise that resolves to a Market instance.
+   */
   static async connect(
     params: {
       mgv: Mangrove;
-      base: string;
-      quote: string;
-    } & Partial<Market.OptionalParams>
+    } & Market.Key &
+      Partial<Market.OptionalParams>,
   ): Promise<Market> {
-    const base = await params.mgv.token(params.base);
-    const quote = await params.mgv.token(params.quote);
+    const base =
+      typeof params.base === "string"
+        ? await params.mgv.token(params.base)
+        : params.base;
+    const quote =
+      typeof params.quote === "string"
+        ? await params.mgv.token(params.quote)
+        : params.quote;
     canConstructMarket = true;
-    const market = new Market({ mgv: params.mgv, base, quote });
+    const market = new Market({
+      mgv: params.mgv,
+      base,
+      quote,
+      tickSpacing: params.tickSpacing,
+    });
     canConstructMarket = false;
     if (params["noInit"]) {
       market.#initClosure = () => {
@@ -283,31 +566,32 @@ class Market {
     } else {
       await market.#initialize(params.bookOptions);
     }
-    const config = await market.config();
-    const gasreq = await params.mgv.orderContract.callStatic.offerGasreq();
-    market.minVolumeAsk = config.asks.density.mul(
-      new Big(config.asks.offer_gasbase).plus(new Big(gasreq.toString()))
+    const config = market.config();
+    const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
+      market.mgv.network.name,
     );
-    market.minVolumeBid = config.bids.density.mul(
-      new Big(config.bids.offer_gasbase).plus(new Big(gasreq.toString()))
+    market.minVolumeAsk = config.asks.density.getRequiredOutboundForGasreq(
+      config.asks.offer_gasbase + gasreq,
     );
-
+    market.minVolumeBid = config.bids.density.getRequiredOutboundForGasreq(
+      config.bids.offer_gasbase + gasreq,
+    );
     return market;
   }
 
   /**
-   * Initialize a new `params.base`:`params.quote` market.
+   * Initialize a new market.
    *
-   * `params.mgv` will be used as mangrove instance
+   * @param params A set of parameters identifying the `params.base`:`params.quote` market on Mangrove to connect to.
    */
-  private constructor(params: {
-    mgv: Mangrove;
-    base: MgvToken;
-    quote: MgvToken;
-  }) {
+  private constructor(
+    params: {
+      mgv: Mangrove;
+    } & Market.KeyResolved,
+  ) {
     if (!canConstructMarket) {
       throw Error(
-        "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)"
+        "Mangrove Market must be initialized async with Market.connect (constructors cannot be async)",
       );
     }
     this.#subscriptions = new Map();
@@ -316,8 +600,22 @@ class Market {
 
     this.base = params.base;
     this.quote = params.quote;
+    this.tickSpacing = params.tickSpacing;
+    this.olKeyBaseQuote = {
+      outbound_tkn: this.base.address,
+      inbound_tkn: this.quote.address,
+      tickSpacing: this.tickSpacing,
+    };
+    this.olKeyQuoteBase = {
+      outbound_tkn: this.quote.address,
+      inbound_tkn: this.base.address,
+      tickSpacing: this.tickSpacing,
+    };
   }
 
+  /**
+   * Close a Market instance.
+   */
   public close() {
     if (
       !this.asksCb ||
@@ -331,6 +629,9 @@ class Market {
     this.#bidsSemibook.removeEventListener(this.bidsCb);
   }
 
+  /**
+   * Initialize the market.
+   */
   initialize(): Promise<void> {
     if (typeof this.#initClosure === "undefined") {
       throw new Error("Cannot initialize already initialized market.");
@@ -361,9 +662,9 @@ class Market {
           desiredPrice: opts.desiredPrice,
           chunkSize: opts.chunkSize,
         };
-      } else if ("maxOffers" in opts) {
+      } else if ("targetNumberOfTicks" in opts) {
         return {
-          maxOffers: opts.maxOffers,
+          targetNumberOfTicks: opts.targetNumberOfTicks,
           chunkSize: opts.chunkSize,
         };
       } else {
@@ -378,17 +679,26 @@ class Market {
       this,
       "asks",
       this.asksCb,
-      getSemibookOpts("asks")
+      getSemibookOpts("asks"),
     );
     this.bidsCb = this.#semibookEventCallback.bind(this);
     const bidsPromise = Semibook.connect(
       this,
       "bids",
       this.bidsCb,
-      getSemibookOpts("bids")
+      getSemibookOpts("bids"),
     );
     this.#asksSemibook = await asksPromise;
     this.#bidsSemibook = await bidsPromise;
+  }
+
+  /**
+   * Get the configuration of the specified offer list of the market.
+   * @param ba bids or asks
+   * @returns The configuration of the specified offer list of the market.
+   */
+  getOLKey(ba: Market.BA): OLKeyStruct {
+    return ba === "asks" ? this.olKeyBaseQuote : this.olKeyQuoteBase;
   }
 
   async #semibookEventCallback({
@@ -412,7 +722,7 @@ class Market {
           this.#subscriptions.delete(cb);
           Promise.resolve(cb(cbArg, event, ethersLog)).then(
             params.ok,
-            params.ko
+            params.ko,
           );
         }
       } else {
@@ -422,12 +732,12 @@ class Market {
   }
 
   /**
-   * Return the semibooks of this market.
+   * Return the two semibooks of this market.
    *
    * Asks are standing offers to sell base and buy quote.
    * Bids are standing offers to buy base and sell quote.
    * All prices are in quote/base, all volumes are in base.
-   * Order is from best to worse from taker perspective.
+   * Offers are ordered from best to worse from the taker perspective.
    */
   getBook(): Market.Book {
     if (!this.#asksSemibook || !this.#bidsSemibook) {
@@ -440,7 +750,7 @@ class Market {
   }
 
   /**
-   * Return the asks or bids semibook
+   * Return the bids or asks semibook.
    */
   getSemibook(ba: Market.BA): Semibook {
     if (!this.#asksSemibook || !this.#bidsSemibook) {
@@ -449,8 +759,13 @@ class Market {
     return ba === "asks" ? this.#asksSemibook : this.#bidsSemibook;
   }
 
+  /**
+   * Return the asks and bids semibook.
+   * @param opts Options to filter the offers in the book.
+   * @returns The asks and bids semibooks, with the offers that match the options.
+   */
   async requestBook(
-    opts: Market.BookOptions = bookOptsDefault
+    opts: Market.BookOptions = bookOptsDefault,
   ): Promise<{ asks: Market.Offer[]; bids: Market.Offer[] }> {
     if (!this.#asksSemibook || !this.#bidsSemibook) {
       throw Error("Market is not initialized");
@@ -463,31 +778,33 @@ class Market {
     };
   }
 
-  async isActive(): Promise<boolean> {
-    const config = await this.config();
+  /**
+   * Is the market active?
+   * @returns Whether the market is active, i.e., whether both the asks and bids semibooks are active.
+   */
+  isActive(): boolean {
+    const config = this.config();
     return config.asks.active && config.bids.active;
   }
 
+  /**
+   * Is the offer corresponding to the given offerId in the book ba live?
+   * @param ba Bids or asks.
+   * @param offerId An offer id to check.
+   * @returns True, if a corresponding live offer was found, else false.
+   */
   async isLive(ba: Market.BA, offerId: number): Promise<boolean> {
     const offer: Market.Offer = await this.getSemibook(ba).offerInfo(offerId);
     return this.isLiveOffer(offer);
   }
 
-  isLiveOffer(offer: Market.Offer): boolean {
-    if (!offer.gives.gt) {
-      console.log(offer);
-    }
-    return offer.gives.gt(0);
-  }
-
-  /** Given a price, find the id of the immediately-better offer in the
-   * book. If there is no offer with a better price, `undefined` is returned.
+  /**
+   * Is the offer live?
+   * @param offer An offer to check.
+   * @returns True, if the offer is live, else false.
    */
-  async getPivotId(
-    ba: Market.BA,
-    price: Bigish | undefined
-  ): Promise<number | undefined> {
-    return this.getSemibook(ba).getPivotId(price);
+  isLiveOffer(offer: Market.Offer): boolean {
+    return offer.gives.gt(0);
   }
 
   /** Gets the amount of ethers necessary to provision an offer on the market.
@@ -499,15 +816,16 @@ class Market {
   async getOfferProvision(
     ba: Market.BA,
     gasreq: number,
-    gasprice?: number
+    gasprice?: number,
   ): Promise<Big> {
     // 0 makes calculation use mgv gasprice
     gasprice ??= 0;
-    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
-    const prov = await this.mgv.readerContract[
-      "getProvision(address,address,uint256,uint256)"
-    ](outbound_tkn.address, inbound_tkn.address, gasreq, gasprice);
-    return this.mgv.fromUnits(prov, 18);
+    const prov = await this.mgv.readerContract.getProvision(
+      this.getOLKey(ba),
+      gasreq,
+      gasprice,
+    );
+    return this.mgv.nativeToken.fromUnits(prov);
   }
 
   /** Gets the amount of ethers necessary to provision a bid on the market.
@@ -539,41 +857,61 @@ class Market {
     ba: Market.BA,
     lockedProvision: Bigish,
     gasreq: number,
-    gasprice?: number
+    gasprice?: number,
   ) {
     const totalRequiredProvision = await this.getOfferProvision(
       ba,
       gasreq,
-      gasprice
+      gasprice,
     );
     return this.mgv.getMissingProvision(
       lockedProvision,
-      totalRequiredProvision
+      totalRequiredProvision,
     );
   }
 
+  /**
+   * Returns the offer info for the given offerId in the bids offer list.
+   * @param offerId id of the offer to get info for.
+   * @returns the offer info for the given offerId.
+   */
   bidInfo(offerId: number): Promise<Market.Offer> {
     return this.offerInfo("bids", offerId);
   }
 
+  /**
+   * Returns the offer info for the given offerId in the asks offer list.
+   * @param offerId id of the offer to get info for.
+   * @returns the offer info for the given offerId.
+   */
   askInfo(offerId: number): Promise<Market.Offer> {
     return this.offerInfo("asks", offerId);
   }
 
-  /** Returns struct containing offer details in the current market */
+  /** Returns struct containing offer details in the current market state.
+   * @param ba bids or asks
+   * @param offerId id of the offer to get info for.
+   * @returns the offer info for the given offerId.
+   */
   async offerInfo(ba: Market.BA, offerId: number): Promise<Market.Offer> {
     return this.getSemibook(ba).offerInfo(offerId);
   }
 
   /** Sign permit data. If action="buy", will permit buying base with spender's
    * quote token. If action="sell", will permit buying quote with spender's base
-   * token. See mangrove.ts. */
+   * token.
+   * @param action "buy" or "sell"
+   * @param data permit data
+   * @returns a promise that resolves to the permit signature.
+   *
+   * @see {@link Mangrove.permit}
+   * */
   permit(
     action: "buy" | "sell",
-    data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">
+    data: Omit<Mangrove.SimplePermitData, "outbound_tkn" | "inbound_tkn">,
   ): Promise<ethers.ContractTransaction> {
-    let outbound_tkn: MgvToken;
-    let inbound_tkn: MgvToken;
+    let outbound_tkn: Token;
+    let inbound_tkn: Token;
 
     if (action === "buy") {
       outbound_tkn = this.base;
@@ -592,14 +930,12 @@ class Market {
 
   /**
    * Market buy order. Will attempt to buy base token using quote tokens.
-   * Params can be of the form:
-   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`.
-   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`.
-   * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
-   * to account for gas.
+   * @param params Trade parameters - see {@link Market.TradeParams}.
+   * @param overrides ethers overrides for the transaction.
+   * @returns a promise that resolves to the transaction response and the result of the trade.
+   *
+   * @remarks
    *
    * Will stop if
    * - book is empty, or
@@ -614,24 +950,19 @@ class Market {
    */
   buy(
     params: Market.TradeParams,
-    overrides: ethers.Overrides = {}
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     return this.trade.order("buy", params, this, overrides);
   }
 
   /**
    * Market sell order. Will attempt to sell base token for quote tokens.
-   * Params can be of the form:
-   * - `{volume,price}`: sell `volume` base tokens for a min average price of `price`.
-   * - `{total,price}` : sell as many base tokens as possible buying up to `total` quote tokens, with a min average price of `price`.
-   * - `{wants,gives,fillWants?}`: accept implicit min average price of `gives/wants`. `fillWants` will be false by default.
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
-   * to account for gas.
+   * @param params Trade parameters - see {@link Market.TradeParams}.
+   * @param overrides ethers overrides for the transaction.
+   * @returns a promise that resolves to the transaction response and the result of the trade.
+   *
+   * @remarks
    *
    * Will stop if
    * - book is empty, or
@@ -646,84 +977,123 @@ class Market {
    */
   sell(
     params: Market.TradeParams,
-    overrides: ethers.Overrides = {}
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     return this.trade.order("sell", params, this, overrides);
   }
 
-  /** Estimate amount of gas for buy. Can be passed as overrides.gasLimit or params.gasLowerBound of @see buy with same params. */
-  gasEstimateBuy(params: Market.TradeParams): Promise<BigNumber> {
-    return this.trade
-      .estimateGas("buy", params, this)
-      .then((v) => v ?? BigNumber.from(0));
+  /** Estimate amount of gas for a buy order corresponding to the given trade parameters.
+   * @param params Trade parameters.
+   * @returns a gas estimate for the trade.
+   *
+   * @see {@link buy} for the corresponding trade method.
+   * @see {@link Market.TradeParams} for a description of trade parameters */
+  async gasEstimateBuy(params: Market.TradeParams): Promise<BigNumber> {
+    const v = await this.trade.estimateGas("buy", params, this);
+    return v ?? BigNumber.from(0);
   }
 
-  /** Estimate amount of gas for sell. Can be passed as overrides.gasLimit or params.gasLowerBound of @see sell with same params. */
-  gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
-    return this.trade
-      .estimateGas("sell", params, this)
-      .then((v) => v ?? BigNumber.from(0));
+  /** Estimate amount of gas for a sell order corresponding to the given trade parameters.
+   * @param params Trade parameters.
+   * @returns a gas estimate for the trade.
+   *
+   * @see {@link sell} for the corresponding trade method.
+   * @see {@link Market.TradeParams} for a description of trade parameters */
+  async gasEstimateSell(params: Market.TradeParams): Promise<BigNumber> {
+    const v = await this.trade.estimateGas("sell", params, this);
+    return v ?? BigNumber.from(0);
+  }
+
+  /** Update a resting order posted by MangroveOrder.
+   *
+   * @param ba whether the offer is a bid or ask
+   * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
+   * @param overrides overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the update.
+   */
+  async updateRestingOrder(
+    ba: Market.BA,
+    params: Market.UpdateRestingOrderParams,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.UpdateRestingOrderResult>> {
+    return this.trade.updateRestingOrder(this, ba, params, overrides);
+  }
+
+  /** Retract a resting order posted by MangroveOrder.
+   *
+   * @param ba whether the offer is a bid or ask
+   * @param id the offer id
+   * @param deprovision whether to deprovision the offer. If true, the offer's provision will be returned to the maker's balance on Mangrove.
+   * @param overrides overrides for the transaction
+   */
+  async retractRestingOrder(
+    ba: Market.BA,
+    id: number,
+    deprovision = false,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
+    return this.trade.retractRestingOrder(this, ba, id, deprovision, overrides);
   }
 
   /**
-   * Snipe specific offers.
-   * Params are:
-   * `targets`: an array of
-   *    `offerId`: the offer to snipe
-   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: if true, then a successful offer will cause the call to fail without sniping anything.
-   *     Note: Setting `requireOffersToFail=true` uses the cleaner contract and the taker needs to approve spending, with
-   *     `await mgv.contract.approve(market.base.address, market.quote.address, mgv.cleanerContract.address, amount);`
+   * Clean a set of given offers.
+   * @param params Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
+   * @param overrides: ethers overrides for the transaction.
+   * @returns a promise that resolves to the transasction response and the result of the cleaning.
+   *
+   * @see {@link Market.CleanParams} for a description of params.
    */
-  snipe(
-    params: Market.SnipeParams,
-    overrides: ethers.Overrides = {}
+  clean(
+    params: Market.CleanParams,
+    overrides: ethers.Overrides = {},
   ): Promise<{
-    result: Promise<Market.OrderResult>;
+    result: Promise<Market.CleanResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
-    return this.trade.snipe(params, this, overrides);
+    return this.trade.clean(params, this, overrides);
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
-   * Params are:
+   * Gets parameters to send to function `market.mgv.cleanerContract.cleanByImpersonation`.
+   *
+   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate
+   *
+   * @returns a promise that resolves to the raw parameters to send to the cleaner contract
+   *
+   * @remarks
+   *
+   * In more detail, the parameters should be an object with the following fields:
    * `targets`: an array of
-   *    `offerId`: the offer to snipe
+   *    `offerId`: the offer to be cleaned
    *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   *    `tick`: the of the offer to be cleaned
+   *    `gasreq`: the maximum gasreq the taker/cleaner, wants to use to clean the offer, has to be at least the same as the gasreq of the offer in order for it be cleaned
+   * `ba`: whether to clean `asks` or `bids`
+   * `taker`: specifies what taker to impersonate, if not specified, the caller of the function will be used
    */
-  getRawSnipeParams(
-    params: Market.SnipeParams,
-    overrides: ethers.Overrides = {}
-  ): Promise<Market.RawSnipeParams> {
-    return this.trade.getRawSnipeParams(params, this, overrides);
+  getRawCleanParams(
+    params: Market.CleanParams,
+  ): Promise<Market.RawCleanParams> {
+    return this.trade.getRawCleanParams(params, this);
   }
 
+  /**
+   * Estimate amount of gas for a buy or sell order for the given volume.
+   * @param bs buy or sell
+   * @param volume volume to trade
+   * @returns an estimate of the gas required for the trade
+   */
   async estimateGas(bs: Market.BS, volume: BigNumber): Promise<BigNumber> {
     const semibook = this.getSemibook(this.trade.bsToBa(bs));
-    const {
-      local: { density, offer_gasbase },
-    } = await semibook.getRawConfig();
+    const { density, offer_gasbase } = semibook.config();
 
     const maxGasreqOffer = (await semibook.getMaxGasReq()) ?? 0;
     const maxMarketOrderGas: BigNumber = BigNumber.from(MAX_MARKET_ORDER_GAS);
     // boosting estimates of 10% to be on the safe side
     const estimation = density.isZero()
       ? maxMarketOrderGas
-      : offer_gasbase
-          .add(volume.div(density))
+      : BigNumber.from(offer_gasbase)
+          .add(density.getMaximumGasForRawOutbound(volume))
           .add(maxGasreqOffer)
           .add(BigNumber.from(maxGasreqOffer).mul(64).div(63))
           .mul(11)
@@ -734,27 +1104,26 @@ class Market {
     return maxMarketOrderGas;
   }
 
-  /** Uses the @see semibook.simulateMarketOrder to simulate the gas required for a market order. An overhead of 50% is added to account for changes to the book and failing offers.
-   * @param ba: bids or asks
-   * @param gives: amount of inbound token to give to the makers
-   * @param wants: amount of outbound token to receive from the makers
-   * @param fillWants: whether to fill wants or gives
+  /** Uses {@link Semibook.simulateMarketOrder} to simulate the gas required for a market order. An overhead of 50% is added to account for changes to the book and failing offers.
+   * @param ba bids or asks
+   * @param gives amount of inbound token to give to the makers
+   * @param wants amount of outbound token to receive from the makers
+   * @param fillWants whether to fill wants or gives
    */
   async simulateGas(
     ba: Market.BA,
-    gives: BigNumber,
-    wants: BigNumber,
-    fillWants: boolean
+    maxTick: number,
+    fillVolume: BigNumber,
+    fillWants: boolean,
   ): Promise<BigNumber> {
     const semibook = this.getSemibook(ba);
-    const { outbound_tkn, inbound_tkn } = this.getOutboundInbound(ba);
 
     // Overestimate by 50% because market can have changed between estimation and execution and some offers may be failing.
     const estimation = (
       await semibook.simulateMarketOrder(
-        outbound_tkn.fromUnits(wants),
-        inbound_tkn.fromUnits(gives),
-        fillWants
+        maxTick,
+        new Big(fillVolume.toNumber()),
+        fillWants,
       )
     ).gas
       .mul(15)
@@ -768,20 +1137,21 @@ class Market {
   }
 
   /**
-   * Volume estimator.
+   * Volume estimation for buying or selling:
    *
-   * if you say `estimateVolume({given:100,what:"base",to:"buy"})`,
+   * If you say `estimateVolume({given:100,what:"base",to:"buy"})`,
    *
-   * it will give you an estimate of how much quote token you would have to
-   * spend to get 100 base tokens.
+   * an estimate of how much quote token you would have to spend to get 100 base tokens will be returned.
    *
-   * if you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
+   * If you say `estimateVolume({given:10,what:"quote",to:"sell"})`,
    *
-   * it will given you an estimate of how much base tokens you'd have to buy in
-   * order to spend 10 quote tokens.
-   * */
+   * an estimate of how much base tokens you'd have to buy in order to spend 10 quote tokens will be returned.
+   *
+   * @param params Parameters for the volume estimation - see {@link Market.VolumeParams}
+   * @returns a promise that resolves to the volume estimation.
+   */
   async estimateVolume(
-    params: Market.VolumeParams
+    params: Market.VolumeParams,
   ): Promise<Market.VolumeEstimate> {
     if (
       (params.what === "base" && params.to === "buy") ||
@@ -793,40 +1163,49 @@ class Market {
     }
   }
 
-  /* Convenience method: estimate volume to be received given an amount of base/quote you are ready to spend. */
+  /** Convenience method: Estimate volume to be received given an amount of base/quote you are ready to spend.
+   *
+   * @param params Parameters for the volume estimation - see {@link Market.DirectionlessVolumeParams}
+   * @returns a promise that resolves to the volume estimation.
+   *
+   * @see {@link estimateVolume}
+   */
   async estimateVolumeToReceive(
-    params: Market.DirectionlessVolumeParams
+    params: Market.DirectionlessVolumeParams,
   ): Promise<Market.VolumeEstimate> {
     return this.estimateVolume({ ...params, to: "sell" });
   }
 
-  /* Convenience method: estimate volume to be spent given an amount of base/quote you want to receive. */
+  /** Convenience method: Estimate volume to be spent given an amount of base/quote you want to receive.
+   *
+   * @param params Parameters for the volume estimation - see {@link Market.DirectionlessVolumeParams}
+   * @returns a promise that resolves to the volume estimation.
+   *
+   * @see {@link estimateVolume}
+   */
   async estimateVolumeToSpend(
-    params: Market.DirectionlessVolumeParams
+    params: Market.DirectionlessVolumeParams,
   ): Promise<Market.VolumeEstimate> {
     return this.estimateVolume({ ...params, to: "buy" });
   }
 
-  /* Convenience method to estimate volume */
-
   /**
    * Return config local to a market.
-   * Returned object is of the form
-   * `{bids,asks}` where bids and asks are of type `localConfig`
-   * Notes:
-   * Amounts are converted to plain numbers.
-   * density is converted to public token units per gas used
-   * fee *remains* in basis points of the token being bought
+   * @returns The config for the asks and bids side of the market.
+   *
+   * @remarks
+   *
+   * * Amounts are converted to plain numbers.
+   * * density is converted to public token units per gas used
+   * * fee *remains* in basis points of the token being bought
    */
-  async config(): Promise<{
+  config(): {
     asks: Mangrove.LocalConfig;
     bids: Mangrove.LocalConfig;
-  }> {
-    const asksConfigPromise = this.getSemibook("asks").getConfig();
-    const bidsConfigPromise = this.getSemibook("bids").getConfig();
+  } {
     return {
-      asks: await asksConfigPromise,
-      bids: await bidsConfigPromise,
+      asks: this.getSemibook("asks").config(),
+      bids: this.getSemibook("bids").config(),
     };
   }
 
@@ -849,8 +1228,12 @@ class Market {
   /**
    * Subscribe to order book updates.
    *
-   * `cb` gets called whenever the order book is updated.
-   *  Its first argument `event` is a summary of the event. It has the following properties:
+   * @param cb a callback, which gets called whenever the order book is updated.
+   *
+   * @remarks
+   *
+   * The first argument of cb, `event`, is a summary of the event.
+   * It has the following properties:
    *
    * * `type` the type of change. May be: * `"OfferWrite"`: an offer was
    * inserted  or moved in the book.  * `"OfferFail"`, `"OfferSuccess"`,
@@ -890,7 +1273,7 @@ class Market {
    */
   async once<T>(
     cb: Market.MarketCallback<T>,
-    filter?: Market.MarketFilter
+    filter?: Market.MarketFilter,
   ): Promise<T> {
     return new Promise((ok, ko) => {
       const params: Market.SubscriptionParam = { type: "once", ok, ko };
@@ -901,27 +1284,35 @@ class Market {
     });
   }
 
-  /* Stop calling a user-provided function on book-related events. */
+  /** Stop calling a user-provided callback function on book-related events. */
   unsubscribe(cb: Market.StorableMarketCallback): void {
     this.#subscriptions.delete(cb);
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @returns the outbound and inbound tokens.
+   */
   getOutboundInbound(ba: Market.BA): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
+    outbound_tkn: Token;
+    inbound_tkn: Token;
   } {
     return Market.getOutboundInbound(ba, this.base, this.quote);
   }
 
-  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks. */
-  static getOutboundInbound(
+  /** Determine which token will be Mangrove's outbound/inbound depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @param base base token
+   * @param quote quote token
+   * @returns the outbound and inbound tokens.
+   */
+  static getOutboundInbound<T>(
     ba: Market.BA,
-    base: MgvToken,
-    quote: MgvToken
+    base: T,
+    quote: T,
   ): {
-    outbound_tkn: MgvToken;
-    inbound_tkn: MgvToken;
+    outbound_tkn: T;
+    inbound_tkn: T;
   } {
     return {
       outbound_tkn: ba === "asks" ? base : quote,
@@ -929,26 +1320,21 @@ class Market {
     };
   }
 
-  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks. */
+  /** Determine whether gives or wants will be baseVolume/quoteVolume depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @param gives amount of token to give
+   * @param wants amount of token to receive
+   * @returns the base and quote volumes.
+   */
   static getBaseQuoteVolumes(
     ba: Market.BA,
     gives: Big,
-    wants: Big
+    wants: Big,
   ): { baseVolume: Big; quoteVolume: Big } {
     return {
       baseVolume: ba === "asks" ? gives : wants,
       quoteVolume: ba === "asks" ? wants : gives,
     };
-  }
-
-  /** Determine the price from dividing offer gives with wants depending on whether you're working with bids or asks. */
-  static getPrice(ba: Market.BA, gives: Big, wants: Big): Big | undefined {
-    const { baseVolume, quoteVolume } = Market.getBaseQuoteVolumes(
-      ba,
-      gives,
-      wants
-    );
-    return baseVolume.gt(0) ? quoteVolume.div(baseVolume) : undefined;
   }
 
   /** Determine the wants from gives and price depending on whether you're working with bids or asks. */
@@ -961,11 +1347,16 @@ class Market {
     return ba === "asks" ? wants.div(price) : wants.mul(price);
   }
 
-  /** Determine gives and wants from a volume (in base) and a price depending on whether you're working with bids or asks. */
+  /** Determine gives and wants from a volume (in base) and a price depending on whether you're working with bids or asks.
+   * @param ba bids or asks
+   * @param volume volume of the offer
+   * @param price price of the offer
+   * @returns the gives and wants
+   */
   static getGivesWantsForVolumeAtPrice(
     ba: Market.BA,
     volume: Big,
-    price: Big
+    price: Big,
   ): { gives: Big; wants: Big } {
     const gives = ba === "asks" ? volume : volume.mul(price);
     const wants = ba === "asks" ? volume.mul(price) : volume;
@@ -984,7 +1375,10 @@ class Market {
     ]);
   }
 
-  /** Determine the first decimal place where the smallest price difference between neighboring offers is visible. */
+  /** Determine the first decimal place where the smallest price difference between neighboring offers is visible.
+   * @param offers offers to consider
+   * @returns the first decimal place where the smallest price difference between neighboring offers is visible.
+   */
   static getDisplayDecimalsForPriceDifferences(offers: Market.Offer[]): number {
     if (offers.length <= 1) {
       return 0;
@@ -1001,7 +1395,7 @@ class Market {
 
     const minBig = (
       b1: Big | undefined,
-      b2: Big | undefined
+      b2: Big | undefined,
     ): Big | undefined => {
       if (b1 === undefined) {
         return b2;

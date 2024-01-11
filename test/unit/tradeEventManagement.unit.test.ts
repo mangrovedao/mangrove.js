@@ -4,97 +4,79 @@ import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import { describe, it } from "mocha";
 import { anything, instance, mock, spy, verify, when } from "ts-mockito";
-import { Market, MgvToken } from "../../src";
-import { OrderSummaryEvent } from "../../src/types/typechain/MangroveOrder";
+import { Market, Token } from "../../src";
 import TradeEventManagement from "../../src/util/tradeEventManagement";
-import UnitCalculations from "../../src/util/unitCalculations";
 import {
   OfferFailEvent,
+  OfferFailWithPosthookDataEvent,
   OfferSuccessEvent,
-  OrderCompleteEvent,
-  PosthookFailEvent,
 } from "../../src/types/typechain/Mangrove";
+import { MangroveOrderStartEvent } from "../../src/types/typechain/MangroveOrder";
 
 describe("TradeEventManagement unit tests suite", () => {
+  type summaryEvent = {
+    args: {
+      olKeyHash: string;
+      taker: string;
+      fillOrKill?: boolean;
+      tick?: BigNumber;
+      maxTick?: BigNumber;
+      fillVolume: BigNumber;
+      fillWants: boolean;
+      restingOrder?: boolean;
+    };
+  };
   describe("createSummary", () => {
     it("return summary with partialFill as true, when partialFill func returns true", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
-      const evt = {
+      const mockedToken = mock(Token);
+      const token = instance(mockedToken);
+      const evt: summaryEvent = {
         args: {
-          takerGot: BigNumber.from(10),
-          takerGave: BigNumber.from(20),
-          penalty: BigNumber.from(1),
-          feePaid: BigNumber.from(2),
+          olKeyHash: "olKeyHash",
+          taker: "taker",
+          fillVolume: BigNumber.from(1),
+          fillWants: true,
+          tick: BigNumber.from(0),
         },
       };
 
-      const gotToken = mock(MgvToken);
-      const gaveToken = mock(MgvToken);
-      const expectedPenalty = UnitCalculations.fromUnits(evt.args.penalty, 18);
-      const expectedGot = UnitCalculations.fromUnits(evt.args.takerGot, 18);
-      const expectedGave = UnitCalculations.fromUnits(evt.args.takerGave, 18);
-      const expectedFeePaid = UnitCalculations.fromUnits(evt.args.feePaid, 18);
-      when(gotToken.fromUnits(evt.args.takerGot)).thenReturn(expectedGot);
-      when(gaveToken.fromUnits(evt.args.takerGave)).thenReturn(expectedGave);
-      const partialFillFunc: (
-        takerGotWithFee: BigNumber,
-        takerGave: BigNumber
-      ) => boolean = () => true;
+      when(mockedToken.fromUnits(anything())).thenReturn(Big(1));
 
       //Act
-      const result = tradeEventManagement.createSummaryFromEvent(
-        evt,
-        instance(gotToken),
-        instance(gaveToken),
-        partialFillFunc
-      );
+      const result = tradeEventManagement.createSummaryFromEvent(evt, token);
 
       //Assert
-      assert.deepStrictEqual(result.got, expectedGot);
-      assert.deepStrictEqual(result.gave, expectedGave);
-      assert.equal(result.partialFill, true);
-      assert.deepStrictEqual(result.bounty, expectedPenalty);
-      assert.deepStrictEqual(result.feePaid, expectedFeePaid);
+      assert.deepStrictEqual(result.olKeyHash, evt.args.olKeyHash);
+      assert.deepStrictEqual(result.taker, evt.args.taker);
+      assert.deepStrictEqual(result.fillVolume, Big(1));
+      assert.deepStrictEqual(result.fillWants, evt.args.fillWants);
+      assert.deepStrictEqual(result.tick, 0);
     });
   });
 
   describe("createSummaryForOrderComplete", () => {
     it("returns createSummary, always", async function () {
       //Arrange
+
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
-      const event = instance(mock<OrderCompleteEvent>());
-      const gotToken = instance(mock(MgvToken));
-      const gaveToken = instance(mock(MgvToken));
+      const mockedToken = mock(Token);
+      const token = instance(mockedToken);
+      const event = instance(mock<summaryEvent>());
       const summary: any = "summary";
 
       when(
-        spyTradeEventManagement.createSummaryFromEvent(
-          event,
-          gotToken,
-          gaveToken,
-          anything()
-        )
+        spyTradeEventManagement.createSummaryFromEvent(event, token),
       ).thenReturn(summary);
 
-      const partialFillFunc = () => true;
       //Act
-      const result = tradeEventManagement.createSummaryFromEvent(
-        event,
-        gotToken,
-        gaveToken,
-        partialFillFunc
-      );
+      const result = tradeEventManagement.createSummaryFromEvent(event, token);
 
       //Asset
       verify(
-        spyTradeEventManagement.createSummaryFromEvent(
-          event,
-          gotToken,
-          gaveToken,
-          partialFillFunc
-        )
+        spyTradeEventManagement.createSummaryFromEvent(event, token),
       ).once();
       assert(result, summary);
     });
@@ -105,52 +87,39 @@ describe("TradeEventManagement unit tests suite", () => {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
       const spyTradeEventManagement = spy(tradeEventManagement);
-      const mockedEvent = mock<OrderSummaryEvent>();
+      const mockedEvent = mock<MangroveOrderStartEvent>();
+      const mockedToken = mock(Token);
+      const token = instance(mockedToken);
       const event = instance(mockedEvent);
-      const gotToken = instance(mock(MgvToken));
-      const gaveToken = instance(mock(MgvToken));
-      const summary: Market.Summary = {
-        got: Big(1),
-        gave: Big(2),
+      const summary: Market.OrderSummary = {
+        olKeyHash: "olKeyHash",
+        taker: "taker",
+        tick: 1,
+        fillVolume: Big(2),
+        fillWants: true,
+        totalGot: Big(0),
+        totalGave: Big(0),
         partialFill: false,
-        bounty: Big(3),
-        feePaid: Big(4),
       };
-      const expectedOfferId = BigNumber.from(20);
-      const args: any = { restingOrderId: expectedOfferId };
+      const args: any = { offerId: BigNumber.from(20) };
 
       when(
-        spyTradeEventManagement.createSummaryFromEvent(
-          anything(),
-          gotToken,
-          gaveToken,
-          anything()
-        )
+        spyTradeEventManagement.createSummaryFromEvent(anything(), anything()),
       ).thenReturn(summary);
       when(mockedEvent.args).thenReturn(args);
 
-      const partialFillFunc = () => true;
       //Act
       const result = tradeEventManagement.createSummaryFromOrderSummaryEvent(
         event,
-        gotToken,
-        gaveToken,
-        partialFillFunc
+        token,
       );
 
       //Asset
       verify(
-        spyTradeEventManagement.createSummaryFromEvent(
-          anything(),
-          gotToken,
-          gaveToken,
-          partialFillFunc
-        )
+        spyTradeEventManagement.createSummaryFromEvent(anything(), anything()),
       ).once();
-      assert.equal(result.got, summary.got);
-      assert.equal(result.gave, summary.gave);
-      assert.equal(result.partialFill, summary.partialFill);
-      assert.equal(result.bounty, summary.bounty);
+      assert.equal(result.taker, summary.taker);
+      assert.equal(result.olKeyHash, summary.olKeyHash);
     });
   });
 
@@ -166,8 +135,8 @@ describe("TradeEventManagement unit tests suite", () => {
         takerWants: BigNumber.from(2),
         takerGives: BigNumber.from(3),
       };
-      const gotToken = mock(MgvToken);
-      const gaveToken = mock(MgvToken);
+      const gotToken = mock(Token);
+      const gaveToken = mock(Token);
       const expectedGot = Big(args.takerWants.toNumber());
       const expectedGave = Big(args.takerGives.toNumber());
 
@@ -179,7 +148,7 @@ describe("TradeEventManagement unit tests suite", () => {
       const result = tradeEventManagement.createSuccessFromEvent(
         event,
         instance(gotToken),
-        instance(gaveToken)
+        instance(gaveToken),
       );
 
       // Assert
@@ -202,24 +171,24 @@ describe("TradeEventManagement unit tests suite", () => {
         takerWants: BigNumber.from(2),
         takerGives: BigNumber.from(3),
       };
-      const gotToken = mock(MgvToken);
-      const gaveToken = mock(MgvToken);
+      const gotToken = mock(Token);
+      const gaveToken = mock(Token);
       const expectedFailToDeliver = Big(args.takerWants.toNumber());
       const expectedVolumeGiven = Big(args.takerGives.toNumber());
 
       when(mockedEvent.args).thenReturn(args);
       when(gotToken.fromUnits(args.takerWants)).thenReturn(
-        expectedFailToDeliver
+        expectedFailToDeliver,
       );
       when(gaveToken.fromUnits(args.takerGives)).thenReturn(
-        expectedVolumeGiven
+        expectedVolumeGiven,
       );
 
       //Act
       const result = tradeEventManagement.createTradeFailureFromEvent(
         event,
         instance(gotToken),
-        instance(gaveToken)
+        instance(gaveToken),
       );
 
       // Assert
@@ -234,11 +203,11 @@ describe("TradeEventManagement unit tests suite", () => {
     it("returns posthookFailure object, always", async function () {
       //Arrange
       const tradeEventManagement = new TradeEventManagement();
-      const mockedEvent = mock<PosthookFailEvent>();
+      const mockedEvent = mock<OfferFailWithPosthookDataEvent>();
       const event = instance(mockedEvent);
       const expectedOfferId = BigNumber.from(123);
       const args: any = {
-        offerId: expectedOfferId,
+        id: expectedOfferId,
         posthookData: "posthookData",
       };
 
@@ -250,83 +219,6 @@ describe("TradeEventManagement unit tests suite", () => {
       // Assert
       assert.equal(result.offerId, expectedOfferId.toNumber());
       assert.equal(result.reason, args.posthookData);
-    });
-  });
-
-  describe("partialFill", () => {
-    it("returns false, when fillWants true, takerGot less then takerWants", async function () {
-      //Arrange
-      const tradeEventManagement = new TradeEventManagement();
-      const fillWants = true;
-      const takerGotWithFee = BigNumber.from(10);
-      const takerWants = BigNumber.from(9);
-
-      //Act
-      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
-        fillWants,
-        takerWants,
-        mock(BigNumber)
-      );
-      const partialFill = partialFillFunc(takerGotWithFee, mock(BigNumber));
-
-      //Assert
-      assert.equal(partialFill, false);
-    });
-    it("returns true, when fillWants true, takerGot larger then takerWants", async function () {
-      //Arrange
-      const tradeEventManagement = new TradeEventManagement();
-      const fillWants = true;
-      const takerGotWithFee = BigNumber.from(10);
-      const takerWants = BigNumber.from(11);
-
-      //Act
-      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
-        fillWants,
-        takerWants,
-        mock(BigNumber)
-      );
-      const partialFill = partialFillFunc(takerGotWithFee, mock(BigNumber));
-
-      //Assert
-      assert.equal(partialFill, true);
-    });
-
-    it("returns false, when fillWants false, takerGave less then takerGives", async function () {
-      //Arrange
-      const tradeEventManagement = new TradeEventManagement();
-      const fillWants = false;
-      const takerGave = BigNumber.from(10);
-      const takerGives = BigNumber.from(9);
-
-      //Act
-      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
-        fillWants,
-        mock(BigNumber),
-        takerGives
-      );
-      const partialFill = partialFillFunc(mock(BigNumber), takerGave);
-
-      //Assert
-      assert.equal(partialFill, false);
-    });
-
-    it("returns true, when fillWants false, takerGave larger then takerGives", async function () {
-      //Arrange
-      const tradeEventManagement = new TradeEventManagement();
-      const fillWants = false;
-      const takerGave = BigNumber.from(10);
-      const takerGives = BigNumber.from(11);
-
-      //Act
-      const partialFillFunc = tradeEventManagement.createPartialFillFunc(
-        fillWants,
-        mock(BigNumber),
-        takerGives
-      );
-      const partialFill = partialFillFunc(mock(BigNumber), takerGave);
-
-      //Assert
-      assert.equal(partialFill, true);
     });
   });
 });

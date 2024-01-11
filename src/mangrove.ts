@@ -1,4 +1,4 @@
-import { LiquidityProvider, Market, MgvToken, OfferLogic, Semibook } from ".";
+import { LiquidityProvider, Market, Token, OfferLogic, Semibook } from ".";
 import configuration, {
   Configuration as MangroveJsConfiguration,
   PartialConfiguration as PartialMangroveJsConfiguration,
@@ -8,7 +8,7 @@ import DevNode from "./util/devNode";
 import { Bigish, Provider, Signer, typechain } from "./types";
 import { logdataLimiter, logger } from "./util/logger";
 import { TypedDataSigner } from "@ethersproject/abstract-signer";
-import { ApproveArgs } from "./mgvtoken";
+import { ApproveArgs, TokenCalculations } from "./token";
 
 import Big from "big.js";
 // Configure big.js global constructor
@@ -23,8 +23,6 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] =
    use Mangrove.connect to make sure the network is reached during construction */
 let canConstructMangrove = false;
 
-import type { Awaited } from "ts-essentials";
-import UnitCalculations from "./util/unitCalculations";
 import {
   BlockManager,
   ReliableProvider,
@@ -35,22 +33,30 @@ import { JsonRpcProvider, WebSocketProvider } from "@ethersproject/providers";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
 import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
-import { LocalUnpackedStructOutput } from "./types/typechain/MgvReader";
+import { OLKeyStruct } from "./types/typechain/Mangrove";
+import { Density } from "./util/Density";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
   export type RawConfig = Awaited<
-    ReturnType<typechain.Mangrove["functions"]["configInfo"]>
+    ReturnType<typechain.MgvReader["functions"]["configInfo"]>
   >;
 
   export type LocalConfig = {
     active: boolean;
     fee: number;
-    density: Big;
+    density: Density;
     offer_gasbase: number;
+  };
+
+  export type LocalConfigFull = LocalConfig & {
     lock: boolean;
-    best: number | undefined;
     last: number | undefined;
+    binPosInLeaf: number;
+    root: number;
+    level1: ethers.BigNumber;
+    level2: ethers.BigNumber;
+    level3: ethers.BigNumber;
   };
 
   export type GlobalConfig = {
@@ -60,6 +66,8 @@ namespace Mangrove {
     gasprice: number;
     gasmax: number;
     dead: boolean;
+    maxRecursionDepth: number;
+    maxGasreqForFailingOffers: number;
   };
 
   export type SimplePermitData = {
@@ -82,9 +90,7 @@ namespace Mangrove {
     deadline: number;
   };
 
-  export type OpenMarketInfo = {
-    base: { name: string; address: string; symbol: string; decimals: number };
-    quote: { name: string; address: string; symbol: string; decimals: number };
+  export type OpenMarketInfo = Market.KeyResolved & {
     asksConfig?: LocalConfig;
     bidsConfig?: LocalConfig;
   };
@@ -107,16 +113,19 @@ class Mangrove {
   network: eth.ProviderNetwork;
   _readOnly: boolean;
   address: string;
-  contract: typechain.Mangrove;
+  contract: typechain.IMangrove;
   readerContract: typechain.MgvReader;
-  cleanerContract: typechain.MgvCleaner;
   multicallContract: typechain.Multicall2;
   orderContract: typechain.MangroveOrder;
   reliableProvider: ReliableProvider;
   mangroveEventSubscriber: MangroveEventSubscriber;
   shouldNotListenToNewEvents: boolean;
+  olKeyHashToOLKeyStructMap: Map<string, OLKeyStruct> = new Map();
+  olKeyStructToOlKeyHashMap: Map<string, string> = new Map();
+  nativeToken: TokenCalculations;
 
-  public eventEmitter: EventEmitter;
+  eventEmitter: EventEmitter;
+  _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
 
   static devNode: DevNode;
   static typechain = typechain;
@@ -124,7 +133,7 @@ class Mangrove {
   /**
    * Creates an instance of the Mangrove Typescript object
    *
-   * @param {object} [options] Optional provider options.
+   * @param {Mangrove.CreateOptions | string} [options] Optional provider options
    *
    * @example
    * ```
@@ -140,10 +149,12 @@ class Mangrove {
    * * path: `m/44'/60'/0'/...`
    * * provider: url, provider object, or chain string
    *
+   * @see {@link Mangrove.CreateOptions} for more details on optional provider parameters.
+   *
    * @returns {Mangrove} Returns an instance mangrove.js
    */
   static async connect(
-    options?: Mangrove.CreateOptions | string
+    options?: Mangrove.CreateOptions | string,
   ): Promise<Mangrove> {
     if (typeof options === "undefined") {
       options = "http://localhost:8545";
@@ -170,7 +181,7 @@ class Mangrove {
     if (!options.blockManagerOptions) {
       options.blockManagerOptions =
         configuration.reliableEventSubscriber.getBlockManagerOptions(
-          network.name
+          network.name,
         );
     }
 
@@ -181,7 +192,7 @@ class Mangrove {
     if (!options.reliableWebsocketProviderOptions && options.providerWsUrl) {
       options.reliableWebsocketProviderOptions = {
         ...configuration.reliableEventSubscriber.getReliableWebSocketOptions(
-          network.name
+          network.name,
         ),
         wsUrl: options.providerWsUrl,
       };
@@ -191,11 +202,36 @@ class Mangrove {
     if (!options.reliableHttpProviderOptions) {
       options.reliableHttpProviderOptions = {
         ...configuration.reliableEventSubscriber.getReliableHttpProviderOptions(
-          network.name
+          network.name,
         ),
         onError: onEthersError(eventEmitter),
       };
     }
+
+    const multicallContract = typechain.Multicall2__factory.connect(
+      Mangrove.getAddress("Multicall2", network.name),
+      signer,
+    );
+
+    const address = Mangrove.getAddress("Mangrove", network.name);
+    const contract = typechain.IMangrove__factory.connect(address, signer);
+
+    const readerAddress = Mangrove.getAddress("MgvReader", network.name);
+    const readerContract = typechain.MgvReader__factory.connect(
+      readerAddress,
+      signer,
+    );
+
+    const orderAddress = Mangrove.getAddress("MangroveOrder", network.name);
+    const orderContract = typechain.MangroveOrder__factory.connect(
+      orderAddress,
+      signer,
+    );
+
+    const config = Mangrove.rawConfigToConfig(
+      await readerContract.globalUnpacked(),
+    );
+
     canConstructMangrove = true;
     const mgv = new Mangrove({
       signer: signer,
@@ -205,7 +241,7 @@ class Mangrove {
       reliableHttpProvider: options.reliableHttpProviderOptions,
       eventEmitter,
       getLogsTimeout: configuration.reliableEventSubscriber.getLogsTimeout(
-        network.name
+        network.name,
       ),
       reliableWebSocketOptions: options.providerWsUrl
         ? {
@@ -215,6 +251,12 @@ class Mangrove {
           }
         : undefined,
       shouldNotListenToNewEvents: options.shouldNotListenToNewEvents,
+      multicallContract,
+      address,
+      contract,
+      readerContract,
+      orderContract,
+      config,
     });
 
     await mgv.initializeProvider();
@@ -233,6 +275,11 @@ class Mangrove {
     return mgv;
   }
 
+  /**
+   * Disconnect from Mangrove.
+   *
+   * Removes all listeners from the provider and stops the reliable provider.
+   */
   disconnect(): void {
     this.provider.removeAllListeners();
     if (this.reliableProvider) {
@@ -243,7 +290,6 @@ class Mangrove {
       contextInfo: "mangrove.base",
     });
   }
-  //TODO types in module namespace with same name as class
 
   constructor(params: {
     signer: Signer;
@@ -258,12 +304,19 @@ class Mangrove {
       wsUrl: string;
     };
     shouldNotListenToNewEvents?: boolean;
+    multicallContract: typechain.Multicall2;
+    address: string;
+    contract: typechain.IMangrove;
+    readerContract: typechain.MgvReader;
+    orderContract: typechain.MangroveOrder;
+    config: Mangrove.GlobalConfig;
   }) {
     if (!canConstructMangrove) {
       throw Error(
-        "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)"
+        "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)",
       );
     }
+    this.nativeToken = new TokenCalculations(18, 18);
     this.eventEmitter = params.eventEmitter;
     const provider = params.signer.provider;
     if (!provider) {
@@ -273,35 +326,12 @@ class Mangrove {
     this.signer = params.signer;
     this.network = params.network;
     this._readOnly = params.readOnly;
-    this.multicallContract = typechain.Multicall2__factory.connect(
-      Mangrove.getAddress("Multicall2", this.network.name),
-      this.signer
-    );
-    this.address = Mangrove.getAddress("Mangrove", this.network.name);
-    this.contract = typechain.Mangrove__factory.connect(
-      this.address,
-      this.signer
-    );
-    const readerAddress = Mangrove.getAddress("MgvReader", this.network.name);
-    this.readerContract = typechain.MgvReader__factory.connect(
-      readerAddress,
-      this.signer
-    );
-
-    const cleanerAddress = Mangrove.getAddress("MgvCleaner", this.network.name);
-    this.cleanerContract = typechain.MgvCleaner__factory.connect(
-      cleanerAddress,
-      this.signer
-    );
-    const orderAddress = Mangrove.getAddress(
-      "MangroveOrder",
-      this.network.name
-    );
-    // this.orderContract = typechain.MangroveOrder__factory.connect(
-    this.orderContract = typechain.MangroveOrder__factory.connect(
-      orderAddress,
-      this.signer
-    );
+    this.multicallContract = params.multicallContract;
+    this.address = params.address;
+    this.contract = params.contract;
+    this.readerContract = params.readerContract;
+    this.orderContract = params.orderContract;
+    this._config = params.config;
 
     this.shouldNotListenToNewEvents = false;
     if (params.shouldNotListenToNewEvents) {
@@ -313,12 +343,12 @@ class Mangrove {
         {
           ...params.blockManagerOptions,
           provider: new WebSocketProvider(
-            params.reliableWebSocketOptions.wsUrl
+            params.reliableWebSocketOptions.wsUrl,
           ),
           multiv2Address: this.multicallContract.address,
           getLogsTimeout: params.getLogsTimeout,
         },
-        params.reliableWebSocketOptions.options
+        params.reliableWebSocketOptions.options,
       );
     } else {
       this.reliableProvider = new ReliableHttpProvider(
@@ -328,15 +358,55 @@ class Mangrove {
           multiv2Address: this.multicallContract.address,
           getLogsTimeout: params.getLogsTimeout,
         },
-        params.reliableHttpProvider
+        params.reliableHttpProvider,
       );
     }
 
     this.mangroveEventSubscriber = new MangroveEventSubscriber(
       this.provider,
       this.contract,
-      this.reliableProvider.blockManager
+      this.reliableProvider.blockManager,
     );
+  }
+
+  getOlKeyHash(olKey: OLKeyStruct): string {
+    const key = `${olKey.outbound_tkn.toLowerCase()}_${olKey.inbound_tkn.toLowerCase()}_${
+      olKey.tickSpacing
+    }`;
+    let value = this.olKeyStructToOlKeyHashMap.get(key);
+    if (!value) {
+      value = this.calculateOLKeyHash(olKey);
+      this.olKeyStructToOlKeyHashMap.set(key, value);
+      this.olKeyHashToOLKeyStructMap.set(value, olKey);
+    }
+    return value;
+  }
+
+  async getOlKeyStruct(olKeyHash: string): Promise<OLKeyStruct | undefined> {
+    let struct = this.olKeyHashToOLKeyStructMap.get(olKeyHash);
+    if (!struct) {
+      try {
+        struct = await this.contract.callStatic.olKeys(olKeyHash);
+        this.olKeyHashToOLKeyStructMap.set(olKeyHash, struct);
+
+        // TODO: use a function to transform OlkeyStruct to string
+        const key = `${struct.outbound_tkn.toLowerCase()}_${struct.inbound_tkn.toLowerCase()}_${
+          struct.tickSpacing
+        }`;
+        this.olKeyStructToOlKeyHashMap.set(key, olKeyHash);
+      } catch {
+        return undefined;
+      }
+    }
+
+    return struct;
+  }
+
+  calculateOLKeyHash(olKey: OLKeyStruct) {
+    const olKeyData = this.contract.interface.encodeFunctionResult("olKeys", [
+      olKey,
+    ]);
+    return ethers.utils.keccak256(olKeyData);
   }
 
   /** Update the configuration by providing a partial configuration containing only the values that should be changed/added.
@@ -365,7 +435,7 @@ class Mangrove {
   }
 
   /**
-   * Initialize reliable provider
+   * Initialize reliable provider.
    */
   private async initializeProvider(): Promise<void> {
     if (!this.reliableProvider) {
@@ -376,7 +446,7 @@ class Mangrove {
       return;
     }
 
-    logger.info(`Start listenning to new events`);
+    logger.info(`Start listening to new events`);
     logger.debug(`Initialize reliable provider`);
     const block = await this.provider.getBlock("latest");
 
@@ -396,16 +466,17 @@ class Mangrove {
      Argument of the form `{base,quote}` where each is a string.
      To set your own token, use `setDecimals` and `setAddress`.
   */
-  async market(params: {
-    base: string;
-    quote: string;
-    bookOptions?: Market.BookOptions;
-  }): Promise<Market> {
+  async market(
+    params: Market.Key & {
+      bookOptions?: Market.BookOptions;
+    },
+  ): Promise<Market> {
     logger.debug("Initialize Market", {
       contextInfo: "mangrove.base",
       data: {
         base: params.base,
         quote: params.quote,
+        tickSpacing: params.tickSpacing,
         bookOptions: params.bookOptions,
       },
     });
@@ -434,15 +505,17 @@ class Mangrove {
     }
   }
 
-  /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders*/
+  /** Get a LiquidityProvider object to enable Mangrove's signer to pass buy and sell orders.
+   */
   async liquidityProvider(
     p:
       | Market
       | {
           base: string;
           quote: string;
+          tickSpacing: number;
           bookOptions?: Market.BookOptions;
-        }
+        },
   ): Promise<LiquidityProvider> {
     const EOA = await this.signer.getAddress();
     if (p instanceof Market) {
@@ -462,20 +535,35 @@ class Mangrove {
     }
   }
 
-  /** Return MgvToken instance, fetching data (decimals) from chain if needed. */
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
   async token(
-    name: string,
-    options?: MgvToken.ConstructorOptions
-  ): Promise<MgvToken> {
-    return MgvToken.createToken(name, this, options);
+    symbolOrId: string,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromSymbolOrId(symbolOrId, this, options);
   }
 
-  /** Return MgvToken instance reading only from configuration, not from chain. */
-  tokenFromConfig(
-    name: string,
-    options?: MgvToken.ConstructorOptions
-  ): MgvToken {
-    return new MgvToken(name, this, options);
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
+  async tokenFromSymbol(
+    symbol: string,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromSymbol(symbol, this, options);
+  }
+
+  /** Return Token instance, fetching data (decimals) from chain if needed. */
+  async tokenFromId(
+    tokenId: string,
+    options?: Token.ConstructorOptions,
+  ): Promise<Token> {
+    return Token.createTokenFromId(tokenId, this, options);
+  }
+
+  /**
+   * Return token instance from address, fetching data (decimals) from chain if needed.
+   */
+  async tokenFromAddress(address: string): Promise<Token> {
+    return Token.createTokenFromAddress(address, this);
   }
 
   /**
@@ -486,8 +574,17 @@ class Mangrove {
   getAddress(name: string): string {
     return configuration.addresses.getAddress(
       name,
-      this.network.name || "mainnet"
+      this.network.name || "mainnet",
     );
+  }
+
+  /**
+   * Read a token address on the current network.
+   *
+   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
+   */
+  getTokenAddress(symbolOrId: string): string {
+    return Token.getTokenAddress(symbolOrId, this.network.name || "mainnet");
   }
 
   /**
@@ -499,132 +596,80 @@ class Mangrove {
     configuration.addresses.setAddress(
       name,
       address,
-      this.network.name || "mainnet"
+      this.network.name || "mainnet",
     );
-  }
-
-  /**
-   * Gets the name of an address on the current network.
-   *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
-   */
-  getNameFromAddress(address: string): string | undefined {
-    return configuration.addresses.getNameFromAddress(
-      address,
-      this.network.name || "mainnet"
-    );
-  }
-
-  /** Gets the token corresponding to the address if it is known; otherwise, undefined.
-   */
-  async getTokenAndAddress(
-    address: string
-  ): Promise<{ address: string; token?: MgvToken }> {
-    const name = this.getNameFromAddress(address);
-    return {
-      address,
-      token: name === undefined ? undefined : await this.token(name),
-    };
-  }
-
-  /** Convert public token amount to internal token representation.
-   *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
-   *
-   * For convenience, has a static and an instance version.
-   *
-   *  @example
-   *  ```
-   *  Mangrove.toUnits(10,"USDC") // 10e6 as ethers.BigNumber
-   *  mgv.toUnits(10,6) // 10e6 as ethers.BigNumber
-   *  ```
-   */
-  static toUnits(
-    amount: Bigish,
-    nameOrDecimals: string | number
-  ): ethers.BigNumber {
-    return UnitCalculations.toUnits(amount, nameOrDecimals);
-  }
-  toUnits(amount: Bigish, nameOrDecimals: string | number): ethers.BigNumber {
-    return Mangrove.toUnits(amount, nameOrDecimals);
-  }
-
-  /** Convert internal token amount to public token representation.
-   *
-   * if `nameOrDecimals` is a string, it is interpreted as a token name. Otherwise
-   * it is the number of decimals.
-   *
-   *  @example
-   *  ```
-   *  mgv.fromUnits("1e19","DAI") // 10
-   *  mgv.fromUnits("1e19",18) // 10
-   *  ```
-   */
-  fromUnits(
-    amount: number | string | ethers.BigNumber,
-    nameOrDecimals: string | number
-  ): Big {
-    return UnitCalculations.fromUnits(amount, nameOrDecimals);
   }
 
   /** Provision available at mangrove for address given in argument, in ethers */
   async balanceOf(
     address: string,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<Big> {
     const bal = await this.contract.balanceOf(address, overrides);
-    return this.fromUnits(bal, 18);
+    return this.nativeToken.fromUnits(bal);
   }
 
   fundMangrove(
     amount: Bigish,
     maker: string,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
-    const _overrides = { value: this.toUnits(amount, 18), ...overrides };
+    const _overrides = {
+      value: this.nativeToken.toUnits(amount),
+      ...overrides,
+    };
     return this.contract["fund(address)"](maker, _overrides);
   }
 
   withdraw(
     amount: Bigish,
-    overrides: ethers.Overrides = {}
+    overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
-    return this.contract.withdraw(this.toUnits(amount, 18), overrides);
+    return this.contract.withdraw(this.nativeToken.toUnits(amount), overrides);
+  }
+
+  optValueToPayableOverride(
+    overrides: ethers.Overrides,
+    fund?: Bigish,
+  ): ethers.PayableOverrides {
+    if (fund) {
+      return { value: this.nativeToken.toUnits(fund), ...overrides };
+    } else {
+      return overrides;
+    }
   }
 
   async approveMangrove(
-    tokenName: string,
-    arg: ApproveArgs = {}
+    tokenId: string,
+    arg: ApproveArgs = {},
   ): Promise<ethers.ContractTransaction> {
-    const token = await this.token(tokenName);
+    const token = await this.token(tokenId);
     return token.approveMangrove(arg);
   }
 
   /** Calculates the provision required or locked for an offer based on the given parameters
-   * @param gasprice the gas price for the offer in gwei.
+   * @param gasprice the gas price for the offer in Mwei.
    * @param gasreq the gas requirement for the offer
    * @param gasbase the offer list's offer_gasbase.
    * @returns the required provision, in ethers.
    */
   calculateOfferProvision(gasprice: number, gasreq: number, gasbase: number) {
-    return this.fromUnits(
-      this.toUnits(1, 9)
+    return this.nativeToken.fromUnits(
+      ethers.BigNumber.from(1e6)
         .mul(gasprice)
         .mul(gasreq + gasbase),
-      18
     );
   }
 
   /** Calculates the provision required or locked for offers based on the given parameters
    * @param offers[] the offers to calculate provision for.
-   * @param offers[].gasprice the gas price for the offer in gwei.
+   * @param offers[].gasprice the gas price for the offer in Mwei.
    * @param offers[].gasreq the gas requirement for the offer
    * @param offers[].gasbase the offer list's offer_gasbase.
    * @returns the required provision, in ethers.
    */
   public calculateOffersProvision(
-    offers: { gasprice: number; gasreq: number; gasbase: number }[]
+    offers: { gasprice: number; gasreq: number; gasbase: number }[],
   ) {
     return offers.reduce(
       (acc, offer) =>
@@ -632,10 +677,10 @@ class Mangrove {
           this.calculateOfferProvision(
             offer.gasprice,
             offer.gasreq,
-            offer.gasbase
-          )
+            offer.gasbase,
+          ),
         ),
-      Big(0)
+      Big(0),
     );
   }
 
@@ -654,21 +699,33 @@ class Mangrove {
   }
 
   /**
-   * Return global Mangrove config
+   * Return global Mangrove config from cache.
    */
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-  async config(): Promise<Mangrove.GlobalConfig> {
-    const config = await this.contract.configInfo(
-      ethers.constants.AddressZero,
-      ethers.constants.AddressZero
+  config(): Mangrove.GlobalConfig {
+    return this._config;
+  }
+
+  /**
+   * Return global Mangrove config from chain.
+   */
+  async fetchConfig(): Promise<Mangrove.GlobalConfig> {
+    return Mangrove.rawConfigToConfig(
+      await this.readerContract.globalUnpacked(),
     );
+  }
+
+  static rawConfigToConfig(
+    rawConfig: Mangrove.RawConfig["_global"],
+  ): Mangrove.GlobalConfig {
     return {
-      monitor: config.global.monitor,
-      useOracle: config.global.useOracle,
-      notify: config.global.notify,
-      gasprice: config.global.gasprice.toNumber(),
-      gasmax: config.global.gasmax.toNumber(),
-      dead: config.global.dead,
+      monitor: rawConfig.monitor,
+      useOracle: rawConfig.useOracle,
+      notify: rawConfig.notify,
+      gasprice: rawConfig.gasprice.toNumber(),
+      gasmax: rawConfig.gasmax.toNumber(),
+      dead: rawConfig.dead,
+      maxRecursionDepth: rawConfig.maxRecursionDepth.toNumber(),
+      maxGasreqForFailingOffers: rawConfig.maxGasreqForFailingOffers.toNumber(),
     };
   }
 
@@ -677,7 +734,7 @@ class Mangrove {
    * num if needed.
    */
   async normalizePermitData(
-    params: Mangrove.SimplePermitData
+    params: Mangrove.SimplePermitData,
   ): Promise<Mangrove.PermitData> {
     const data = { ...params };
 
@@ -750,7 +807,7 @@ class Mangrove {
    * current owner nonce.
    */
   async permit(
-    params: Mangrove.SimplePermitData
+    params: Mangrove.SimplePermitData,
   ): Promise<ethers.ContractTransaction> {
     if (!params.deadline) {
       params.deadline = new Date();
@@ -759,7 +816,7 @@ class Mangrove {
 
     const data = await this.normalizePermitData(params);
     const { v, r, s } = ethers.utils.splitSignature(
-      await this.signPermitData(data)
+      await this.signPermitData(data),
     );
 
     return this.contract.permit(
@@ -771,7 +828,7 @@ class Mangrove {
       data.deadline,
       v,
       r,
-      s
+      s,
     );
   }
 
@@ -800,90 +857,6 @@ class Mangrove {
   }
 
   /**
-   * Gets the name of an address on the given network.
-   *
-   * Note that this reads from the static `Mangrove` address registry which is shared across instances of this class.
-   */
-  static getNameFromAddress(
-    address: string,
-    network: string
-  ): string | undefined {
-    return configuration.addresses.getNameFromAddress(address, network);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimals(tokenName: string): number | undefined {
-    return configuration.tokens.getDecimals(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName`. Fails if the decimals are not in the configuration.
-   * To read decimals directly onchain, use `fetchDecimals`.
-   */
-  static getDecimalsOrFail(tokenName: string): number {
-    return configuration.tokens.getDecimalsOrFail(tokenName);
-  }
-
-  /**
-   * Read decimals for `tokenName` on given network.
-   * If not found in the local configuration, fetch them from the current network and save them
-   */
-  static getOrFetchDecimals(
-    tokenName: string,
-    provider: Provider
-  ): Promise<number> {
-    return configuration.tokens.getOrFetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Read chain for decimals of `tokenName` on current network and save them
-   */
-  static async fetchDecimals(
-    tokenName: string,
-    provider: Provider
-  ): Promise<number> {
-    return configuration.tokens.fetchDecimals(tokenName, provider);
-  }
-
-  /**
-   * Read displayed decimals for `tokenName`.
-   */
-  static getDisplayedDecimals(tokenName: string): number {
-    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
-  }
-
-  /**
-   * Read displayed decimals for `tokenName` when displayed as a price.
-   */
-  static getDisplayedPriceDecimals(tokenName: string): number {
-    return configuration.tokens.getDisplayedPriceDecimals(tokenName);
-  }
-
-  /**
-   * Set decimals for `tokenName` on current network.
-   */
-  static setDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDecimals(tokenName, dec);
-  }
-
-  /**
-   * Set displayed decimals for `tokenName`.
-   */
-  static setDisplayedDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDisplayedDecimals(tokenName, dec);
-  }
-
-  /**
-   * Set displayed decimals for `tokenName` when displayed as a price.
-   */
-  static setDisplayedPriceDecimals(tokenName: string, dec: number): void {
-    configuration.tokens.setDisplayedPriceDecimals(tokenName, dec);
-  }
-
-  /**
    * Setup dev node necessary contracts if needed, register dev Multicall2
    * address, listen to future additions (a script external to mangrove.js may
    * deploy contracts during execution).
@@ -897,7 +870,7 @@ class Mangrove {
     configuration.addresses.setAddress(
       "Multicall2",
       devNode.multicallAddress,
-      network.name
+      network.name,
     );
     // get currently deployed contracts & listen for future ones
     const setAddress = (name: string, address: string, decimals?: number) => {
@@ -913,42 +886,39 @@ class Mangrove {
   }
 
   /**
-   * Returns open markets data according to mangrove reader.
-   * @param from: start at market `from`. Default 0.
-   * @param maxLen: max number of markets returned. Default all.
-   * @param configs: fetch market's config information. Default true.
-   * @param tokenInfo: fetch token information (symbol, decimals)
+   * Returns open markets data according to MgvReader.
+   * @param from start at market `from`. Default 0.
+   * @param maxLen max number of markets returned. Default all.
+   * @param configs fetch market's config information. Default true.
    * @note If an open market has a token with no/bad decimals/symbol function, this function will revert.
    */
-  async openMarketsData(
+  async openMarkets(
     params: {
       from?: number;
       maxLen?: number | ethers.BigNumber;
       configs?: boolean;
-      tokenInfos?: boolean;
-    } = {}
+    } = {},
   ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
     params.from ??= 0;
     params.maxLen ??= ethers.constants.MaxUint256;
     params.configs ??= true;
-    params.tokenInfos ??= true;
     // read open markets and their configs off mgvReader
     const raw = await this.readerContract["openMarkets(uint256,uint256,bool)"](
       params.from,
       params.maxLen,
-      params.configs
+      params.configs,
     );
 
-    // structure data object as address => (symbol,decimals,address=>config)
+    // structure data object as address => (token,address=>config)
     const data: Record<
       string,
       {
-        symbol: string;
-        decimals: number;
-        configs: Record<string, LocalUnpackedStructOutput>;
+        token: Token;
+        configs: Record<string, Mangrove.RawConfig["_local"]>;
       }
     > = {};
+
     raw.markets.forEach(([tkn0, tkn1], i) => {
       (data[tkn0] as any) ??= { configs: {} };
       (data[tkn1] as any) ??= { configs: {} };
@@ -959,153 +929,59 @@ class Mangrove {
       }
     });
 
+    // TODO: Consider fetching missing decimals/symbols in one Multicall and dispatch to Token initializations instead of firing multiple RPC calls.
+    //       However, viem (and maybe ethers6) automatically batches multiple read requests as a multicall, so not sure this is worth pursuing.
     const addresses = Object.keys(data);
-
-    //read decimals & symbol for each token using Multicall
-    const ierc20 = typechain.IERC20__factory.createInterface();
-
-    const tryDecodeDecimals = (ary: any[], fnName: "decimals") => {
-      return ary.forEach((returnData, i) => {
-        // will raise exception if call reverted
-        data[addresses[i]][fnName] = ierc20.decodeFunctionResult(
-          fnName as any,
-          returnData
-        )[0] as number;
-      });
-    };
-    const tryDecodeSymbol = (ary: any[], fnName: "symbol") => {
-      return ary.forEach((returnData, i) => {
-        // will raise exception if call reverted
-        data[addresses[i]][fnName] = ierc20.decodeFunctionResult(
-          fnName as any,
-          returnData
-        )[0] as string;
-      });
-    };
-
-    /* Grab decimals for all contracts */
-    const decimalArgs = addresses.map((addr) => {
-      return { target: addr, callData: ierc20.encodeFunctionData("decimals") };
-    });
-    const symbolArgs = addresses.map((addr) => {
-      return { target: addr, callData: ierc20.encodeFunctionData("symbol") };
-    });
-    const { returnData } = await this.multicallContract.callStatic.aggregate([
-      ...decimalArgs,
-      ...symbolArgs,
-    ]);
-    tryDecodeDecimals(returnData.slice(0, addresses.length), "decimals");
-    tryDecodeSymbol(returnData.slice(addresses.length), "symbol");
+    await Promise.all(
+      addresses.map(async (address) => {
+        data[address].token = await this.tokenFromAddress(address);
+      }),
+    );
 
     // format return value
-    return raw.markets.map(([tkn0, tkn1]) => {
-      // Use internal mgv name if defined; otherwise use the symbol.
-      const tkn0Name = this.getNameFromAddress(tkn0) ?? data[tkn0].symbol;
-      const tkn1Name = this.getNameFromAddress(tkn1) ?? data[tkn1].symbol;
-
-      const { baseName, quoteName } = Mangrove.toBaseQuoteByCashness(
-        tkn0Name,
-        tkn1Name
+    return raw.markets.map(([tkn0, tkn1, tickSpacing]) => {
+      const { base, quote } = this.toBaseQuoteByCashness(
+        data[tkn0].token,
+        data[tkn1].token,
       );
-      const [base, quote] = baseName === tkn0Name ? [tkn0, tkn1] : [tkn1, tkn0];
 
       return {
-        base: {
-          name: baseName,
-          address: base,
-          symbol: data[base].symbol,
-          decimals: data[base].decimals,
-        },
-        quote: {
-          name: quoteName,
-          address: quote,
-          symbol: data[quote].symbol,
-          decimals: data[quote].decimals,
-        },
+        base,
+        quote,
+        tickSpacing: tickSpacing.toNumber(),
         asksConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
-              data[base].configs[quote],
-              data[base].decimals
+              data[base.address].configs[quote.address],
+              base.decimals,
             )
           : undefined,
         bidsConfig: params.configs
           ? Semibook.rawLocalConfigToLocalConfig(
-              data[quote].configs[base],
-              data[quote].decimals
+              data[quote.address].configs[base.address],
+              quote.decimals,
             )
           : undefined,
       };
     });
   }
 
-  /**
-   * Returns open markets according to mangrove reader. Will internally update Mangrove token information.
-   *
-   * @param from: start at market `from` (default: 0)
-   * @param maxLen: max number of markets returned (default: all)
-   * @param noInit: do not initialize markets (default: false)
-   * @param bookOptions: bookOptions argument to pass to every new market (default: undefined)
-   */
-  async openMarkets(
-    params: {
-      from?: number;
-      maxLen?: number;
-      noInit?: boolean;
-      bookOptions?: Market.BookOptions;
-    } = {}
-  ): Promise<Market[]> {
-    const noInit = params.noInit ?? false;
-    delete params.noInit;
-    const bookOptions = params.bookOptions;
-    delete params.bookOptions;
-    const openMarketsData = await this.openMarketsData({
-      ...params,
-      tokenInfos: true,
-      configs: false,
-    });
-    // TODO: fetch all semibook configs in one Multicall and dispatch to Semibook initializations (see openMarketsData) instead of firing multiple RPC calls.
-    return Promise.all(
-      openMarketsData.map(({ base, quote }) => {
-        this.setAddress(base.name, base.address);
-        if (configuration.tokens.getDecimals(base.name) === undefined) {
-          configuration.tokens.setDecimals(base.name, base.decimals);
-        }
-        this.setAddress(quote.name, quote.address);
-        if (configuration.tokens.getDecimals(quote.name) === undefined) {
-          configuration.tokens.setDecimals(quote.name, quote.decimals);
-        }
-        return Market.connect({
-          mgv: this,
-          base: base.name,
-          quote: quote.name,
-          bookOptions: bookOptions,
-          noInit: noInit,
-        });
-      })
-    );
-  }
-
-  /** Set the relative cashness of a token. This determines which token is base & which is quote in a {@link Market}.
-   * Lower cashness is base, higher cashness is quote, tiebreaker is lexicographic ordering of name string (name is most likely the same as the symbol).
-   */
-  setCashness(name: string, cashness: number) {
-    configuration.tokens.setCashness(name, cashness);
-  }
-
   // cashness is "how similar to cash is a token". The cashier token is the quote.
   // toBaseQuoteByCashness orders tokens according to relative cashness.
   // Assume cashness of both to be 0 if cashness is undefined for at least one argument.
   // Ordering is lex order on cashness x (string order)
-  static toBaseQuoteByCashness(name0: string, name1: string) {
-    let cash0 = configuration.tokens.getCashness(name0);
-    let cash1 = configuration.tokens.getCashness(name1);
+  toBaseQuoteByCashness(
+    token0: Token,
+    token1: Token,
+  ): { base: Token; quote: Token } {
+    let cash0 = configuration.tokens.getCashness(token0.id);
+    let cash1 = configuration.tokens.getCashness(token1.id);
     if (cash0 === undefined || cash1 === undefined) {
       cash0 = cash1 = 0;
     }
-    if (cash0 < cash1 || (cash0 === cash1 && name0 < name1)) {
-      return { baseName: name0, quoteName: name1 };
+    if (cash0 < cash1 || (cash0 === cash1 && token0.id < token1.id)) {
+      return { base: token0, quote: token1 };
     } else {
-      return { baseName: name1, quoteName: name0 };
+      return { base: token1, quote: token0 };
     }
   }
 }

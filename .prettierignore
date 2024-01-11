@@ -1,0 +1,6 @@
+# Ignore TypeScript files that are converted from Solidity
+src/util/coreCalculations
+!src/util/coreCalculations/yul.ts
+!src/util/coreCalculations/uint.ts
+
+test/unit/coreCalculations

@@ -2,56 +2,54 @@ import Big from "big.js";
 import Market from "../market";
 import KandelDistributionHelper from "./kandelDistributionHelper";
 
-/** Distribution of bids and asks and their base and quote amounts.
- * @param offerType Whether the offer is a bid or an ask.
+/** A list of bids or asks with their index, tick, and gives.
  * @param index The index of the price point in Kandel.
- * @param base The amount of base tokens for the offer.
- * @param quote The amount of quote tokens for the offer.
+ * @param gives The amount of tokens (base for ask, quote for bid) the offer should give.
+ * @param tick The tick for the offer (the tick price of base per quote for bids and quote per base for asks)
+ */
+export type OfferList = {
+  index: number;
+  gives: Big;
+  tick: number;
+}[];
+
+/** Distribution of bids and asks and their base and quote amounts. Take care to ensure duals are included or already populated with correct parameters.
+ * @param bids The bids in the distribution.
+ * @param asks The asks in the distribution.
  */
 export type OfferDistribution = {
-  offerType: Market.BA;
-  index: number;
-  base: Big;
-  quote: Big;
-}[];
+  bids: OfferList;
+  asks: OfferList;
+};
 
 /** @title A distribution of bids and ask for Kandel. */
 class KandelDistribution {
   offers: OfferDistribution;
-  baseDecimals: number;
-  quoteDecimals: number;
-  ratio: Big;
+  market: Market.KeyResolvedForCalculation;
   pricePoints: number;
+  stepSize: number;
   helper: KandelDistributionHelper;
 
   /** Constructor
    * @param offers The distribution of bids and asks.
-   * @param ratio The ratio used when calculating the price distribution.
-   * @param pricePoints The number of price points in the distribution. Can be more than the number of offers if a subset is considered.
-   * @param baseDecimals The number of decimals for the base token.
-   * @param quoteDecimals The number of decimals for the quote token.
+   * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
+   * @param pricePoints The number of price points in the distribution.
+   * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
+   * @param market The key data about the market.
    */
   public constructor(
-    ratio: Big,
     pricePoints: number,
+    stepSize: number,
     offers: OfferDistribution,
-    baseDecimals: number,
-    quoteDecimals: number
+    market: Market.KeyResolvedForCalculation,
   ) {
-    this.helper = new KandelDistributionHelper(baseDecimals, quoteDecimals);
-    this.helper.sortByIndex(offers);
-    this.ratio = ratio;
+    this.helper = new KandelDistributionHelper(market);
+    this.helper.sortByIndex(offers.asks);
+    this.helper.sortByIndex(offers.bids);
     this.pricePoints = pricePoints;
+    this.stepSize = stepSize;
     this.offers = offers;
-    this.baseDecimals = baseDecimals;
-    this.quoteDecimals = quoteDecimals;
-  }
-
-  /** Gets the number of offers in the distribution. This can be lower than the number of price points when a subset is considered.
-   * @returns The number of offers in the distribution.
-   */
-  public getOfferCount() {
-    return this.offers.length;
+    this.market = market;
   }
 
   /** Calculates the gives for a single offer of the given type given the total available volume and the count of offers of that type.
@@ -63,23 +61,77 @@ class KandelDistribution {
   public calculateOfferGives(
     offerType: Market.BA,
     offerCount: number,
-    totalVolume: Big
+    totalVolume: Big,
   ) {
     if (offerCount) {
       const gives = totalVolume
         .div(offerCount)
         .round(
-          offerType == "asks" ? this.baseDecimals : this.quoteDecimals,
-          Big.roundDown
+          offerType == "asks"
+            ? this.market.base.decimals
+            : this.market.quote.decimals,
+          Big.roundDown,
         );
       if (gives.eq(0)) {
         throw Error(
-          "Too low volume for the given number of offers. Would result in 0 gives."
+          "Too low volume for the given number of offers. Would result in 0 gives.",
         );
       }
       return gives;
     }
     return Big(0);
+  }
+
+  /** Gets all offers of the given type
+   * @param offerType The type of offer.
+   * @returns All offers of the given type.
+   */
+  public getOffers(offerType: Market.BA) {
+    return offerType == "bids" ? this.offers.bids : this.offers.asks;
+  }
+
+  /** Gets all live offers of the given type (offers with non-zero gives)
+   * @param offerType The type of offer.
+   * @returns All live offers of the given type (offers with non-zero gives)
+   */
+  public getLiveOffers(offerType: Market.BA) {
+    return this.getOffers(offerType).filter((x) => x.gives.gt(0));
+  }
+
+  /** Gets all dead offers of the given type (offers with 0 gives)
+   * @param offerType The type of offer.
+   * @returns All dead offers of the given type (offers with 0 gives)
+   */
+  public getDeadOffers(offerType: Market.BA) {
+    return (offerType == "bids" ? this.offers.bids : this.offers.asks).filter(
+      (x) => !x.gives.gt(0),
+    );
+  }
+
+  /** Gets the offer at the given index for the given offer type
+   * @param offerType The type of offer.
+   * @param index The index of the offer.
+   * @returns The offer at the given index for the given offer type.
+   */
+  public getOfferAtIndex(offerType: Market.BA, index: number) {
+    return this.getOffers(offerType).find((x) => x.index == index);
+  }
+
+  /** Gets an offer distribution adorned with prices of offers.
+   * @returns An offer distribution adorned with prices of offers.
+   */
+  public getOffersWithPrices() {
+    return KandelDistribution.mapOffers(
+      { asks: this.getOffers("asks"), bids: this.getOffers("bids") },
+      (x, ba) => ({
+        ...x,
+        price: this.helper[
+          ba === "bids" ? "bidTickPriceHelper" : "askTickPriceHelper"
+        ]
+          // Rounding does not matter since tick should already be binned
+          .priceFromTick(x.tick, "roundUp"),
+      }),
+    );
   }
 
   /** Calculates the gives for bids and asks based on the available volume for the distribution.
@@ -89,144 +141,107 @@ class KandelDistribution {
    */
   public calculateConstantGivesPerOffer(
     availableBase?: Big,
-    availableQuote?: Big
+    availableQuote?: Big,
   ) {
-    const bids = this.offers.filter((x) => x.offerType == "bids").length;
-    const asks = this.offers.filter((x) => x.offerType == "asks").length;
-
     return {
       askGives: availableBase
-        ? this.calculateOfferGives("asks", asks, availableBase)
+        ? this.calculateOfferGives(
+            "asks",
+            this.getLiveOffers("asks").length,
+            availableBase,
+          )
         : undefined,
       bidGives: availableQuote
-        ? this.calculateOfferGives("bids", bids, availableQuote)
+        ? this.calculateOfferGives(
+            "bids",
+            this.getLiveOffers("bids").length,
+            availableQuote,
+          )
         : undefined,
     };
   }
 
-  /** Gets the index of the first ask in the distribution. If there are no asks, then the length of the distribution is returned.
-   * @returns The index of the first ask in the distribution; or the length of the distribution if there are no asks.
+  /** Gets the index of the first ask in the distribution. If there are no live asks, then the length of the distribution is returned.
+   * @returns The index of the first ask in the distribution. If there are no live asks, then the length of the distribution is returned.
    */
-  public getFirstAskIndex() {
+  public getFirstLiveAskIndex() {
     return (
-      this.offers.find((x) => x.offerType == "asks")?.index ?? this.pricePoints
+      this.getLiveOffers("asks").find((o) => o.gives.gt(0))?.index ??
+      this.pricePoints
     );
   }
 
-  /** Gets the index of the first ask in the subset of offers in offers for the distribution. If there are no asks, then the length of offers is returned.
-   * @returns The index of the first ask in the subset of offers in offers for the distribution. If there are no asks, then the length of offers is returned.
+  /** Gets the index of the last live ask in the distribution. If there are no live bids, then -1 is returned.
+   * @returns The index of the last live ask in the distribution. If there are no live bids, then -1 is returned.
    */
-  public getOffersIndexOfFirstAskIndex() {
-    const firstAskIndex = this.getFirstAskIndex();
-    if (firstAskIndex == this.pricePoints) {
-      return this.offers.length;
-    } else {
-      return this.offers.findIndex((x) => x.index == firstAskIndex);
-    }
-  }
-
-  /** Split a distribution and its pivots into chunks according to the maximum number of offers in a single chunk.
-   * @param pivots The pivots for the distribution.
-   * @param maxOffersInChunk The maximum number of offers in a single chunk.
-   * @returns The chunks.
-   */
-  public chunkDistribution(pivots: number[], maxOffersInChunk: number) {
-    const chunks: {
-      pivots: number[];
-      distribution: OfferDistribution;
-    }[] = [];
-
-    const offerMiddle = this.getOffersIndexOfFirstAskIndex();
-    let pivotsChunk: number[] = [];
-    let distributionChunk: OfferDistribution = [];
-    for (let i = 0; i < this.offers.length; i++) {
-      const indexLow = offerMiddle - i - 1;
-      const indexHigh = offerMiddle + i;
-      if (indexLow >= 0 && indexLow < this.offers.length) {
-        pivotsChunk.unshift(pivots[indexLow]);
-        distributionChunk.unshift(this.offers[indexLow]);
-      }
-      if (indexHigh < this.offers.length) {
-        pivotsChunk.push(pivots[indexHigh]);
-        distributionChunk.push(this.offers[indexHigh]);
-      }
-      if (pivotsChunk.length >= maxOffersInChunk) {
-        chunks.push({
-          pivots: pivotsChunk,
-          distribution: distributionChunk,
-        });
-        pivotsChunk = [];
-        distributionChunk = [];
-      }
-    }
-    if (pivotsChunk.length) {
-      chunks.push({
-        pivots: pivotsChunk,
-        distribution: distributionChunk,
-      });
-    }
-    return chunks;
-  }
-
-  /** Gets the prices for the distribution, with undefined for prices not represented by offers in the distribution.
-   * @returns The prices in the distribution.
-   */
-  public getPricesForDistribution() {
-    const prices: (Big | undefined)[] = Array(this.pricePoints).fill(undefined);
-
-    this.offers.forEach((o) => {
-      prices[o.index] = o.base.gt(0) ? o.quote.div(o.base) : undefined;
-    });
-    return prices;
+  public getLastLiveBidIndex() {
+    return (
+      this.getLiveOffers("bids")
+        .reverse()
+        .find(() => true)?.index ?? -1
+    );
   }
 
   /** Gets the required volume of base and quote for the distribution to be fully provisioned.
    * @returns The offered volume of base and quote for the distribution to be fully provisioned.
    */
   public getOfferedVolumeForDistribution() {
-    return this.offers.reduce(
-      (a, x) => {
-        return x.offerType == "bids"
-          ? {
-              requiredBase: a.requiredBase,
-              requiredQuote: a.requiredQuote.add(x.quote),
-            }
-          : {
-              requiredBase: a.requiredBase.add(x.base),
-              requiredQuote: a.requiredQuote,
-            };
-      },
-      { requiredBase: new Big(0), requiredQuote: new Big(0) }
-    );
+    return {
+      requiredBase: this.offers.asks.reduce((a, x) => a.add(x.gives), Big(0)),
+      requiredQuote: this.offers.bids.reduce((a, x) => a.add(x.gives), Big(0)),
+    };
   }
 
   /** Verifies the distribution is valid.
    * @remarks Throws if the distribution is invalid.
    * The verification checks that indices are ascending and bids come before asks.
-   * The price distribution is not verified.
+   * The price distribution is not verified, except that the tick of each offer is a multiple of the tick spacing.
    */
   public verifyDistribution() {
-    if (this.offers.length == 0) {
-      return;
+    const expectedLength = this.pricePoints - this.stepSize;
+    if (this.offers.bids.length != expectedLength) {
+      throw new Error(
+        "Invalid distribution: number of bids does not match number of price points and step size",
+      );
     }
-    if (this.offers.length > this.pricePoints) {
-      throw new Error("Invalid distribution: more offers than price points");
+    if (this.offers.asks.length != expectedLength) {
+      throw new Error(
+        "Invalid distribution: number of asks does not match number of price points and step size",
+      );
     }
-    let lastOfferType = this.offers[0].offerType;
-    for (let i = 1; i < this.offers.length; i++) {
-      if (this.offers[i].index <= this.offers[i - 1].index) {
-        throw new Error("Invalid distribution: indices are not ascending");
+    for (let i = 0; i < expectedLength; i++) {
+      if (this.offers.bids[i].tick % this.market.tickSpacing != 0) {
+        throw new Error(
+          "Invalid distribution: bid tick is not a multiple of tick spacing",
+        );
       }
-      if (this.offers[i].offerType != lastOfferType) {
-        if (this.offers[i].offerType == "bids") {
-          throw new Error("Invalid distribution: bids should come before asks");
+      if (this.offers.asks[i].tick % this.market.tickSpacing != 0) {
+        throw new Error(
+          "Invalid distribution: ask tick is not a multiple of tick spacing",
+        );
+      }
+      if (i > 0) {
+        if (this.offers.bids[i].index <= this.offers.bids[i - 1].index) {
+          throw new Error(
+            "Invalid distribution: bid indices are not ascending",
+          );
         }
-        lastOfferType = this.offers[i].offerType;
+        if (this.offers.asks[i].index <= this.offers.asks[i - 1].index) {
+          throw new Error(
+            "Invalid distribution: ask indices are not ascending",
+          );
+        }
       }
+    }
+    const lastLiveBidIndex = this.getLastLiveBidIndex();
+    if (this.getFirstLiveAskIndex() < lastLiveBidIndex) {
+      throw new Error(
+        "Invalid distribution: live bids should come before live asks",
+      );
     }
   }
 
-  /** Determines the required provision for the listed offers in the distribution (disregarding the number of price points).
+  /** Determines the required provision for the price points in the distribution.
    * @param params The parameters used to calculate the provision.
    * @param params.market The market to get provisions for bids and asks from.
    * @param params.gasreq The gas required to execute a trade.
@@ -241,8 +256,48 @@ class KandelDistribution {
   }) {
     return this.helper.getRequiredProvision({
       ...params,
-      offerCount: this.getOfferCount(),
+      bidCount: this.offers.bids.length,
+      askCount: this.offers.asks.length,
     });
+  }
+
+  /** Calculates the minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
+   * @param minimumBasePerOffer The minimum base to give for each offer.
+   * @param minimumQuotePerOffer The minimum quote to give for each offer.
+   * @returns The minimum initial gives for each offer such that all possible gives of fully taken offers at all price points will be above the minimums provided.
+   */
+  calculateMinimumInitialGives(
+    minimumBasePerOffer: Big,
+    minimumQuotePerOffer: Big,
+  ) {
+    return this.helper.calculateMinimumInitialGives(
+      minimumBasePerOffer,
+      minimumQuotePerOffer,
+      this.offers.bids.map((x) => x.tick),
+      this.offers.asks.map((x) => x.tick),
+    );
+  }
+
+  /** Maps bids and asks arrays to a new value using an async function */
+  static async mapAsyncOffers<T, R>(
+    offers: { bids: T[]; asks: T[] },
+    f: (x: T, ba: Market.BA) => Promise<R>,
+  ) {
+    return {
+      bids: await Promise.all(offers.bids.map((x) => f(x, "bids"))),
+      asks: await Promise.all(offers.asks.map((x) => f(x, "asks"))),
+    };
+  }
+
+  /** Maps bids and asks arrays to a new value using a function */
+  static mapOffers<T, R>(
+    offers: { bids: T[]; asks: T[] },
+    f: (x: T, ba: Market.BA) => R,
+  ) {
+    return {
+      bids: offers.bids.map((x) => f(x, "bids")),
+      asks: offers.asks.map((x) => f(x, "asks")),
+    };
   }
 }
 

@@ -24,13 +24,13 @@ const levels = {
 export const createLogger = (
   consoleFormatLogger: Format,
   logLevel: string,
-  noColor?: string
+  noColor?: string,
 ): CommonLogger => {
   /* Expose winston-style interface to the logger */
   // generate fresh logger
   const logger = loglevel.getLogger(Symbol());
   // remember default log method generator
-  var originalFactory = logger.methodFactory;
+  const originalFactory = logger.methodFactory;
 
   // configure colorizer
   const opts = {
@@ -50,7 +50,7 @@ export const createLogger = (
   // generate new logging methods
   logger.methodFactory = function (methodName, logLevel, loggerName) {
     // remember default log method
-    var rawMethod = originalFactory(methodName, logLevel, loggerName);
+    const rawMethod = originalFactory(methodName, logLevel, loggerName);
 
     // create formatter with logform
     let thisFormat: Format;
@@ -59,7 +59,7 @@ export const createLogger = (
         format.splat(),
         format.timestamp(),
         format.errors({ stack: true }),
-        consoleFormatLogger
+        consoleFormatLogger,
       );
     } else {
       thisFormat = format.combine(
@@ -67,7 +67,7 @@ export const createLogger = (
         format.splat(),
         format.timestamp(),
         format.errors({ stack: true }),
-        consoleFormatLogger
+        consoleFormatLogger,
       );
     }
 

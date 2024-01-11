@@ -1,95 +1,192 @@
 import Big from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import Market from "../market";
-import MgvToken from "../mgvtoken";
 import { Bigish } from "../types";
 import logger from "./logger";
-import TradeEventManagement from "./tradeEventManagement";
-import UnitCalculations from "./unitCalculations";
+import TradeEventManagement, {
+  OrderResultWithOptionalSummary,
+} from "./tradeEventManagement";
+import configuration from "../configuration";
+import TickPriceHelper from "./tickPriceHelper";
 
-const MANGROVE_ORDER_GAS_OVERHEAD = 200000;
-
-type SnipeUnitParams = {
+type CleanUnitParams = {
   ba: Market.BA;
   targets: {
     offerId: number;
+    tick: number;
+    gasreq: ethers.BigNumber;
     takerWants: ethers.BigNumber;
-    takerGives: ethers.BigNumber;
-    gasLimit?: number;
   }[];
-  fillWants?: boolean;
+  taker: string;
   gasLowerBound?: ethers.BigNumberish;
 };
 
 class Trade {
-  mangroveUtils = new UnitCalculations();
   tradeEventManagement = new TradeEventManagement();
 
+  /**
+   * Get raw parameters to send to Mangrove for a buy order for the given trade and market parameters.
+   */
   getParamsForBuy(
     params: Market.TradeParams,
-    baseToken: MgvToken,
-    quoteToken: MgvToken
+    market: Market.KeyResolvedForCalculation,
   ) {
-    let wants: Big, gives: Big, fillWants: boolean;
-    if ("price" in params) {
+    // validate parameters and setup tickPriceHelper
+    let fillVolume: Big, maxTick: number, fillWants: boolean;
+    const slippage = this.validateSlippage(params.slippage);
+    const tickPriceHelper = new TickPriceHelper("asks", market);
+    if ("limitPrice" in params) {
+      if (Big(params.limitPrice).lte(0)) {
+        throw new Error("Cannot buy at or below price 0");
+      }
+      const priceWithSlippage = this.adjustForSlippage(
+        Big(params.limitPrice),
+        slippage,
+        "buy",
+      );
+      // round down to not exceed the price
+      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       if ("volume" in params) {
-        wants = Big(params.volume);
-        gives = wants.mul(params.price);
+        fillVolume = Big(params.volume);
         fillWants = true;
       } else {
-        gives = Big(params.total);
-        wants = gives.div(params.price);
+        fillVolume = Big(params.total);
         fillWants = false;
       }
-    } else {
-      wants = Big(params.wants);
-      gives = Big(params.gives);
+    } else if ("maxTick" in params) {
+      // in this case, we're merely asking to get the tick adjusted for slippage
+      fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? true;
+      if (slippage > 0) {
+        // round down to not exceed the price
+        const limitPrice = tickPriceHelper.priceFromTick(
+          params.maxTick,
+          "roundDown",
+        );
+        const limitPriceWithSlippage = this.adjustForSlippage(
+          limitPrice,
+          slippage,
+          "buy",
+        );
+        // round down to not exceed the price
+        maxTick = tickPriceHelper.tickFromPrice(
+          limitPriceWithSlippage,
+          "roundDown",
+        );
+      } else {
+        // if slippage is 0, we don't need to do anything
+        maxTick = params.maxTick;
+      }
+    } else {
+      const givesWithSlippage = this.adjustForSlippage(
+        Big(params.gives),
+        slippage,
+        "buy",
+      );
+      fillWants = params.fillWants ?? true;
+      fillVolume = fillWants ? Big(params.wants) : givesWithSlippage;
+      // round down to not exceed price expectations
+      maxTick = tickPriceHelper.tickFromVolumes(
+        givesWithSlippage,
+        params.wants,
+        "roundDown",
+      );
     }
 
-    const slippage = this.validateSlippage(params.slippage);
-    const givesWithSlippage = quoteToken.toUnits(
-      gives.mul(100 + slippage).div(100)
-    );
     return {
-      wants: baseToken.toUnits(wants),
-      givesSlippageAmount: givesWithSlippage.sub(quoteToken.toUnits(gives)),
-      gives: givesWithSlippage,
+      maxTick,
+      fillVolume: fillWants
+        ? market.base.toUnits(fillVolume)
+        : market.quote.toUnits(fillVolume),
       fillWants: fillWants,
     };
   }
 
+  /**
+   * Adjust a price for slippage.
+   * @param value price to adjust
+   * @param slippage slippage in percentage points
+   * @param orderType buy or sell
+   * @returns price adjusted for slippage
+   */
+  private adjustForSlippage(
+    value: Big,
+    slippage: number,
+    orderType: Market.BS,
+  ): Big {
+    const adjustment = orderType === "buy" ? slippage : -slippage;
+    return value.mul(100 + adjustment).div(100);
+  }
+
+  /**
+   * Get raw parameters to send to Mangrove for a sell order for the given trade and market parameters.
+   */
   getParamsForSell(
     params: Market.TradeParams,
-    baseToken: MgvToken,
-    quoteToken: MgvToken
+    market: Market.KeyResolvedForCalculation,
   ) {
-    let wants: Big, gives: Big, fillWants: boolean;
-    if ("price" in params) {
+    let fillVolume: Big, maxTick: number, fillWants: boolean;
+    const slippage = this.validateSlippage(params.slippage);
+    const tickPriceHelper = new TickPriceHelper("bids", market);
+    if ("limitPrice" in params) {
+      if (Big(params.limitPrice).lte(0)) {
+        throw new Error("Cannot buy at or below price 0");
+      }
+      const priceWithSlippage = this.adjustForSlippage(
+        Big(params.limitPrice),
+        slippage,
+        "sell",
+      );
+      // round down to not exceed the price
+      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
       if ("volume" in params) {
-        gives = Big(params.volume);
-        wants = gives.mul(params.price);
+        fillVolume = Big(params.volume);
         fillWants = false;
       } else {
-        wants = Big(params.total);
-        gives = wants.div(params.price);
+        fillVolume = Big(params.total);
         fillWants = true;
       }
-    } else {
-      wants = Big(params.wants);
-      gives = Big(params.gives);
+    } else if ("maxTick" in params) {
+      // in this case, we're merely asking to get the tick adjusted for slippage
+      fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? false;
+      if (slippage > 0) {
+        // Round up since a higher price is better for sell
+        const limitPrice = tickPriceHelper.priceFromTick(
+          params.maxTick,
+          "roundUp",
+        );
+        const priceWithSlippage = this.adjustForSlippage(
+          limitPrice,
+          slippage,
+          "sell",
+        );
+        // round down to not exceed the price expectations
+        maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
+      } else {
+        maxTick = params.maxTick;
+      }
+    } else {
+      const wantsWithSlippage = this.adjustForSlippage(
+        Big(params.wants),
+        slippage,
+        "sell",
+      );
+      fillWants = params.fillWants ?? false;
+      fillVolume = fillWants ? wantsWithSlippage : Big(params.gives);
+      // round down to not exceed the price expectations
+      maxTick = tickPriceHelper.tickFromVolumes(
+        params.gives,
+        wantsWithSlippage,
+        "roundDown",
+      );
     }
 
-    const slippage = this.validateSlippage(params.slippage);
-    const wantsWithSlippage = quoteToken.toUnits(
-      wants.mul(100 - slippage).div(100)
-    );
-
     return {
-      gives: baseToken.toUnits(gives),
-      wantsSlippageAmount: wantsWithSlippage.sub(quoteToken.toUnits(wants)),
-      wants: wantsWithSlippage,
+      fillVolume: fillWants
+        ? market.quote.toUnits(fillVolume)
+        : market.base.toUnits(fillVolume),
+      maxTick,
       fillWants: fillWants,
     };
   }
@@ -106,7 +203,7 @@ class Trade {
   comparePrices(
     price: Bigish,
     priceComparison: "lt" | "gt",
-    referencePrice: Bigish
+    referencePrice: Bigish,
   ) {
     return Big(price)[priceComparison](Big(referencePrice));
   }
@@ -115,7 +212,7 @@ class Trade {
   isPriceBetter(
     price: Bigish | undefined,
     referencePrice: Bigish | undefined,
-    ba: Market.BA
+    ba: Market.BA,
   ) {
     if (price === undefined && referencePrice === undefined) {
       return false;
@@ -134,7 +231,7 @@ class Trade {
   isPriceWorse(
     price: Bigish | undefined,
     referencePrice: Bigish | undefined,
-    ba: Market.BA
+    ba: Market.BA,
   ) {
     if (price === undefined && referencePrice === undefined) {
       return false;
@@ -149,106 +246,60 @@ class Trade {
     return this.comparePrices(price, priceComparison, referencePrice);
   }
 
+  /**
+   * Get raw parameters to send to Mangrove for a buy or sell order for the given trade and market parameters.
+   * @param bs buy or sell
+   * @param params trade parameters - see {@link Market.TradeParams}
+   * @param market market to trade on
+   * @returns raw parameters for a market order to send to Mangrove
+   */
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { gives, wants, fillWants } =
+    const { maxTick, fillVolume, fillWants } =
       bs === "buy"
-        ? this.getParamsForBuy(params, market.base, market.quote)
-        : this.getParamsForSell(params, market.base, market.quote);
+        ? this.getParamsForBuy(params, market)
+        : this.getParamsForSell(params, market);
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
-
-    const snipeOfferId = "offerId" in params ? params.offerId : null;
 
     const orderType =
       !!params.fillOrKill ||
       !!restingOrderParams ||
       !!params.forceRoutingToMangroveOrder
         ? "restingOrder"
-        : snipeOfferId
-        ? "snipe"
         : "marketOrder";
 
     return {
-      gives,
-      wants,
+      maxTick,
+      fillVolume,
       fillWants,
       restingOrderParams,
       orderType,
-      snipeOfferId,
     };
   }
 
   /**
-   * Market buy/sell order. Will attempt to buy/sell base token for quote tokens.
-   * Params can be of the form:
-   * - `{volume,price}`: buy `volume` base tokens for a max average price of `price`.
-   * - `{total,price}` : buy as many base tokens as possible using up to `total` quote tokens, with a max average price of `price`.
-   * - `{wants,gives,fillWants?}`: accept implicit max average price of `gives/wants`
+   * Market order. Will attempt to buy or sell base token using quote tokens.
    *
-   * In addition, `slippage` defines an allowed slippage in % of the amount of quote token, and
-   * `restingOrder` or `offerId` can be supplied to create a resting order or to snipe a specific order, e.g.,
-   * to account for gas.
-   *
-   * Will stop if
-   * - book is empty, or
-   * - price no longer good, or
-   * - `wants` tokens have been bought.
-   *
-   * @example
-   * ```
-   * const market = await mgv.market({base:"USDC",quote:"DAI"}
-   * market.buy({volume: 100, price: '1.01'}) //use strings to be exact
-   * ```
+   * @param bs whether to buy or sell base token
+   * @param params trade parameters - see {@link Market.TradeParams}
+   * @param market the market to trade on
+   * @param overrides ethers overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the trade
    */
   order(
     bs: Market.BS,
     params: Market.TradeParams,
     market: Market,
-    overrides: ethers.Overrides = {}
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
-    // const { wants, gives, fillWants } =
-    //   bs === "buy"
-    //     ? this.getParamsForBuy(params, market.base, market.quote)
-    //     : this.getParamsForSell(params, market.base, market.quote);
-    // const restingOrderParams =
-    //   "restingOrder" in params ? params.restingOrder : undefined;
-    // if (
-    //   !!params.fillOrKill ||
-    //   !!restingOrderParams ||
-    //   !!params.forceRoutingToMangroveOrder
-    // ) {
-    //   return this.mangroveOrder(
-    //     {
-    //       wants: wants,
-    //       gives: gives,
-    //       orderType: bs,
-    //       fillWants: fillWants,
-    //       expiryDate: params.expiryDate ?? 0,
-    //       restingParams: restingOrderParams,
-    //       market: market,
-    //       fillOrKill: params.fillOrKill ?? false,
-    //     },
-    //     overrides
-    //   );
-    // } else {
-    //   if ("offerId" in params && params.offerId) {
-    const {
-      wants,
-      gives,
-      fillWants,
-      restingOrderParams,
-      orderType,
-      snipeOfferId,
-    } = this.getRawParams(bs, params, market);
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.OrderResult>> {
+    const { maxTick, fillVolume, fillWants, restingOrderParams, orderType } =
+      this.getRawParams(bs, params, market);
     switch (orderType) {
       case "restingOrder":
         return this.mangroveOrder(
           {
-            wants: wants,
-            gives: gives,
+            maxTick,
+            fillVolume,
             orderType: bs,
             fillWants: fillWants,
             expiryDate: params.expiryDate ?? 0,
@@ -257,148 +308,306 @@ class Trade {
             fillOrKill: params.fillOrKill ? params.fillOrKill : false,
             gasLowerBound: params.gasLowerBound ?? 0,
           },
-          overrides
+          overrides,
         );
-      case "snipe":
-        //
-        return this.snipes(
-          {
-            targets: [
-              {
-                offerId: snipeOfferId as number,
-                takerGives: gives,
-                takerWants: wants,
-                gasLimit: undefined,
-              },
-            ],
-            fillWants: fillWants,
-            ba: this.bsToBa(bs),
-            gasLowerBound: params.gasLowerBound ?? 0,
-          },
-          market,
-          overrides
-        );
-
       case "marketOrder":
         return this.marketOrder(
           {
-            wants: wants,
-            gives: gives,
+            maxTick,
+            fillVolume,
             orderType: bs,
             fillWants: fillWants,
             market,
             gasLowerBound: params.gasLowerBound ?? 0,
           },
-          overrides
+          overrides,
         );
       default:
         throw new Error(`Unknown order type ${orderType}`);
     }
   }
 
-  /**
-   * Snipe specific offers.
-   * Params are:
-   * `targets`: an array of
-   *    `offerId`: the offer to snipe
-   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+  /** Update a resting order posted by MangroveOrder.
+   *
+   * @param market the market to retract the order on
+   * @param ba whether the offer is a bid or ask
+   * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
+   * @param overrides overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the update.
    */
-  async snipe(
-    params: Market.SnipeParams,
+  async updateRestingOrder(
     market: Market,
-    overrides: ethers.Overrides = {}
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
-    const raw = await this.getRawSnipeParams(params, market, overrides);
+    ba: Market.BA,
+    params: Market.UpdateRestingOrderParams,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.UpdateRestingOrderResult>> {
+    const olKey = market.getOLKey(ba);
 
-    return this.snipesWithRawParameters(
-      raw,
+    const restingOrderParams = await this.getRestingOrderParams(
+      params,
       market,
-      overrides,
-      params.requireOffersToFail
+      ba,
     );
+    const overrides_ = {
+      ...overrides,
+      value: market.mgv.nativeToken.toUnits(restingOrderParams.provision),
+    };
+
+    // Get the current offer data
+    const id = params.offerId;
+    const offer =
+      ba === "asks" ? await market.askInfo(id) : await market.bidInfo(id);
+    if (offer === undefined) {
+      throw Error(`No offer in market with id ${id}.`);
+    }
+    if (offer.maker !== market.mgv.orderContract.address) {
+      throw Error(
+        `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
+      );
+    }
+
+    const { gives, tick } = this.getRawUpdateRestingOrderParams(
+      params,
+      market,
+      ba,
+      offer.tick,
+      offer.gives,
+    );
+
+    // update offer
+    const txPromise = market.mgv.orderContract.updateOffer(
+      olKey,
+      tick,
+      gives,
+      restingOrderParams.restingOrderGasreq,
+      params.offerId,
+      overrides_,
+    );
+
+    logger.debug("Updating MangroveOrder offer", {
+      contextInfo: "mangrove.updateMangroveOrder",
+      data: { id: params.offerId, ba: ba, gives, tick, overrides: overrides_ },
+    });
+
+    return {
+      result: txPromise.then((receipt) => receipt.wait()).then(() => {}),
+      response: txPromise,
+    };
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
-   * Params are:
-   * `targets`: an array of
-   *    `offerId`: the offer to snipe
-   *    `takerWants`: the amount of base token (for asks) or quote token (for bids) the taker wants
-   *    `takerGives`: the amount of quote token (for asks) or base token (for bids) the take gives
-   *    `gasLimit?`: the maximum gas requirement the taker will tolerate for that offer
-   * `ba`: whether to snipe `asks` or `bids`
-   * `fillWants?`: specifies whether you will buy at most `takerWants` (true), or you will buy as many tokens as possible as long as you don't spend more than `takerGives` (false).
-   * `requireOffersToFail`: defines whether a successful offer will cause the call to fail without sniping anything.
+   * Gets parameters to send to function `market.mgv.orderContract.updateOffer`.
+   *
+   * @param params update parameters - see {@link Market.UpdateRestingOrderParams}
+   * @param market the market to retract the order on
+   * @param ba whether the offer is a bid or ask
+   * @returns the raw parameters to send to the MangroveOrder contract
    */
-  getRawSnipeParams(
-    params: Market.SnipeParams,
-    market: Market,
-    overrides: ethers.Overrides = {}
-  ): Promise<Market.RawSnipeParams> {
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(params.ba);
+  getRawUpdateRestingOrderParams(
+    params: Market.UpdateRestingOrderParams,
+    market: Market.KeyResolvedForCalculation,
+    ba: Market.BA,
+    tick: number,
+    gives: Big,
+  ): { gives: BigNumber; tick: number } {
+    const tickPriceHelper = new TickPriceHelper(ba, market);
 
-    const _targets = params.targets.map<SnipeUnitParams["targets"][number]>(
+    if ("tick" in params && params.tick !== undefined) {
+      tick = params.tick;
+    }
+
+    if ("price" in params && params.price !== undefined) {
+      // round up to ensure we as a maker get what we want for the offer.
+      tick = tickPriceHelper.tickFromPrice(Big(params.price), "roundUp");
+    }
+
+    if ("gives" in params && params.gives !== undefined) {
+      gives = Big(params.gives);
+    }
+
+    if ("volume" in params && params.volume !== undefined) {
+      // round down so that we do not give more than we expect
+      gives =
+        ba === "asks"
+          ? Big(params.volume)
+          : tickPriceHelper.outboundFromInbound(
+              tick,
+              params.volume,
+              "roundDown",
+            );
+    }
+
+    if ("total" in params && params.total !== undefined) {
+      // round down so that we do not give more than we expect
+      gives =
+        ba === "asks"
+          ? tickPriceHelper.outboundFromInbound(tick, params.total, "roundDown")
+          : Big(params.total);
+    }
+
+    const givesRaw =
+      ba === "asks" ? market.base.toUnits(gives) : market.quote.toUnits(gives);
+
+    return { gives: givesRaw, tick };
+  }
+
+  /** Retract a resting order posted by MangroveOrder.
+   *
+   * @param market the market to retract the order on
+   * @param ba whether the offer is a bid or ask
+   * @param id the offer id
+   * @param deprovision whether to deprovision the offer. If true, the offer's provision will be returned to the maker's balance on Mangrove.
+   * @param overrides overrides for the transaction
+   */
+  async retractRestingOrder(
+    market: Market,
+    ba: Market.BA,
+    id: number,
+    deprovision = false,
+    overrides: ethers.Overrides = {},
+  ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
+    const olKey = market.getOLKey(ba);
+
+    let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
+
+    // retract offer
+    txPromise = market.mgv.orderContract.retractOffer(
+      olKey,
+      id,
+      deprovision,
+      overrides,
+    );
+
+    logger.debug("Retracting MangroveOrder offer", {
+      contextInfo: "mangrove.retractMangroveOrder",
+      data: { id: id, ba: ba, deprovision: deprovision, overrides: overrides },
+    });
+
+    return {
+      result: txPromise.then((receipt) => receipt.wait()).then(() => {}),
+      response: txPromise,
+    };
+  }
+
+  /**
+   * Clean a set of given offers.
+   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
+   * @param market: the market to clean on
+   * @param overrides: ethers overrides for the transaction
+   * @returns a promise that resolves to the transaction response and the result of the cleaning.
+   *
+   * @see {@link Market.CleanParams} for a more thorough description of cleaning parameters.
+   */
+  async clean(
+    params: Market.CleanParams,
+    market: Market,
+    overrides: ethers.Overrides = {},
+  ): Promise<{
+    result: Promise<Market.CleanResult>;
+    response: Promise<ethers.ContractTransaction>;
+  }> {
+    const raw = await this.getRawCleanParams(params, market);
+
+    const result = await this.cleanWithRawParameters(raw, market, overrides);
+
+    const awaitedResult = await result.result;
+
+    return {
+      result: Promise.resolve({
+        ...awaitedResult,
+        summary: awaitedResult.cleanSummary!,
+      }),
+      response: result.response,
+    };
+  }
+
+  /**
+   * Gets parameters to send to function `market.mgv.cleanerContract.cleanByImpersonation`.
+   *
+   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
+   * @param market: the market to clean on
+   * @returns a promise that resolves to the raw parameters to send to the cleaner contract
+   *
+   * @remarks
+   *
+   * @see {@link Market.CleanParams} for a more thorough description of cleaning parameters.
+   */
+  async getRawCleanParams(
+    params: Market.CleanParams,
+    market: Market,
+  ): Promise<Market.RawCleanParams> {
+    const { outbound_tkn } = market.getOutboundInbound(params.ba);
+
+    const _targets = params.targets.map<CleanUnitParams["targets"][number]>(
       (t) => {
         return {
           offerId: t.offerId,
           takerWants: outbound_tkn.toUnits(t.takerWants),
-          takerGives: inbound_tkn.toUnits(t.takerGives),
-          gasLimit: t.gasLimit,
+          tick: t.tick,
+          gasreq: BigNumber.from(t.gasreq),
         };
-      }
+      },
     );
-
-    return this.getSnipesRawParamsFromUnitParams(
-      { targets: _targets, ba: params.ba, fillWants: params.fillWants },
+    return this.getCleanRawParamsFromUnitParams(
+      {
+        targets: _targets,
+        ba: params.ba,
+        taker: params.taker ?? (await market.mgv.signer.getAddress()),
+      },
       market,
-      overrides
     );
   }
 
+  /**
+   * Estimate amount of gas for a buy or sell order for the given volume.
+   * @param bs buy or sell
+   * @param volume volume to trade
+   * @returns an estimate of the gas required for the trade
+   */
   async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { wants, orderType } = this.getRawParams(bs, params, market);
+    const { fillVolume, orderType } = this.getRawParams(bs, params, market);
 
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.estimateGas(bs, wants)).add(
-          MANGROVE_ORDER_GAS_OVERHEAD
+        return (await market.estimateGas(bs, fillVolume)).add(
+          configuration.mangroveOrder.getTakeGasOverhead(
+            market.mgv.network.name,
+          ),
         );
-      case "snipe":
-        return undefined;
       case "marketOrder":
-        return await market.estimateGas(bs, wants);
+        return await market.estimateGas(bs, fillVolume);
       default:
         throw new Error(`Unknown order type ${orderType}`);
     }
   }
 
+  /** Simulate the gas required for a market order.
+   * @param ba buy or sell
+   * @param params trade parameters - see {@link Market.TradeParams}
+   * @param market the market to trade on
+   * @returns an estimate of the gas required for the trade
+   */
   async simulateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { gives, wants, fillWants, orderType } = this.getRawParams(
+    const { maxTick, fillVolume, fillWants, orderType } = this.getRawParams(
       bs,
       params,
-      market
+      market,
     );
     const ba = this.bsToBa(bs);
 
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
-        return (await market.simulateGas(ba, gives, wants, fillWants)).add(
-          MANGROVE_ORDER_GAS_OVERHEAD
+        return (
+          await market.simulateGas(ba, maxTick, fillVolume, fillWants)
+        ).add(
+          configuration.mangroveOrder.getTakeGasOverhead(
+            market.mgv.network.name,
+          ),
         );
-      case "snipe":
-        return undefined;
       case "marketOrder":
-        return await market.simulateGas(ba, gives, wants, fillWants);
+        return await market.simulateGas(ba, maxTick, fillVolume, fillWants);
     }
   }
 
@@ -407,7 +616,7 @@ class Trade {
     estimateTx: (...args: T) => Promise<BigNumber>,
     gasLowerBound: ethers.BigNumberish,
     overrides: ethers.Overrides,
-    args: T
+    args: T,
   ) {
     // If not given an explicit gasLimit then we estimate it. Ethers does this automatically, but if we are given a lower bound,
     // (for instance from our own estimateGas function) then we need to invoke estimation manually and compare.
@@ -435,65 +644,53 @@ class Trade {
    */
   async marketOrder(
     {
-      wants,
-      gives,
+      maxTick,
+      fillVolume,
       orderType,
       fillWants,
       market,
       gasLowerBound,
     }: {
-      wants: ethers.BigNumber;
-      gives: ethers.BigNumber;
+      maxTick: number;
+      fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       market: Market;
       gasLowerBound: ethers.BigNumberish;
     },
-    overrides: ethers.Overrides
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
-    const [outboundTkn, inboundTkn] =
-      orderType === "buy"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
+    overrides: ethers.Overrides,
+  ): Promise<Market.Transaction<Market.OrderResult>> {
+    const olKey = market.getOLKey(this.bsToBa(orderType));
+    orderType === "buy"
+      ? [market.base, market.quote]
+      : [market.quote, market.base];
 
     logger.debug("Creating market order", {
       contextInfo: "market.marketOrder",
       data: {
-        outboundTkn: outboundTkn.name,
-        inboundTkn: inboundTkn.name,
+        olKey: olKey,
         fillWants: fillWants,
-        wants: wants.toString(),
-        gives: gives.toString(),
+        maxTick: maxTick,
+        fillVolume: fillVolume.toString(),
         orderType: orderType,
         gasLimit: overrides.gasLimit?.toString(),
       },
     });
 
     const response = this.createTxWithOptionalGasEstimation(
-      market.mgv.contract.marketOrder,
-      market.mgv.contract.estimateGas.marketOrder,
+      market.mgv.contract.marketOrderByTick,
+      market.mgv.contract.estimateGas.marketOrderByTick,
       gasLowerBound,
       overrides,
-      [
-        outboundTkn.address,
-        inboundTkn.address,
-        wants,
-        gives,
-        fillWants,
-        overrides,
-      ]
+      [olKey, maxTick, fillVolume, fillWants, overrides],
     );
 
     const result = this.responseToMarketOrderResult(
       response,
       orderType,
       fillWants,
-      wants,
-      gives,
-      market
+      fillVolume,
+      market,
     );
     return { result, response };
   }
@@ -502,9 +699,8 @@ class Trade {
     response: Promise<ethers.ContractTransaction>,
     orderType: Market.BS,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
-    market: Market
+    fillVolume: ethers.BigNumber,
+    market: Market,
   ) {
     const receipt = await (await response).wait();
 
@@ -518,9 +714,8 @@ class Trade {
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      wants,
-      gives,
-      market
+      fillVolume,
+      market,
     );
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("market order went wrong");
@@ -528,10 +723,17 @@ class Trade {
     return result;
   }
 
+  /**
+   * Low level resting order.
+   *
+   * Returns a promise for market order result after 1 confirmation.
+   *
+   * Will throw on same conditions as ethers.js `transaction.wait`.
+   */
   async mangroveOrder(
     {
-      wants,
-      gives,
+      maxTick,
+      fillVolume,
       orderType,
       fillWants,
       fillOrKill,
@@ -540,8 +742,8 @@ class Trade {
       market,
       gasLowerBound,
     }: {
-      wants: ethers.BigNumber;
-      gives: ethers.BigNumber;
+      maxTick: number;
+      fillVolume: ethers.BigNumber;
       orderType: Market.BS;
       fillWants: boolean;
       fillOrKill: boolean;
@@ -550,32 +752,20 @@ class Trade {
       market: Market;
       gasLowerBound: ethers.BigNumberish;
     },
-    overrides: ethers.Overrides
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
-    const { postRestingOrder, provision } =
-      this.getRestingOrderParams(restingParams);
-    const overrides_ = {
-      ...overrides,
-      value: provision ? market.mgv.toUnits(provision, 18) : 0,
-    };
-
+    overrides: ethers.Overrides,
+  ): Promise<Market.Transaction<Market.OrderResult>> {
     const ba = this.bsToBa(orderType);
-    const { outbound_tkn, inbound_tkn } = market.getOutboundInbound(ba);
-    const price = Market.getPrice(
-      ba,
-      /* (maker) gives is takerWants*/ outbound_tkn.fromUnits(wants),
-      /* (maker) wants is takerGives*/ inbound_tkn.fromUnits(gives)
-    );
+    const restingOrderParams = restingParams
+      ? await this.getRestingOrderParams(restingParams, market, ba)
+      : undefined;
+    const overrides_ = restingOrderParams
+      ? {
+          ...overrides,
+          value: market.mgv.nativeToken.toUnits(restingOrderParams.provision),
+        }
+      : overrides;
 
-    // Find pivot in opposite semibook
-    const pivotId =
-      price === undefined
-        ? 0
-        : (await market.getPivotId(ba === "asks" ? "bids" : "asks", price)) ??
-          0;
+    const olKey = market.getOLKey(ba);
 
     const response = this.createTxWithOptionalGasEstimation(
       market.mgv.orderContract.take,
@@ -584,27 +774,29 @@ class Trade {
       overrides_,
       [
         {
-          outbound_tkn: outbound_tkn.address,
-          inbound_tkn: inbound_tkn.address,
+          olKey: olKey,
           fillOrKill: fillOrKill,
-          fillWants: orderType === "buy",
-          takerWants: wants,
-          takerGives: gives,
-          restingOrder: postRestingOrder,
-          pivotId,
+          tick: maxTick,
+          fillVolume: fillVolume,
+          fillWants: fillWants,
+          restingOrder: !!restingOrderParams,
           expiryDate: expiryDate,
+          offerId:
+            restingParams?.offerId === undefined ? 0 : restingParams.offerId,
+          restingOrderGasreq: restingOrderParams
+            ? restingOrderParams.restingOrderGasreq
+            : 0,
         },
         overrides_,
-      ]
+      ],
     );
     const result = this.responseToMangroveOrderResult(
       response,
       orderType,
       fillWants,
-      wants,
-      gives,
+      fillVolume,
       market,
-      pivotId
+      restingParams?.offerId,
     );
     // if resting order was not posted, result.summary is still undefined.
     return { result, response };
@@ -614,10 +806,9 @@ class Trade {
     response: Promise<ethers.ContractTransaction>,
     orderType: Market.BS,
     fillWants: boolean,
-    wants: ethers.BigNumber,
-    gives: ethers.BigNumber,
+    fillVolume: ethers.BigNumber,
     market: Market,
-    pivotId: number
+    offerId: number | undefined,
   ) {
     const receipt = await (await response).wait();
 
@@ -626,48 +817,105 @@ class Trade {
       data: { receipt: receipt },
     });
 
-    const result = this.initialResult(receipt);
+    let result = this.initialResult(receipt);
 
     this.tradeEventManagement.processMangroveEvents(
       result,
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      wants,
-      gives,
-      market
+      fillVolume,
+      market,
     );
     this.tradeEventManagement.processMangroveOrderEvents(
       result,
       receipt,
       this.bsToBa(orderType),
       fillWants,
-      wants,
-      gives,
       market,
-      pivotId
     );
+    let restingOrderId: number | undefined;
+    if (
+      result.summary !== undefined &&
+      "restingOrderId" in result.summary &&
+      result.summary?.restingOrderId !== undefined
+    ) {
+      restingOrderId = result.summary?.restingOrderId;
+    } else if (result.restingOrderId !== undefined) {
+      restingOrderId = result.restingOrderId;
+    }
+
+    if (restingOrderId !== undefined) {
+      result = {
+        ...result,
+        restingOrder: this.tradeEventManagement.createRestingOrderFromIdAndBA(
+          this.bsToBa(orderType),
+          restingOrderId,
+          result.offerWrites,
+        ),
+      };
+    }
 
     if (!this.tradeEventManagement.isOrderResult(result)) {
       throw Error("mangrove order went wrong");
     } else return result;
   }
 
-  getRestingOrderParams(params: Market.RestingOrderParams | undefined): {
-    provision: Bigish;
-    postRestingOrder: boolean;
-  } {
-    if (params) {
-      return {
-        provision: params.provision,
-        postRestingOrder: true,
-      };
-    } else {
-      return { provision: 0, postRestingOrder: false };
+  /** Determines the parameters for a resting order which can be provided via default configuration value.
+   * @param params The resting order params. @see Market.RestingOrderParams.
+   * @param market The market.
+   * @param ba The BA of the taker order; the resting order will be the opposite.
+   * @returns The resting order parameters.
+   */
+  public async getRestingOrderParams(
+    params: Market.RestingOrderParams,
+    market: Market,
+    ba: Market.BA,
+  ): Promise<{
+    provision: Big.BigSource;
+    restingOrderGasreq: number;
+    gaspriceFactor: number;
+    restingOrderBa: string;
+  }> {
+    const gaspriceFactor =
+      params.restingOrderGaspriceFactor ??
+      configuration.mangroveOrder.getRestingOrderGaspriceFactor(
+        market.mgv.network.name,
+      );
+    const restingOrderGasreq =
+      params.restingOrderGasreq ??
+      configuration.mangroveOrder.getRestingOrderGasreq(
+        market.mgv.network.name,
+      );
+
+    const restingOrderBa = ba === "asks" ? "bids" : "asks";
+    let provision = params.provision;
+    if (!provision) {
+      const mangroveOrder = market.mgv.offerLogic(
+        market.mgv.orderContract.address,
+      );
+      provision = await mangroveOrder.getMissingProvision(
+        market,
+        restingOrderBa,
+        restingOrderGasreq,
+        {
+          id: params?.offerId,
+          gasprice: market.mgv.config().gasprice * gaspriceFactor,
+        },
+      );
     }
+
+    return {
+      provision,
+      restingOrderGasreq,
+      gaspriceFactor,
+      restingOrderBa,
+    };
   }
 
-  initialResult(receipt: ethers.ContractReceipt) {
+  initialResult(
+    receipt: ethers.ContractReceipt,
+  ): OrderResultWithOptionalSummary {
     return {
       txReceipt: receipt,
       summary: undefined,
@@ -687,94 +935,82 @@ class Trade {
   }
 
   /**
-   * Gets parameters to send to functions `market.mgv.cleanerContract.collect` or `market.mgv.contract.snipes`.
+   * Gets parameters to send to functions `market.mgv.contract.cleanByImpersonation`.
    */
-  async getSnipesRawParamsFromUnitParams(
-    unitParams: SnipeUnitParams,
+  async getCleanRawParamsFromUnitParams(
+    unitParams: CleanUnitParams,
     market: Market,
-    overrides: ethers.Overrides
-  ): Promise<Market.RawSnipeParams> {
-    const _fillWants = unitParams.fillWants ?? true;
+  ): Promise<Market.RawCleanParams> {
+    const olKey = market.getOLKey(unitParams.ba);
 
-    const [outboundTkn, inboundTkn] =
-      unitParams.ba === "asks"
-        ? [market.base, market.quote]
-        : [market.quote, market.base];
-
-    logger.debug("Creating snipes", {
-      contextInfo: "market.snipes",
+    logger.debug("Creating cleans", {
+      contextInfo: "market.clean",
       data: {
-        outboundTkn: outboundTkn.name,
-        inboundTkn: inboundTkn.name,
-        fillWants: _fillWants,
+        olKey: olKey,
       },
     });
 
     // user defined gasLimit is a total max for gasreq of each offer; otherwise, each offer is allowed to use its specified gasreq,
     // this is accomplished by supplying a number larger than 2^24-1 for the offer (in this case MaxUint256).
     const _targets = unitParams.targets.map<
-      Market.RawSnipeParams["targets"][number]
-    >((t) => [
-      t.offerId,
-      t.takerWants,
-      t.takerGives,
-      t.gasLimit ?? overrides.gasLimit ?? ethers.constants.MaxUint256,
-    ]);
+      Market.RawCleanParams["targets"][number]
+    >((t) => {
+      return {
+        offerId: t.offerId,
+        tick: t.tick,
+        gasreq: t.gasreq,
+        takerWants: t.takerWants,
+      };
+    });
 
     return {
       ba: unitParams.ba,
-      outboundTkn: outboundTkn.address,
-      inboundTkn: inboundTkn.address,
+      olKey: olKey,
       targets: _targets,
-      fillWants: _fillWants,
+      taker: unitParams.taker,
     };
   }
 
   /**
    * Low level sniping of `targets`.
    *
-   * `requireOffersToFail`: if true, then a successful offer will cause the call to fail without sniping anything.
-   *
-   * Returns a promise for snipes result after 1 confirmation.
+   * Returns a promise for clean result after 1 confirmation.
    * Will throw on same conditions as ethers.js `transaction.wait`.
    */
-  async snipesWithRawParameters(
-    raw: Market.RawSnipeParams,
+  async cleanWithRawParameters(
+    raw: Market.RawCleanParams,
     market: Market,
     overrides: ethers.Overrides,
-    requireOffersToFail?: boolean
   ): Promise<{
-    result: Promise<Market.OrderResult>;
+    result: Promise<Market.DirtyOrderResult>;
     response: Promise<ethers.ContractTransaction>;
   }> {
     // Invoking the cleanerContract does not populate receipt.events, so we instead parse receipt.logs
-    const snipeFunction = requireOffersToFail
-      ? market.mgv.cleanerContract.collect
-      : market.mgv.contract.snipes;
+    const cleanFunction = market.mgv.contract.cleanByImpersonation;
 
-    const response = snipeFunction(
-      raw.outboundTkn,
-      raw.inboundTkn,
+    const response = cleanFunction(
+      raw.olKey,
       raw.targets,
-      raw.fillWants,
-      overrides
+      raw.taker,
+      overrides,
     );
 
-    const result = this.responseToSnipesResult(response, raw, market);
+    const result = this.responseToCleanResult(response, raw, market);
+
     return { result, response };
   }
 
-  async responseToSnipesResult(
+  async responseToCleanResult(
     response: Promise<ethers.ContractTransaction>,
-    raw: Market.RawSnipeParams,
-    market: Market
+    raw: Market.RawCleanParams,
+    market: Market,
   ) {
     const receipt = await (await response).wait();
 
     const result = this.initialResult(receipt);
 
-    logger.debug("Snipes raw receipt", {
-      contextInfo: "market.snipes",
+    logger.debug("Clean raw receipt", {
+      contextInfo: "market.clean",
       data: { receipt: receipt },
     });
 
@@ -785,36 +1021,13 @@ class Trade {
       raw.ba,
       true,
       ethers.BigNumber.from(0),
-      ethers.BigNumber.from(0),
-      market
+      market,
     );
-    if (!this.tradeEventManagement.isOrderResult(result)) {
-      throw Error("snipes went wrong");
+
+    if (!this.tradeEventManagement.isCleanResult(result)) {
+      throw Error("clean went wrong");
     }
     return result;
-  }
-
-  /**
-   * Low level sniping of `targets`.
-   *
-   * Returns a promise for snipes result after 1 confirmation.
-   * Will throw on same conditions as ethers.js `transaction.wait`.
-   */
-  async snipes(
-    unitParams: SnipeUnitParams,
-    market: Market,
-    overrides: ethers.Overrides
-  ): Promise<{
-    result: Promise<Market.OrderResult>;
-    response: Promise<ethers.ContractTransaction>;
-  }> {
-    const raw = await this.getSnipesRawParamsFromUnitParams(
-      unitParams,
-      market,
-      overrides
-    );
-
-    return this.snipesWithRawParameters(raw, market, overrides);
   }
 }
 

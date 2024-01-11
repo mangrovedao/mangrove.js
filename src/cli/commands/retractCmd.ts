@@ -15,6 +15,7 @@ export const builder = (yargs: yargs.Argv) => {
   return yargs
     .positional("base", { type: "string", demandOption: true })
     .positional("quote", { type: "string", demandOption: true })
+    .option("tickSpacing", { type: "number", demandOption: true })
     .option("ba", { choices: ["asks", "bids"] })
     .option("nodeUrl", { type: "string", demandOption: true })
     .option("privateKey", { type: "string", demandOption: true })
@@ -32,7 +33,8 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
   const market = await mangrove.market({
     base: argv.base,
     quote: argv.quote,
-    bookOptions: { maxOffers: 200 },
+    tickSpacing: argv.tickSpacing,
+    bookOptions: { targetNumberOfTicks: 200 },
   });
 
   const makerAddress = wallet.address;
@@ -47,7 +49,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
       "asks",
       asks,
       makerAddress,
-      argv.deprovision
+      argv.deprovision,
     );
   }
 
@@ -57,7 +59,7 @@ export async function handler(argvOrPromiseArgv: Arguments): Promise<void> {
       "bids",
       bids,
       makerAddress,
-      argv.deprovision
+      argv.deprovision,
     );
   }
 
@@ -69,36 +71,30 @@ async function retractAllFromOfferList(
   ba: "asks" | "bids",
   semibook: Semibook,
   makerAddress: string,
-  deprovision: boolean
+  deprovision: boolean,
 ) {
   const offerList = [...semibook];
   console.log(
-    `Retracting from '${ba}' list...        (offer count: ${offerList.length})`
+    `Retracting from '${ba}' list...        (offer count: ${offerList.length})`,
   );
-  const { inbound_tkn, outbound_tkn } = market.getOutboundInbound(ba);
+  const olKey = market.getOLKey(ba);
   const retractTxPromises: Promise<void>[] = [];
   for (const offer of offerList) {
     if (offer.maker == makerAddress) {
       const provision = await market.mgv.contract.callStatic.retractOffer(
-        outbound_tkn.address,
-        inbound_tkn.address,
+        olKey,
         offer.id,
-        deprovision
+        deprovision,
       );
       const txPromise = market.mgv.contract
-        .retractOffer(
-          outbound_tkn.address,
-          inbound_tkn.address,
-          offer.id,
-          deprovision
-        )
+        .retractOffer(olKey, offer.id, deprovision)
         .then((tx) => tx.wait())
         .then((txReceipt) => {
           let msg = `* Offer ${chalk.gray(offer.id.toString())} retracted`;
           if (deprovision) {
             msg += `, ${ethers.utils.formatUnits(
               provision,
-              18
+              18,
             )} was credited to ${makerAddress} provisions (${
               txReceipt.gasUsed
             } gas used)`;
@@ -110,6 +106,6 @@ async function retractAllFromOfferList(
   }
   await Promise.allSettled(retractTxPromises);
   console.log(
-    `Done retracting from '${ba}' list...   (retracted count: ${retractTxPromises.length})`
+    `Done retracting from '${ba}' list...   (retracted count: ${retractTxPromises.length})`,
   );
 }

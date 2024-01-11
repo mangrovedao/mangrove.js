@@ -1,11 +1,11 @@
 // TODO do not distribute in browser version
 // Utility functions for writing integration tests against Mangrove.
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import { Market, MgvToken, Mangrove } from "../..";
-import * as typechain from "../../types/typechain";
+import { Market, Token, Mangrove } from "../..";
+import { typechain } from "../../types";
+
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Deferred } from "../../util";
-import { PromiseOrValue } from "../../types/typechain/common";
 
 export type Account = {
   name: string;
@@ -13,7 +13,7 @@ export type Account = {
   signer: ethers.Signer;
   connectedContracts: {
     // Contracts connected with the signer for setting chain state in test case setup
-    mangrove: typechain.Mangrove;
+    mangrove: typechain.IMangrove;
     testMaker: typechain.SimpleTestMaker;
     tokenA: typechain.TestToken;
     tokenB: typechain.TestToken;
@@ -40,8 +40,11 @@ export type Addresses = {
 let addresses: Addresses;
 
 let mgv: Mangrove;
-let mgvAdmin: Mangrove | undefined;
 const signers: any = {};
+
+// A safe minimum to be above density requirement.
+export const rawMinGivesBase = BigNumber.from("1000000000000000000");
+export const rawMinGivesQuote = BigNumber.from("1000000000000000000");
 
 // With the removal of hardhat, there is no "default chain" anymore
 // (it used to be implicit since we ran the ethereum local server in-process).
@@ -49,13 +52,8 @@ const signers: any = {};
 // We minimally disrupt this library and just add a global "mangrove"
 // to be set early in the tests.
 // TODO: Remove this hack, and either remove this lib or add an `mgv` param everywhere.
-export const setConfig = (
-  _mgv: Mangrove,
-  accounts: any,
-  _mgvAdmin: Mangrove
-) => {
+export const setConfig = (_mgv: Mangrove, accounts: any) => {
   mgv = _mgv;
-  mgvAdmin = _mgvAdmin;
   for (const [name, { key }] of Object.entries(accounts) as any) {
     signers[name] = new ethers.Wallet(key, mgv.provider);
   }
@@ -66,8 +64,9 @@ export const getAddresses = async (): Promise<Addresses> => {
     const mg = await mgv.contract;
     const tm = await Mangrove.typechain.SimpleTestMaker__factory.connect(
       mgv.getAddress("SimpleTestMaker"),
-      mgv.signer
+      mgv.signer,
     );
+
     const ta = (await mgv.token("TokenA")).contract;
     const tb = (await mgv.token("TokenB")).contract;
     addresses = {
@@ -88,32 +87,32 @@ export const logAddresses = async (): Promise<void> => {
 };
 
 export type Contracts = {
-  mangrove: typechain.Mangrove;
+  mangrove: typechain.IMangrove;
   testMaker: typechain.SimpleTestMaker;
   tokenA: typechain.TestToken;
   tokenB: typechain.TestToken;
 };
 
 export const getContracts = async (
-  signer: ethers.Signer
+  signer: ethers.Signer,
 ): Promise<Contracts> => {
   const addresses = await getAddresses();
   return {
-    mangrove: typechain.Mangrove__factory.connect(
+    mangrove: typechain.IMangrove__factory.connect(
       addresses.mangrove.address,
-      signer
+      signer,
     ),
     testMaker: typechain.SimpleTestMaker__factory.connect(
       addresses.testMaker.address,
-      signer
+      signer,
     ),
     tokenA: typechain.TestToken__factory.connect(
       addresses.tokenA.address,
-      signer
+      signer,
     ),
     tokenB: typechain.TestToken__factory.connect(
       addresses.tokenB.address,
-      signer
+      signer,
     ),
   };
 };
@@ -140,7 +139,7 @@ export const getAccount = async (name: AccountName): Promise<Account> => {
 
 export const getAccountBalances = async (
   account: Account,
-  provider: Provider
+  provider: Provider,
 ): Promise<Balances> => {
   return {
     ether: await provider.getBalance(account.address),
@@ -151,7 +150,7 @@ export const getAccountBalances = async (
 
 export const getBalances = async (
   accounts: Account[],
-  provider: Provider
+  provider: Provider,
 ): Promise<Map<string, Balances>> => {
   const balances = new Map<string, Balances>();
   for (const account of accounts) {
@@ -163,7 +162,7 @@ export const getBalances = async (
 export const logBalances = async (
   accounts: Account[],
   balancesBefore: Map<string, Balances>,
-  balancesAfter: Map<string, Balances>
+  balancesAfter: Map<string, Balances>,
 ): Promise<void> => {
   const accountBalancesTable: {
     Name: string;
@@ -216,24 +215,11 @@ export const logBalances = async (
   console.groupEnd();
 };
 
-export const getTokens = (
-  market: Market,
-  ba: Market.BA
-): {
-  inboundToken: MgvToken;
-  outboundToken: MgvToken;
-} => {
-  return {
-    inboundToken: ba === "asks" ? market.quote : market.base,
-    outboundToken: ba === "asks" ? market.base : market.quote,
-  };
-};
-
 export type NewOffer = {
   market: Market;
   ba: Market.BA;
   maker: Account;
-  wants?: ethers.BigNumberish;
+  tick?: ethers.BigNumberish;
   gives?: ethers.BigNumberish;
   gasreq?: ethers.BigNumberish;
   shouldFail?: boolean;
@@ -315,9 +301,21 @@ export const stopPollOfTransactionTracking = (): void => {
  * NB: Only works when this is awaited before sending more tx's.
  */
 export async function waitForTransactions(
-  txPromises: PromiseOrValue<PromiseOrValue<ContractTransaction>[]>
+  txPromises:
+    | Promise<
+        (
+          | Promise<ContractTransaction | undefined>
+          | ContractTransaction
+          | undefined
+        )[]
+      >
+    | (
+        | Promise<ContractTransaction | undefined>
+        | ContractTransaction
+        | undefined
+      )[],
 ): Promise<TransactionReceipt[]> {
-  const txs = await txPromises;
+  const txs = (await txPromises).filter((x) => x) as ContractTransaction[];
   const receipts: TransactionReceipt[] = Array(txs.length);
   for (let i = 0; i < txs.length; i++) {
     receipts[i] = await waitForTransaction(txs[i]);
@@ -331,7 +329,10 @@ export async function waitForTransactions(
  * NB: Only works when this is awaited before sending more tx's.
  */
 export async function waitForOptionalTransaction(
-  txPromise: PromiseOrValue<ContractTransaction | undefined>
+  txPromise:
+    | Promise<ContractTransaction | undefined>
+    | ContractTransaction
+    | undefined,
 ): Promise<TransactionReceipt | undefined> {
   awaitedPollId = undefined;
   lastTxReceipt = undefined;
@@ -352,7 +353,7 @@ export async function waitForOptionalTransaction(
  * NB: Only works when this is awaited before sending more tx's.
  */
 export async function waitForTransaction(
-  txPromise: PromiseOrValue<ContractTransaction>
+  txPromise: ContractTransaction | Promise<ContractTransaction>,
 ): Promise<TransactionReceipt> {
   const lastTxReceipt = await waitForOptionalTransaction(txPromise);
   if (lastTxReceipt === undefined) {
@@ -366,55 +367,55 @@ export const postNewOffer = async ({
   market,
   ba,
   maker,
-  wants = 1,
-  gives = "90000000000000000",
-  gasreq = 5e4,
+  tick = 1,
+  gives = rawMinGivesBase,
+  gasreq = 1e5,
   shouldFail = false,
   shouldRevert = false,
 }: NewOffer) => {
-  const { inboundToken, outboundToken } = getTokens(market, ba);
+  const olKey = market.getOLKey(ba);
 
   // we start by making sure that Mangrove is approved (for infinite fund withdrawal)
   // and that we have funds (going below the minting limit for ERC20's)
   await waitForTransaction(
     maker.connectedContracts.testMaker.approveMgv(
-      outboundToken.address,
+      olKey.outbound_tkn,
       ethers.constants.MaxUint256,
-      { gasLimit: 100_000 }
-    )
+      { gasLimit: 100_000 },
+    ),
   );
 
   await rawMint(
-    outboundToken,
+    market.getOutboundInbound(ba).outbound_tkn,
     maker.connectedContracts.testMaker.address,
-    BigNumber.from(gives).mul(2)
+    BigNumber.from(gives).mul(2),
   );
 
   await waitForTransaction(
-    maker.connectedContracts.testMaker.shouldFail(shouldFail)
+    maker.connectedContracts.testMaker.shouldFail(shouldFail),
   );
   await waitForTransaction(
-    maker.connectedContracts.testMaker.shouldRevert(shouldRevert)
+    maker.connectedContracts.testMaker.shouldRevert(shouldRevert),
   );
 
   return await waitForTransaction(
     maker.connectedContracts.testMaker[
-      "newOffer(address,address,uint256,uint256,uint256,uint256)"
-    ](outboundToken.address, inboundToken.address, wants, gives, gasreq, 1)
-  ); // (base address, quote address, wants, gives, gasreq, pivotId)
+      "newOfferByTick((address,address,uint256),int256,uint256,uint256)"
+    ](olKey, tick, gives, gasreq),
+  ); // (base address, quote address, wants, gives, gasreq)
 };
 
 export const postNewRevertingOffer = async (
   market: Market,
   ba: Market.BA,
-  maker: Account
+  maker: Account,
 ) => {
   return await postNewOffer({
     market,
     ba,
     maker,
-    wants: 1,
-    gives: "90000000000000000",
+    tick: 1,
+    gives: rawMinGivesBase,
     shouldRevert: true,
   });
 };
@@ -422,7 +423,7 @@ export const postNewRevertingOffer = async (
 export const postNewSucceedingOffer = async (
   market: Market,
   ba: Market.BA,
-  maker: Account
+  maker: Account,
 ) => {
   return await postNewOffer({ market, ba, maker });
 };
@@ -430,33 +431,33 @@ export const postNewSucceedingOffer = async (
 export const postNewFailingOffer = async (
   market: Market,
   ba: Market.BA,
-  maker: Account
+  maker: Account,
 ) => {
   return await postNewOffer({ market, ba, maker, shouldFail: true });
 };
 
 export const setMgvGasPrice = async (
-  gasPrice: ethers.BigNumberish
+  gasPrice: ethers.BigNumberish,
 ): Promise<void> => {
   const deployer = await getAccount(AccountName.Deployer);
   await waitForTransaction(
-    deployer.connectedContracts.mangrove.setGasprice(gasPrice)
+    deployer.connectedContracts.mangrove.setGasprice(gasPrice),
   );
 };
 
 const rawMint = async (
-  token: MgvToken,
+  token: Token,
   receiverAddress: string,
-  internalAmount: ethers.BigNumberish
+  internalAmount: ethers.BigNumberish,
 ): Promise<void> => {
   const deployer = await getAccount(AccountName.Deployer);
-  switch (token.name) {
+  switch (token.id) {
     case "TokenA":
       await waitForTransaction(
         deployer.connectedContracts.tokenA.mintTo(
           receiverAddress,
-          internalAmount
-        )
+          internalAmount,
+        ),
       );
 
       break;
@@ -465,8 +466,8 @@ const rawMint = async (
       await waitForTransaction(
         deployer.connectedContracts.tokenB.mintTo(
           receiverAddress,
-          internalAmount
-        )
+          internalAmount,
+        ),
       );
 
       break;
@@ -474,9 +475,9 @@ const rawMint = async (
 };
 
 export const mint = async (
-  token: MgvToken,
+  token: Token,
   receiver: Account,
-  amount: number
+  amount: number,
 ): Promise<void> => {
   await rawMint(token, receiver.address, token.toUnits(amount));
 };

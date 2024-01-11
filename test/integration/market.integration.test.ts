@@ -2,19 +2,27 @@
 import { expect } from "chai";
 import { afterEach, beforeEach, describe, it } from "mocha";
 
-import { toWei } from "../util/helpers";
+import { newOffer, toWei } from "../util/helpers";
 import * as mgvTestUtil from "../../src/util/test/mgvIntegrationTestUtil";
-const waitForTransaction = mgvTestUtil.waitForTransaction;
+import {
+  rawMinGivesBase,
+  rawMinGivesQuote,
+  waitForBlock,
+  waitForTransaction,
+  waitForTransactions,
+} from "../../src/util/test/mgvIntegrationTestUtil";
 
 import assert from "assert";
 import { Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
-import { BigNumber, ethers, utils } from "ethers";
+import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
 import { Bigish } from "../../src/types";
-import { Deferred } from "../../src/util";
+import { Density } from "../../src/util/Density";
+import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
+import TickPriceHelper from "../../src/util/tickPriceHelper";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -24,7 +32,6 @@ Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
 describe("Market integration tests suite", () => {
   let mgv: Mangrove;
   let mgvAdmin: Mangrove;
-  const rawMinGivesBase = BigNumber.from("90000000000000000");
 
   beforeEach(async function () {
     mgv = await Mangrove.connect({
@@ -37,7 +44,7 @@ describe("Market integration tests suite", () => {
       provider: mgv.provider,
     });
 
-    mgvTestUtil.setConfig(mgv, this.accounts, mgvAdmin);
+    mgvTestUtil.setConfig(mgv, this.accounts);
 
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -73,10 +80,15 @@ describe("Market integration tests suite", () => {
     });
 
     it("can read book updates in readonly mode", async function () {
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
       const marketReadonly = await mgvReadonly.market({
         base: "TokenA",
         quote: "TokenB",
+        tickSpacing: 1,
       });
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -84,12 +96,15 @@ describe("Market integration tests suite", () => {
         assert.strictEqual(
           marketReadonly.getBook().asks.size(),
           1,
-          "book should have size 1 by now"
+          "book should have size 1 by now",
         );
       });
-      await helpers.newOffer(mgv, market.base, market.quote, {
-        wants: "1",
+      await newOffer({
+        mgv,
+        market,
+        ba: "asks",
         gives: "1.2",
+        price: "1.0001",
       });
       await pro1;
     });
@@ -120,142 +135,154 @@ describe("Market integration tests suite", () => {
 
     it("returns this.base as outbound and this.quote as inbound, when asks", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
       // Act
       const result = market.getOutboundInbound("asks");
       // Assert
-      assert.equal(result.outbound_tkn.name, "TokenA");
-      assert.equal(result.inbound_tkn.name, "TokenB");
+      assert.equal(result.outbound_tkn.id, "TokenA");
+      assert.equal(result.inbound_tkn.id, "TokenB");
     });
 
     it("returns this.base as inbound and this.quote as outbound, when bids", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
       // Act
       const result = market.getOutboundInbound("bids");
       // Assert
-      assert.equal(result.inbound_tkn.name, "TokenA");
-      assert.equal(result.outbound_tkn.name, "TokenB");
+      assert.equal(result.inbound_tkn.id, "TokenA");
+      assert.equal(result.outbound_tkn.id, "TokenB");
     });
   });
 
   describe("isActive", () => {
     it("returns true, when asks and bids are active", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
       const bids: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(true);
     });
 
+    it("non-existing market can be created but is not active", async function () {
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "USDC",
+        tickSpacing: 1,
+      });
+      assert.ok(
+        !market.isActive(),
+        "market is not existing and thus not active",
+      );
+    });
+
     it("returns false, when asks and bids both not active", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
       const bids: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(false);
     });
 
     it("returns false, when asks is active and bids is not active", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
       const bids: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(false);
     });
 
     it("returns false, when asks is not active and bids is active", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
       const asks: Mangrove.LocalConfig = {
         active: false,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.base.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
       const bids: Mangrove.LocalConfig = {
         active: true,
         fee: 0,
-        density: new Big(2),
+        density: new Density(BigNumber.from(2), market.quote.decimals),
         offer_gasbase: 0,
-        lock: false,
-        best: undefined,
-        last: undefined,
       };
 
-      mockito.when(mockedMarket.config()).thenResolve({ asks, bids });
+      mockito.when(mockedMarket.config()).thenReturn({ asks, bids });
       // Act
-      const isActive = await market.isActive();
+      const isActive = market.isActive();
       // Assert
       expect(isActive).to.be.equal(false);
     });
@@ -264,23 +291,40 @@ describe("Market integration tests suite", () => {
   describe("isLive", () => {
     it("returns true, when gives is positive", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
+
       const offerId = 23;
+      const expectedGives = new Big(23);
+
+      const tick = 23;
+
+      const price = tickPriceHelper.priceFromTick(23, "nearest");
+
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(23),
-        gives: new Big(23),
-        volume: new Big(23),
-        price: new Big(23),
+        gasbase: 0,
+        gives: expectedGives,
+        tick,
+        price,
+        wants: tickPriceHelper.inboundFromOutbound(
+          tick,
+          expectedGives,
+          "roundDown",
+        ),
+        volume: expectedGives,
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -292,25 +336,39 @@ describe("Market integration tests suite", () => {
       expect(result).to.be.equal(true);
     });
 
-    it("returns false, when gives is negative", async function () {
+    it("returns false, when gives is less than 1", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
       const offerId = 23;
+      const expectedGives = new Big(0);
+
+      const tick = 23;
+
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(23),
-        gives: new Big(-12),
-        volume: new Big(23),
-        price: new Big(23),
+        gasbase: 0,
+        gives: expectedGives,
+        tick,
+        price: tickPriceHelper.priceFromTick(tick, "nearest"),
+        wants: tickPriceHelper.inboundFromOutbound(
+          tick,
+          expectedGives,
+          "roundDown",
+        ),
+        volume: expectedGives,
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -324,89 +382,43 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  describe("getPivotIdTest", () => {
-    // prettier-ignore
-    it("returns correct Pivot ids for bids and asks", async function () {
-      // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-
-      // some bids
-      await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1000", }));
-      await waitForTransaction(helpers.newOffer(mgv, market.quote, market.base, { wants: "1", gives: "1200", }));
-      // some asks
-      await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1400", gives: "1", }));
-      const tx = await waitForTransaction(helpers.newOffer(mgv, market.base, market.quote, { wants: "1600", gives: "1", }));
-
-      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-
-      // Act/assert
-      assert.equal(await market.getPivotId("bids", 900), 1, "bid offer id 1 has price 1000 which is higher than 900");
-      assert.equal(await market.getPivotId("bids", 1100), 2, "bid offer id 2 has price 1200 and is higher than 1100");
-      assert.equal(await market.getPivotId("bids", 1300), undefined, "no bid offer has price above 1300");
-      assert.equal(await market.getPivotId("asks", 1300), undefined, "no ask offer has price below 1300");
-      assert.equal(await market.getPivotId("asks", 1500), 1, "ask offer id 1 has price 1400 which is below 1500");
-      assert.equal(await market.getPivotId("asks", 1700), 2, "ask offer id 2 has price 1600 which is below 1700");
-    });
-
-    it("returns Pivot id for bids", async function () {
-      // Arrange
-      // let mgv:Mangrove | undefined =undefined;
-      // const params = { mgv: mgv!, base: "TokenA", quote: "TokenB", noInit: true };
-      // const market = await Market.connect(params);
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
-      const semiBook = mockito.mock(Semibook);
-
-      const ba = "asks";
-      const price: Bigish = "234";
-      const pivotId = 231;
-      mockito
-        .when(mockedMarket.getSemibook(ba))
-        .thenReturn(mockito.instance(semiBook));
-      mockito.when(semiBook.getPivotId(price)).thenResolve(pivotId);
-
-      // Act
-      const result = await market.getPivotId(ba, price);
-      // Assert
-      mockito.verify(mockedMarket.getSemibook(ba)).once();
-      mockito.verify(semiBook.getPivotId(price)).once();
-      expect(result).to.be.equal(pivotId);
-    });
-  });
-
-  [undefined, 100].forEach((gasprice) => {
+  [undefined, 10000].forEach((gasprice) => {
     mgvTestUtil.bidsAsks.forEach((ba) => {
       it(`getOfferProvision agrees with calculateOfferProvision for ${ba} with gasprice=${gasprice} `, async () => {
         // Arrange
-        const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+        });
         const gasreq = 10000;
-        const config = await market.config();
+        const config = market.config();
         const gasbase = (ba == "asks" ? config.asks : config.bids)
           .offer_gasbase;
 
         const mgvProvision = mgv.calculateOfferProvision(
-          gasprice ?? (await mgv.config()).gasprice,
+          gasprice ?? mgv.config().gasprice,
           gasreq,
-          gasbase
+          gasbase,
         );
 
         // Act
         const offerProvision = await market.getOfferProvision(
           ba,
           gasreq,
-          gasprice
+          gasprice,
         );
         const baProvision = await (ba == "asks"
           ? market.getAskProvision(gasreq, gasprice)
           : market.getBidProvision(gasreq, gasprice));
         const offersProvision = market.mgv.calculateOffersProvision([
           {
-            gasprice: gasprice ?? (await mgv.config()).gasprice,
+            gasprice: gasprice ?? mgv.config().gasprice,
             gasreq,
             gasbase,
           },
           {
-            gasprice: gasprice ?? (await mgv.config()).gasprice,
+            gasprice: gasprice ?? mgv.config().gasprice,
             gasreq,
             gasbase,
           },
@@ -417,7 +429,7 @@ describe("Market integration tests suite", () => {
         assert.equal(baProvision.toNumber(), mgvProvision.toNumber());
         assert.equal(
           offersProvision.toNumber(),
-          mgvProvision.mul(2).toNumber()
+          mgvProvision.mul(2).toNumber(),
         );
       });
     });
@@ -426,19 +438,23 @@ describe("Market integration tests suite", () => {
   describe("getMissingProvision", () => {
     it("can miss some provision", async () => {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const provision = await market.getOfferProvision("bids", 30000);
 
       // Act
       const missingZero = await market.getMissingProvision(
         "asks",
         provision.mul(2),
-        30000
+        30000,
       );
       const missing = await market.getMissingProvision(
         "asks",
         provision.div(4),
-        30000
+        30000,
       );
 
       // Assert
@@ -450,20 +466,34 @@ describe("Market integration tests suite", () => {
   describe("offerInfo", () => {
     it("returns bids offer info", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
+
+      const tick = 23;
+
+      const semiBook = market.getSemibook("bids");
+      const gives = new Big(12);
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(23),
-        gives: new Big(-12),
-        volume: new Big(23),
-        price: new Big(23),
+        gasbase: 0,
+        gives,
+        tick,
+        price: semiBook.tickPriceHelper.priceFromTick(tick, "nearest"),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(
+          tick,
+          gives,
+          "roundDown",
+        ),
+        volume: new Big(42),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -477,20 +507,35 @@ describe("Market integration tests suite", () => {
 
     it("returns asks offer info", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
+
+      const semiBook = market.getSemibook("asks");
+
+      const gives = Big(12);
+      const tick = 23;
+
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(23),
-        gives: new Big(-12),
-        volume: new Big(23),
-        price: new Big(23),
+        gasbase: 0,
+        gives,
+        tick,
+        price: semiBook.tickPriceHelper.priceFromTick(tick, "nearest"),
+        wants: semiBook.tickPriceHelper.inboundFromOutbound(
+          tick,
+          gives,
+          "roundDown",
+        ),
+        volume: new Big(42),
       };
       mockito
         .when(mockedMarket.offerInfo(mockito.anyString(), mockito.anyNumber()))
@@ -504,22 +549,35 @@ describe("Market integration tests suite", () => {
 
     it("return offer from ba semi book", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
+      const ba = "asks";
+      const tickPriceHelper = market.getSemibook(ba).tickPriceHelper;
       const mockedMarket = mockito.spy(market);
       const semiBook = mockito.mock(Semibook);
-      const ba = "asks";
+
+      const expectedGives = new Big(12);
+      const tick = 23;
       const offer: Market.Offer = {
         id: 0,
-        prev: undefined,
-        next: undefined,
+        prevAtTick: undefined,
+        nextAtTick: undefined,
         gasprice: 0,
         maker: "",
         gasreq: 0,
-        offer_gasbase: 0,
-        wants: new Big(23),
-        gives: new Big(-12),
-        volume: new Big(23),
-        price: new Big(23),
+        gasbase: 0,
+        gives: expectedGives,
+        tick,
+        price: tickPriceHelper.priceFromTick(tick, "nearest"),
+        wants: tickPriceHelper.inboundFromOutbound(
+          tick,
+          expectedGives,
+          "roundDown",
+        ),
+        volume: expectedGives,
       };
       mockito
         .when(mockedMarket.getSemibook(ba))
@@ -539,40 +597,21 @@ describe("Market integration tests suite", () => {
   describe("estimateVolumeTest", () => {
     it("return estimate value for sell", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
       const params: Market.DirectionlessVolumeParams = {
         what: "quote",
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
+        maxTickMatched: 0,
         estimatedVolume: new Big(12),
-        givenResidue: new Big(12),
-      };
-      mockito
-        .when(mockedMarket.estimateVolume(mockito.anything()))
-        .thenResolve(volumeEstimate);
-
-      // Act
-      const result = await market.estimateVolumeToReceive(params);
-      const paramsUsed = mockito.capture(mockedMarket.estimateVolume).last();
-
-      // Assert
-      expect(paramsUsed[0].to).to.be.eq("sell");
-      expect(result).to.be.eq(volumeEstimate);
-    });
-
-    it("return estimate value for sell", async function () {
-      // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
-      const mockedMarket = mockito.spy(market);
-      const params: Market.DirectionlessVolumeParams = {
-        what: "quote",
-        given: "",
-      };
-      const volumeEstimate: Market.VolumeEstimate = {
-        estimatedVolume: new Big(12),
-        givenResidue: new Big(12),
+        estimatedFee: new Big(1),
+        remainingFillVolume: new Big(12),
       };
       mockito
         .when(mockedMarket.estimateVolume(mockito.anything()))
@@ -589,15 +628,21 @@ describe("Market integration tests suite", () => {
 
     it("return estimate value for buy", async function () {
       // Arrange
-      const market = await mgv.market({ base: "TokenB", quote: "TokenA" });
+      const market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
       const mockedMarket = mockito.spy(market);
       const params: Market.DirectionlessVolumeParams = {
         what: "quote",
         given: "",
       };
       const volumeEstimate: Market.VolumeEstimate = {
+        maxTickMatched: 0,
         estimatedVolume: new Big(12),
-        givenResidue: new Big(12),
+        estimatedFee: new Big(1),
+        remainingFillVolume: new Big(12),
       };
       mockito
         .when(mockedMarket.estimateVolume(mockito.anything()))
@@ -617,10 +662,16 @@ describe("Market integration tests suite", () => {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
     const queue2 = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-    const market2 = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-    console.log("markets created");
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
+    const market2 = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
 
     let latestAsks: Market.Offer[] = [];
     let latestBids: Market.Offer[] = [];
@@ -645,40 +696,67 @@ describe("Market integration tests suite", () => {
 
     market2.subscribe(cb2);
 
-    await helpers
-      .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "1.2" })
-      .then((tx) => tx.wait());
+    const askTickHelper = market.getSemibook("asks").tickPriceHelper;
+
+    const asksGives = Big(1);
+    let askPrice = Big(2);
+    const tick = askTickHelper.tickFromPrice(askPrice, "nearest");
+    askPrice = askTickHelper.priceFromTick(tick, "nearest");
 
     await helpers
-      .newOffer(mgv, market.quote, market.base, { wants: "1.3", gives: "1.1" })
+      .newOffer({
+        mgv,
+        outbound: market.base,
+        inbound: market.quote,
+        tick: tick,
+        gives: asksGives,
+      })
       .then((tx) => tx.wait());
 
     const offer1 = {
       id: 1,
-      prev: undefined,
-      next: undefined,
-      gasprice: 1,
+      prevAtTick: undefined,
+      nextAtTick: undefined,
+      gasprice: mgv.config().gasprice,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      offer_gasbase: (await market.config()).asks.offer_gasbase,
-      wants: Big("1"),
-      gives: Big("1.2"),
-      volume: Big("1.2"),
-      price: Big("1").div(Big("1.2")),
+      gasbase: market.config().asks.offer_gasbase,
+      tick: tick,
+      gives: asksGives,
+      price: askPrice,
+      wants: askTickHelper.inboundFromOutbound(tick, asksGives, "roundDown"),
+      volume: asksGives,
     };
+
+    const bidTickHelper = market.getSemibook("bids").tickPriceHelper;
+
+    const bidsGives = Big(2);
+    let bidPrice = Big(2);
+
+    const bidTick = bidTickHelper.tickFromPrice(bidPrice, "nearest");
+    bidPrice = bidTickHelper.priceFromTick(bidTick, "nearest");
+
+    await newOffer({
+      mgv,
+      outbound: market.quote,
+      inbound: market.base,
+      tick: bidTick,
+      gives: bidsGives,
+    }).then((tx) => tx.wait());
 
     const offer2 = {
       id: 1,
-      prev: undefined,
-      next: undefined,
-      gasprice: 1,
+      prevAtTick: undefined,
+      nextAtTick: undefined,
+      gasprice: mgv.config().gasprice,
       gasreq: 10000,
       maker: await mgv.signer.getAddress(),
-      offer_gasbase: (await market.config()).bids.offer_gasbase,
-      wants: Big("1.3"),
-      gives: Big("1.1"),
-      volume: Big("1.3"),
-      price: Big("1.1").div(Big("1.3")),
+      gasbase: market.config().bids.offer_gasbase,
+      tick: bidTick,
+      gives: bidsGives,
+      wants: bidTickHelper.inboundFromOutbound(bidTick, bidsGives, "roundDown"),
+      price: bidPrice,
+      volume: bidsGives.div(bidPrice),
     };
 
     // Events may be received in different order
@@ -698,11 +776,24 @@ describe("Market integration tests suite", () => {
       },
     ];
     const events = [await queue.get(), await queue.get()];
-    expect(events).to.have.deep.members(expectedEvents);
+
+    assert.deepStrictEqual(events, expectedEvents);
 
     const events2 = [await queue2.get(), await queue2.get()];
     expect(events2).to.have.deep.members(expectedEvents);
 
+    assert.equal(
+      offer1.price.toNumber(),
+      latestAsks[0].price.toNumber(),
+      "ask price is incorrect",
+    );
+    assert.equal(
+      offer2.price.toNumber(),
+      latestBids[0].price.toNumber(),
+      "ask price is incorrect",
+    );
+    offer1.price = latestAsks[0].price;
+    offer2.price = latestBids[0].price;
     assert.deepStrictEqual(latestAsks, [offer1], "asks semibook not correct");
     assert.deepStrictEqual(latestBids, [offer2], "bids semibook not correct");
 
@@ -710,20 +801,25 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
     market2.close();
-    await market.sell({ wants: "1", gives: "1.3" });
+    await market.sell({ maxTick: bidTick, fillVolume: "1.3" });
+
     const offerFail = await queue.get();
     assert.strictEqual(offerFail.type, "OfferSuccess");
     assert.strictEqual(offerFail.ba, "bids");
 
     assert.strictEqual(queue2.empty(), true);
-    //TODO: test offerRetract, offerFail, setGasbase
+    //FIXME: test offerRetract, offerFail, setGasbase
   });
 
   it("returns correct data when taking offers", async function () {
     const queue = helpers.asyncQueue<Market.BookSubscriptionCbArgument>();
 
     // setup market and listener for events from market
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
 
     const cb = (evt: Market.BookSubscriptionCbArgument) => {
       // disregard a few SetGasbase-events
@@ -733,25 +829,27 @@ describe("Market integration tests suite", () => {
 
     // post a failing offer from SimpleTestMaker
     const maker = await mgvTestUtil.getAccount(
-      mgvTestUtil.AccountName.Deployer
+      mgvTestUtil.AccountName.Deployer,
     );
     const tx = await mgvTestUtil.postNewFailingOffer(market, "asks", maker);
 
     // make sure the offer tx has been gen'ed and the OfferWrite has been logged
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+    await waitForBlock(market.mgv, tx.blockNumber);
 
     const events = [await queue.get()];
     expect(events).to.have.lengthOf(1);
 
     // make a buy, which we expect to provoke an OfferFail
-    const buyPromises = await market.buy({ wants: "1", gives: "1.5e12" });
+    const buyPromises = await market.buy({
+      maxTick: 1,
+      fillVolume: "1.5e12",
+    });
     const result = await buyPromises.result;
     expect(result.tradeFailures).to.have.lengthOf(1);
     expect(
-      utils.parseBytes32String(result.tradeFailures[0].reason)
+      utils.parseBytes32String(result.tradeFailures[0].reason),
     ).to.be.equal("mgv/makerTransferFail");
     expect(result.successes).to.have.lengthOf(0);
-    expect(result.summary.bounty.toNumber()).to.be.greaterThan(0);
     //expect(result.failures[0].offerId).to.be.equal(1);
 
     const offerEvent = await queue.get();
@@ -766,10 +864,12 @@ describe("Market integration tests suite", () => {
     }
     await mgvTestUtil.mint(market.quote, maker, 100);
     await mgvTestUtil.mint(market.base, maker, 100);
-
     const tx2 = await mgvTestUtil.postNewSucceedingOffer(market, "asks", maker);
-    await mgvTestUtil.waitForBlock(mgv, tx2.blockNumber);
-    const buyPromises_ = await market.buy({ wants: "1", gives: "1.5e12" });
+    await waitForBlock(mgv, tx2.blockNumber);
+    const buyPromises_ = await market.buy({
+      maxTick: 1,
+      fillVolume: "1.5e12",
+    });
     const result_ = await buyPromises_.result;
     expect(result_.tradeFailures).to.have.lengthOf(0);
     expect(result_.posthookFailures).to.have.lengthOf(0);
@@ -780,7 +880,13 @@ describe("Market integration tests suite", () => {
   });
 
   it("buying uses best price, with no forceRoutingToMangroveOrder", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
+
+    const askTickPriceHelper = market.getSemibook("asks").tickPriceHelper;
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -790,28 +896,43 @@ describe("Market integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      wants: 1,
+      tick: 1,
       gives: rawMinGivesBase,
     });
     await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
-      wants: 1,
+      tick: 2,
       gives: rawMinGivesBase.mul(2),
     });
-
-    const buyPromises = await market.buy({ wants: 0.000000000002, gives: 10 });
+    const gave = askTickPriceHelper
+      .priceFromTick(1, "nearest")
+      .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
+      .toNumber();
+    const buyPromises = await market.buy({
+      maxTick: 1,
+      fillVolume: 10,
+    });
     const result = await buyPromises.result;
-    expect(result.tradeFailures).to.have.lengthOf(0);
+
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
-    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
+    expect(result.tradeFailures).to.have.lengthOf(0);
+    expect(result.successes[0].got.toNumber()).to.be.equal(
+      market.base.fromUnits(rawMinGivesBase).toNumber(),
+    );
+    expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
+    expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);
   });
 
   it("buying uses best price, with forceRoutingToMangroveOrder:false", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
+
+    const askTickPriceHelper = market.getSemibook("asks").tickPriceHelper;
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -821,32 +942,45 @@ describe("Market integration tests suite", () => {
       market,
       ba: "asks",
       maker,
-      wants: 1,
+      tick: 1,
       gives: rawMinGivesBase,
     });
     await mgvTestUtil.postNewOffer({
       market,
       ba: "asks",
       maker,
-      wants: 1,
+      tick: 2,
       gives: rawMinGivesBase.mul(2),
     });
 
     const buyPromises = await market.buy({
       forceRoutingToMangroveOrder: false,
-      wants: 0.000000000002,
-      gives: 10,
+      maxTick: 1,
+      fillVolume: 10,
     });
     const result = await buyPromises.result;
+    result.summary = result.summary as Market.OrderSummary;
+    const gave = askTickPriceHelper
+      .priceFromTick(1, "nearest")
+      .mul(market.base.fromUnits(rawMinGivesBase).toNumber())
+      .toNumber();
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(2e-12);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
-    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
+    expect(result.successes[0].got.toNumber()).to.be.equal(
+      market.base.fromUnits(rawMinGivesBase).toNumber(),
+    );
+    expect(result.successes[0].gave.toNumber()).to.be.equal(gave);
+    expect(result.summary.fee?.toNumber()).to.be.greaterThan(0);
   });
 
   it("selling uses best price", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
+
+    const bidTickPriceHelper = new TickPriceHelper("bids", market);
 
     // post two offers, one worse than the other.
     const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
@@ -856,29 +990,33 @@ describe("Market integration tests suite", () => {
       market,
       ba: "bids",
       maker,
-      wants: 100,
-      gives: 1000000,
+      tick: bidTickPriceHelper.tickFromPrice(2, "nearest"),
+      gives: rawMinGivesQuote,
     });
     const tx = await mgvTestUtil.postNewOffer({
       market,
       ba: "bids",
       maker,
-      wants: 100,
-      gives: 2000000,
+      tick: bidTickPriceHelper.tickFromPrice(1, "nearest"),
+      gives: rawMinGivesQuote,
     });
 
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
+    await waitForBlock(market.mgv, tx.blockNumber);
 
     const sellPromises = await market.sell({
-      volume: "0.0000000000000001",
-      price: 0,
+      fillVolume: "0.0001",
+      maxTick: MAX_TICK.toNumber(),
     });
     const result = await sellPromises.result;
 
     expect(result.tradeFailures).to.have.lengthOf(0);
     expect(result.successes).to.have.lengthOf(1);
-    expect(result.successes[0].got.toNumber()).to.be.equal(2);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
+    expect(result.successes[0].got.toString()).to.equal(
+      Big("0.0001").mul(2).toString(),
+    );
+    expect(result.successes[0].gave.toString()).to.equal(
+      Big("0.0001").toString(),
+    );
   });
 
   [true, false].forEach((forceRouting) => {
@@ -889,11 +1027,17 @@ describe("Market integration tests suite", () => {
           const market = await mgv.market({
             base: "TokenA",
             quote: "TokenB",
+            tickSpacing: 1,
           });
 
           const tradeParams: Market.TradeParams = {
-            wants: 0.000000000002,
-            gives: 10,
+            maxTick: market
+              .getBook()
+              .asks.tickPriceHelper.tickFromRawRatio(
+                Big(0.000000000002).div(10),
+                "roundDown",
+              ),
+            fillVolume: 10,
           };
           tradeParams.forceRoutingToMangroveOrder = forceRouting;
           tradeParams.gasLowerBound = gasLowerBound;
@@ -909,14 +1053,14 @@ describe("Market integration tests suite", () => {
           }
 
           const maker = await mgvTestUtil.getAccount(
-            mgvTestUtil.AccountName.Maker
+            mgvTestUtil.AccountName.Maker,
           );
           await mgvTestUtil.mint(market.base, maker, 100);
           await mgvTestUtil.postNewOffer({
             market,
             ba: "asks",
             maker,
-            wants: 1,
+            tick: 1,
             gives: rawMinGivesBase,
           });
 
@@ -936,9 +1080,9 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 317708;
+                expectedLimit = 126242;
               } else {
-                expectedLimit = 246887;
+                expectedLimit = 43475;
               }
             }
           }
@@ -948,421 +1092,49 @@ describe("Market integration tests suite", () => {
     });
   });
 
-  it("buying offerId snipes offer", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-    // post two offers, one worse than the other.
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      wants: 1,
-      gives: rawMinGivesBase,
-    });
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      wants: 1,
-      gives: rawMinGivesBase.mul(2),
-    });
-
-    // get not-best offer
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const asks = [...market.getBook().asks];
-    const notBest = asks[1].id;
-
-    // make a buy of the not-best offer
-    // a standard buy would give us 2e-12, but due to snipe we only get 1e-12.
-    const buyPromises = await market.buy({
-      offerId: notBest,
-      total: 1,
-      price: Big(ethers.constants.MaxUint256.toString()),
-    });
-    const result = await buyPromises.result;
-
-    expect(result.tradeFailures).to.have.lengthOf(0);
-    expect(result.successes).to.have.lengthOf(1);
-
-    expect(result.successes[0].got.toNumber()).to.be.equal(0.09);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-6);
-    expect(result.successes[0].offerId).to.be.equal(notBest);
-  });
-
-  it("selling offerId snipes offer", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-    // post two offers, one worse than the other.
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "bids",
-      maker,
-      wants: 100,
-      gives: 1000000,
-    });
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "bids",
-      maker,
-      wants: 100,
-      gives: 2000000,
-    });
-
-    // get not-best offer
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const bids = [...market.getBook().bids];
-    const notBest = bids[1].id;
-
-    // make a sell of the not-best offer
-    // a standard sell would give us 2e-13, but due to snipe we only get 1e-13.
-    const sellPromises = await market.sell({
-      offerId: notBest,
-      wants: "0.1",
-      gives: "0.0000000000001",
-    });
-    const result = await sellPromises.result;
-
-    expect(result.tradeFailures).to.have.lengthOf(0);
-    expect(result.successes).to.have.lengthOf(1);
-
-    expect(result.successes[0].got.toNumber()).to.be.equal(1);
-    expect(result.successes[0].gave.toNumber()).to.be.equal(1e-16);
-    expect(result.successes[0].offerId).to.be.equal(notBest);
-  });
-
-  it("snipe asks book for two successful orders succeeds", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-    // post progressively worse offers.
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      wants: 1,
-      gives: rawMinGivesBase,
-    });
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      wants: 1,
-      gives: rawMinGivesBase.mul(2),
-    });
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      wants: 1,
-      gives: rawMinGivesBase.mul(3),
-    });
-
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const asks = [...market.getBook().asks];
-
-    // use wants/gives from offer to verify unit conversion
-    const snipePromises = await market.snipe({
-      ba: "asks",
-      targets: [
-        {
-          offerId: asks[1].id,
-          takerGives: asks[1].wants,
-          takerWants: asks[1].gives,
-        },
-        {
-          offerId: asks[2].id,
-          takerGives: asks[2].wants,
-          takerWants: asks[2].gives,
-        },
-      ],
-    });
-    const result = await snipePromises.result;
-
-    expect(result.tradeFailures).to.have.lengthOf(0);
-    expect(result.successes).to.have.lengthOf(2);
-
-    // 5% fee configured in mochaHooks.js
-    expect(result.summary.got.toNumber()).to.be.equal(0.2565);
-    expect(result.summary.gave.toNumber()).to.be.equal(2e-6);
-    expect(result.summary.feePaid.toNumber()).to.be.greaterThan(0);
-  });
-
-  it("snipe bids book for two successful orders succeeds", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-    // post progressively worse offers.
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "bids",
-      maker,
-      wants: 100,
-      gives: 1000000,
-    });
-    await mgvTestUtil.postNewOffer({
-      market,
-      ba: "bids",
-      maker,
-      wants: 100,
-      gives: 2000000,
-    });
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "bids",
-      maker,
-      wants: 100,
-      gives: 3000000,
-    });
-
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const bids = [...market.getBook().bids];
-
-    // use wants/gives from offer to verify unit conversion
-    const snipePromises = await market.snipe({
-      ba: "bids",
-      targets: [
-        {
-          offerId: bids[1].id,
-          takerGives: bids[1].wants,
-          takerWants: bids[1].gives,
-        },
-        {
-          offerId: bids[2].id,
-          takerGives: bids[2].wants,
-          takerWants: bids[2].gives,
-        },
-      ],
-    });
-    const result = await snipePromises.result;
-
-    expect(result.tradeFailures).to.have.lengthOf(0);
-    expect(result.successes).to.have.lengthOf(2);
-
-    // 5% fee configured in mochaHooks.js
-    expect(result.summary.got.toString()).to.be.equal("2.85");
-    expect(result.summary.gave.toNumber()).to.be.equal(2e-16);
-  });
-
-  [true, false].forEach((requireOffersToFail) => {
-    it(`snipe failing offers collects bounty with requireOffersToFail:${requireOffersToFail}`, async function () {
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-      // post progressively worse offers.
-      const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-      await mgvTestUtil.mint(market.quote, maker, 100);
-      await mgvTestUtil.mint(market.base, maker, 100);
-      // Note: shouldFail is for the entire maker and not per order
-      await mgvTestUtil.postNewOffer({
-        market,
-        ba: "asks",
-        maker,
-        wants: 1,
-        gives: rawMinGivesBase,
-        shouldFail: true,
-      });
-      const tx = await mgvTestUtil.postNewOffer({
-        market,
-        ba: "asks",
-        maker,
-        wants: 1,
-        gives: rawMinGivesBase.mul(2),
-        shouldFail: true,
-      });
-
-      await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-      const asks = [...market.getBook().asks];
-
-      const snipePromises = await market.snipe({
-        ba: "asks",
-        targets: [
-          {
-            offerId: asks[0].id,
-            takerGives: asks[0].wants,
-            takerWants: asks[0].gives,
-          },
-          {
-            offerId: asks[1].id,
-            takerGives: asks[1].wants,
-            takerWants: asks[1].gives,
-          },
-        ],
-        requireOffersToFail: requireOffersToFail,
-      });
-      const result = await snipePromises.result;
-
-      expect(result.tradeFailures).to.have.lengthOf(2);
-      expect(result.successes).to.have.lengthOf(0);
-
-      expect(result.summary.got.toNumber()).to.be.equal(0);
-      expect(result.summary.gave.toNumber()).to.be.equal(0);
-
-      expect(result.summary.bounty.toNumber()).to.be.gt(
-        0,
-        "bounty should be greater than zero"
-      );
-      expect(result.summary.bounty.toNumber()).to.be.lte(
-        0.001,
-        "bounty too high"
-      );
-      expect(result.summary.feePaid.toNumber()).to.be.equal(0);
-
-      // Verify book gets updated to reflect offers have failed and are removed
-      await mgvTestUtil.waitForBlock(market.mgv, result.txReceipt.blockNumber);
-      const asksAfter = [...market.getBook().asks];
-
-      expect(asksAfter).to.have.lengthOf(0);
-    });
-  });
-
-  it("snipe asks book for successful orders fails if requireOffersToFail is set", async function () {
-    // Arrange
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      wants: 1,
-      gives: rawMinGivesBase,
-    });
-
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const ask = [...market.getBook().asks][0];
-
-    // Act
-    // Approve cleanerContract to spend for taker (otherwise the orders fail due to lowAllowance)
-    await mgv.contract.approve(
-      market.base.address,
-      market.quote.address,
-      mgv.cleanerContract.address,
-      100000000
-    );
-
-    // Actual snipe
-    let didThrow = false;
-    try {
-      const snipePromises = await market.snipe(
-        {
-          ba: "asks",
-          targets: [
-            {
-              offerId: ask.id,
-              takerGives: ask.wants,
-              takerWants: ask.gives,
-              gasLimit: 650000,
-            },
-          ],
-          requireOffersToFail: true,
-        },
-        { gasLimit: 600000 }
-      );
-      await snipePromises.result;
-    } catch (e: any) {
-      didThrow = true;
-      const callResult = await mgv.provider.call(e.transaction);
-      expect(() =>
-        mgv.cleanerContract.interface.decodeFunctionResult(
-          "collect",
-          callResult
-        )
-      ).to.throw("mgvCleaner/anOfferDidNotFail");
-    }
-    expect(didThrow).to.be.equal(true);
-  });
-
-  it(`snipe via callStatic for failing offers returns bounty`, async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-
-    // post progressively worse offers.
-    const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
-    await mgvTestUtil.mint(market.quote, maker, 100);
-    await mgvTestUtil.mint(market.base, maker, 100);
-    // Note: shouldFail is for the entire maker and not per order
-    const tx = await mgvTestUtil.postNewOffer({
-      market,
-      ba: "asks",
-      maker,
-      wants: 1,
-      gives: rawMinGivesBase,
-      shouldFail: true,
-    });
-
-    await mgvTestUtil.waitForBlock(market.mgv, tx.blockNumber);
-    const asks = [...market.getBook().asks];
-
-    const raw = await market.getRawSnipeParams({
-      ba: "asks",
-      targets: [
-        {
-          offerId: asks[0].id,
-          takerGives: asks[0].wants,
-          takerWants: asks[0].gives,
-        },
-      ],
-    });
-
-    const result = await market.mgv.cleanerContract.callStatic.collect(
-      raw.outboundTkn,
-      raw.inboundTkn,
-      raw.targets,
-      raw.fillWants
-    );
-
-    expect(mgv.fromUnits(result, 18).toNumber()).to.be.gt(
-      0,
-      "bounty should be greater than zero"
-    );
-    expect(mgv.fromUnits(result, 18).toNumber()).to.be.lte(
-      0.001,
-      "bounty too high"
-    );
-  });
-
   it("gets config", async function () {
-    const mgvAsAdmin = await Mangrove.connect({
-      provider: this.server.url,
-      privateKey: this.accounts.deployer.key,
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
     });
 
     const fee = 13;
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
-    await mgvAsAdmin.contract.setFee(
-      market.base.address,
-      market.quote.address,
-      fee
+    const txs = await waitForTransactions(
+      helpers.setFee({
+        mgvAdmin,
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+        fee,
+      }),
     );
+    await waitForBlock(mgv, txs[txs.length - 1].blockNumber);
 
-    const config = await market.config();
+    const config = market.config();
     assert.strictEqual(config.asks.fee, fee, "wrong fee");
-    mgvAsAdmin.disconnect();
   });
 
   it("updates OB", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const pro1 = market.once((evt) => {
       assert.strictEqual(
         market.getBook().asks.size(),
         1,
-        "book should have size 1 by now"
+        "book should have size 1 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
-      wants: "1",
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
+      tick: 1,
       gives: "1.2",
     });
     await pro1;
@@ -1372,11 +1144,14 @@ describe("Market integration tests suite", () => {
       assert.strictEqual(
         market.getBook().asks.size(),
         2,
-        "book should have size 2 by now"
+        "book should have size 2 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
-      wants: "1",
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
+      tick: 1,
       gives: "1.2",
     });
     await pro2;
@@ -1386,68 +1161,289 @@ describe("Market integration tests suite", () => {
       assert.strictEqual(
         market.getBook().asks.size(),
         3,
-        "book should have size 3 by now"
+        "book should have size 3 by now",
       );
     });
-    await helpers.newOffer(mgv, market.base, market.quote, {
-      wants: "1",
+    await newOffer({
+      mgv,
+      outbound: market.base,
+      inbound: market.quote,
+      tick: 1,
       gives: "1.2",
     });
     await pro3;
     //TODO add to after
   });
 
-  it("crudely simulates market buy", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+  [0, 123].map((fee) => {
+    it(`crudely simulates market buy, fee = ${fee} bps ~ ${
+      fee / 100
+    }%`, async function () {
+      const txs = await waitForTransactions(
+        helpers.setFee({
+          mgvAdmin,
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          fee,
+        }),
+      );
 
-    const done = new Deferred();
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    market.subscribe(async (evt) => {
-      if (market.getBook().asks.size() === 2) {
-        const { estimatedVolume: estimated } = await market.estimateVolume({
-          given: "2",
-          what: "quote",
-          to: "sell",
-        });
-        assert.strictEqual(estimated.toFixed(), "0.5");
-        done.resolve();
-      }
+      await waitForBlock(mgv, txs[txs.length - 1].blockNumber);
+
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
+
+      const price = market
+        .getSemibook("asks")
+        .tickPriceHelper.coercePrice(4, "roundDown");
+
+      await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.3",
+          price,
+        }),
+      );
+      const tx = await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.25",
+          price,
+        }),
+      );
+
+      await waitForBlock(mgv, tx.blockNumber);
+
+      const baseVolume = 0.5;
+      const volumeEstimate = await market.estimateVolume({
+        given: baseVolume,
+        what: "base",
+        to: "buy",
+      });
+
+      // estimated volume is in quote = inbound token and the fee is taken in base = outbound token
+      const expectedEstimatedVolume = price.mul(baseVolume).toNumber();
+      const expectedEstimatedFee = (baseVolume * fee) / 10_000;
+
+      const estimatedVolume = volumeEstimate!.estimatedVolume.toNumber();
+      expect(estimatedVolume).to.be.approximately(
+        expectedEstimatedVolume,
+        0.0001,
+        "estimatedVolume is incorrect",
+      );
+
+      const estimatedFee = volumeEstimate!.estimatedFee.toNumber();
+      expect(estimatedFee).to.be.approximately(
+        expectedEstimatedFee,
+        0.0001,
+        "estimatedFee is incorrect",
+      );
     });
 
-    await helpers
-      .newOffer(mgv, market.base, market.quote, { wants: "1.2", gives: "0.3" })
-      .then((tx) => tx.wait());
-    await helpers
-      .newOffer(mgv, market.base, market.quote, { wants: "1", gives: "0.25" })
-      .then((tx) => tx.wait());
-    await done.promise;
+    it(`crudely simulates market sell, fee = ${fee} bps ~ ${
+      fee / 100
+    }%`, async function () {
+      const txs = await waitForTransactions(
+        helpers.setFee({
+          mgvAdmin,
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          fee,
+        }),
+      );
+
+      await waitForBlock(mgv, txs[txs.length - 1].blockNumber);
+
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
+
+      const price = market
+        .getSemibook("asks")
+        .tickPriceHelper.coercePrice(4, "roundDown");
+      await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.3",
+          price,
+        }),
+      );
+      const tx = await waitForTransaction(
+        await helpers.newOffer({
+          mgv,
+          market,
+          ba: "asks",
+          gives: "0.25",
+          price,
+        }),
+      );
+
+      await waitForBlock(mgv, tx.blockNumber);
+
+      const quoteVolume = 2;
+      const volumeEstimate = await market.estimateVolume({
+        given: quoteVolume,
+        what: "quote",
+        to: "sell",
+      });
+
+      // estimated volume is in base = outbound token and the fee is taken in base
+      const expectedEstimatedVolumeIncludingFee = Big(2).div(price).toNumber();
+      const expectedEstimatedFee =
+        (expectedEstimatedVolumeIncludingFee * fee) / 10_000;
+      const expectedEstimatedVolume =
+        expectedEstimatedVolumeIncludingFee - expectedEstimatedFee;
+
+      const estimatedVolume = volumeEstimate!.estimatedVolume.toNumber();
+      expect(estimatedVolume).to.be.approximately(
+        expectedEstimatedVolume,
+        0.0001,
+        "estimatedVolume is incorrect",
+      );
+
+      const estimatedFee = volumeEstimate!.estimatedFee.toNumber();
+      expect(estimatedFee).to.be.approximately(
+        expectedEstimatedFee,
+        0.0001,
+        "estimatedFee is incorrect",
+      );
+    });
   });
 
   it("gets OB", async function () {
     // Initialize A/B market.
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
+    const askTickPriceHelper = new TickPriceHelper("asks", market);
+    const bidTickPriceHelper = new TickPriceHelper("bids", market);
 
     /* create bids and asks */
     let asks = [
-      { id: 1, wants: "1", gives: "1", gasreq: 10_000, gasprice: 1 },
-      { id: 2, wants: "1.2", gives: "1", gasreq: 10_002, gasprice: 3 },
-      { id: 3, wants: "1", gives: "1.2", gasreq: 9999, gasprice: 21 },
+      {
+        id: 1,
+        tick: 1,
+        price: askTickPriceHelper.priceFromTick(1, "nearest"),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21000,
+      },
+      {
+        id: 2,
+        tick: 2,
+        price: askTickPriceHelper.priceFromTick(2, "nearest"),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21000,
+      },
+      {
+        id: 3,
+        tick: 1,
+        price: askTickPriceHelper.priceFromTick(1, "nearest"),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21000,
+      },
+      {
+        id: 4,
+        tick: 2,
+        price: askTickPriceHelper.priceFromTick(2, "nearest"),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21000,
+      },
+      {
+        id: 5,
+        tick: 1,
+        price: askTickPriceHelper.priceFromTick(1, "nearest"),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21000,
+      },
+      {
+        id: 6,
+        tick: 3,
+        price: askTickPriceHelper.priceFromTick(3, "nearest"),
+        gives: "1",
+        gasreq: 9999,
+        gasprice: 21000,
+      },
     ];
 
     let bids = [
-      { id: 1, wants: "0.99", gives: "1", gasreq: 10_006, gasprice: 11 },
-      { id: 2, wants: "1", gives: "1.43", gasreq: 9998, gasprice: 7 },
-      { id: 3, wants: "1.11", gives: "1", gasreq: 10_022, gasprice: 30 },
+      {
+        id: 1,
+        tick: 2,
+        price: bidTickPriceHelper.priceFromTick(2, "nearest"),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30000,
+      },
+      {
+        id: 2,
+        tick: 1,
+        price: bidTickPriceHelper.priceFromTick(1, "nearest"),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30000,
+      },
+      {
+        id: 3,
+        tick: 2,
+        price: bidTickPriceHelper.priceFromTick(2, "nearest"),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30000,
+      },
+      {
+        id: 4,
+        tick: 1,
+        price: bidTickPriceHelper.priceFromTick(1, "nearest"),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30000,
+      },
+      {
+        id: 5,
+        tick: 3,
+        price: bidTickPriceHelper.priceFromTick(3, "nearest"),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30000,
+      },
+      {
+        id: 6,
+        tick: 1,
+        price: bidTickPriceHelper.priceFromTick(1, "nearest"),
+        gives: "1",
+        gasreq: 10_022,
+        gasprice: 30000,
+      },
     ];
 
     /* fill order book with bids and asks */
     /* note that we are NOT testing mangrove.js's newOffer function
      * so we create offers through ethers.js generic API */
     for (const ask of asks) {
-      await waitForTransaction(helpers.newOffer(mgv, "TokenA", "TokenB", ask));
+      await waitForTransaction(newOffer({ mgv, market, ba: "asks", ...ask }));
     }
     for (const bid of bids) {
-      await waitForTransaction(helpers.newOffer(mgv, "TokenB", "TokenA", bid));
+      await waitForTransaction(newOffer({ mgv, market, ba: "bids", ...bid }));
     }
 
     /* Now we create the order book we expect to get back so we can compare them */
@@ -1459,28 +1455,34 @@ describe("Market integration tests suite", () => {
       o.map((i) => a[a.findIndex((e) => e.id == i)]);
 
     /* Put bids and asks in expected order (from best price to worse) */
-    asks = reorder(asks, [3, 1, 2]);
-    bids = reorder(bids, [2, 1, 3]);
+    asks = reorder(asks, [1, 3, 5, 2, 4, 6]);
+    bids = reorder(bids, [2, 4, 6, 1, 3, 5]);
 
     const selfAddress = await mgv.signer.getAddress();
 
     // Add price/volume, prev/next, +extra info to expected book.
     // Volume always in base, price always in quote/base.
-    const config = await market.config();
+    const config = market.config();
     const complete = (isAsk: boolean, ary: typeof bids) => {
       return ary.map((ofr, i) => {
         const _config = config[isAsk ? "asks" : "bids"];
-        const [baseVolume, quoteVolume] = isAsk
-          ? [ofr.gives, ofr.wants]
-          : [ofr.wants, ofr.gives];
+        const prevOfferTick = ary[i - 1]?.tick ?? -1;
+        const nextOfferTick = ary[i + 1]?.tick ?? -2;
         return {
           ...ofr,
-          prev: ary[i - 1]?.id as number | undefined,
-          next: ary[i + 1]?.id as number | undefined,
-          volume: Big(baseVolume),
-          price: Big(quoteVolume).div(Big(baseVolume)) as Bigish | undefined,
+          prevAtTick:
+            prevOfferTick == ofr.tick
+              ? (ary[i - 1]?.id as number | undefined)
+              : undefined,
+          nextAtTick:
+            nextOfferTick == ofr.tick
+              ? (ary[i + 1]?.id as number | undefined)
+              : undefined,
           maker: selfAddress,
-          offer_gasbase: _config.offer_gasbase,
+          gasbase: _config.offer_gasbase,
+          volume: isAsk
+            ? new Big(ofr.gives)
+            : new Big(ofr.gives).div(ofr.price),
         };
       });
     };
@@ -1490,24 +1492,21 @@ describe("Market integration tests suite", () => {
     const bids2 = complete(false, bids);
 
     type Bs = {
-      wants: Bigish;
       gives: Bigish;
-      volume: Bigish;
-      price: Bigish | undefined;
+      tick: number;
     }[];
     /* Start testing */
 
-    const book = await market.requestBook({ maxOffers: 3 });
+    const book = await market.requestBook({ targetNumberOfTicks: 6 });
 
     // Convert big.js numbers to string for easier debugging
     const stringify = ({ bids, asks }: { bids: Bs; asks: Bs }) => {
       const s = (obj: Bs[number]) => {
         return {
           ...obj,
-          wants: obj.wants.toString(),
+          tick: obj.tick,
           gives: obj.gives.toString(),
-          volume: obj.volume.toString(),
-          price: obj.price?.toString(),
+          wants: undefined, // do not test wants are it's tested else where
         };
       };
       return { bids: bids.map(s), asks: asks.map(s) };
@@ -1516,46 +1515,54 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(
       stringify(book),
       stringify({ bids: bids2, asks: asks2 }),
-      "bad book"
+      "bad book",
     );
   });
 
   it("max gasreq returns a BigNumber, even if the book is empty", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
     const gasEstimate = await market.gasEstimateSell({
       volume: market.quote.fromUnits(1),
-      price: 0,
+      limitPrice: 1,
     });
 
     // we need to use BigNumber.isBigNumber() function to test variable type
     expect(
       BigNumber.isBigNumber(gasEstimate),
-      `returned a value that is not a BigNumber. Value was: '${gasEstimate}'.`
+      `returned a value that is not a BigNumber. Value was: '${gasEstimate}'.`,
     ).to.be.true;
   });
 
   it("max gasreq is added to gas estimates", async function () {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
 
     const emptyBookAsksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
-      price: 0,
+      limitPrice: 1,
     });
 
     /* create asks */
     const askGasReq = 10000;
     const asks = [
-      { id: 1, wants: "1", gives: "1", gasreq: askGasReq, gasprice: 1 },
+      { id: 1, price: "1.0001", gives: "1", gasreq: askGasReq, gasprice: 1 },
     ];
 
     const lastTx = await waitForTransaction(
-      helpers.newOffer(mgv, market.base, market.quote, asks[0])
+      newOffer({ mgv, market, ba: "asks", ...asks[0] }),
     );
 
-    await mgvTestUtil.waitForBlock(market.mgv, lastTx.blockNumber);
+    await waitForBlock(market.mgv, lastTx.blockNumber);
     const asksEstimate = await market.gasEstimateBuy({
       volume: market.base.fromUnits(1),
-      price: 0,
+      limitPrice: 1,
     });
     expect(asksEstimate.toNumber()).to.be.equal(
       emptyBookAsksEstimate
@@ -1563,16 +1570,19 @@ describe("Market integration tests suite", () => {
           BigNumber.from(askGasReq)
             .add(BigNumber.from(askGasReq).mul(64).div(63))
             .mul(11)
-            .div(10)
+            .div(10),
         )
-        .add(1 /* due to precision */)
-        .toNumber()
+        .toNumber(),
     );
   });
 
   mgvTestUtil.bidsAsks.forEach((ba) => {
     it(`mgvIntegrationTestUtils can post offers for ${ba}`, async function () {
-      const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+      const market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 1,
+      });
       const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
       await market.quote.approveMangrove(1000000000000000);
       await market.base.approveMangrove(1000000000000000);
@@ -1581,28 +1591,48 @@ describe("Market integration tests suite", () => {
 
       const bs = market.trade.baToBs(ba);
       const params: Market.TradeParams = {
-        wants: market.base.fromUnits(1),
-        gives: 1,
+        maxTick: 1,
+        fillVolume: 1,
       };
 
       await mgvTestUtil.postNewSucceedingOffer(market, ba, maker);
       let result = await (await market.trade.order(bs, params, market)).result;
-      assert.equal(result.successes.length, 1);
+      assert.equal(result.successes.length, 1, "should have 1 success");
 
       await mgvTestUtil.postNewFailingOffer(market, ba, maker),
         (result = await (await market.trade.order(bs, params, market)).result);
-      assert.equal(result.tradeFailures.length, 1);
+      assert.equal(result.tradeFailures.length, 1, "should have 1 failure");
 
       await mgvTestUtil.postNewRevertingOffer(market, ba, maker),
         (result = await (await market.trade.order(bs, params, market)).result);
-      assert.equal(result.tradeFailures.length, 1);
+      assert.equal(result.tradeFailures.length, 1, "should have 1 failure");
     });
   });
 
   it("get minimum volume", async () => {
-    const market = await mgv.market({ base: "TokenA", quote: "TokenB" });
+    const market = await mgv.market({
+      base: "TokenA",
+      quote: "TokenB",
+      tickSpacing: 1,
+    });
+    // see mangroveOrder.json -> restingOrderGasreq
+    const gasreq = 152000;
+    const baseAsOutbound = await mgv.readerContract.minVolume(
+      market.olKeyBaseQuote,
+      gasreq,
+    );
+    const quoteAsOutbound = await mgv.readerContract.minVolume(
+      market.olKeyQuoteBase,
+      gasreq,
+    );
 
-    assert.equal(market.minVolumeAsk!.toNumber(), 0.108072);
-    assert.equal(market.minVolumeBid!.toNumber(), 0.216144);
+    assert.equal(
+      market.minVolumeAsk!.mul(Big(10).pow(market.base.decimals)).toFixed(),
+      baseAsOutbound.toString(),
+    );
+    assert.equal(
+      market.minVolumeBid!.mul(Big(10).pow(market.quote.decimals)).toFixed(),
+      quoteAsOutbound.toString(),
+    );
   });
 });
