@@ -23,7 +23,7 @@
 - feat!: 'MgvToken' has been renamed to 'Token'.
 - feat!: 'Mangrove.toUnits|fromUnits' no longer accepts a token name/symbol as this was ambiguous. Instead, use 'Token.createToken' and call 'toUnits|fromUnits' on that.
 - feat!: Token 'name' was misused: Sometimes it was assumed to be a symbol and sometimes an ID. It has therefore been replaced by 'id' and 'symbol' in all relevant places. Configuration files have been converted to use the token instance ID's from the context-addresses package to avoid ambiguity among (1) different tokens with the same symbol and (2) multiple token instances such as 'USDC' (Circle issued) and 'USDC.e' (bridged from Ethereum).
-  - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. 'Mangrove.token()` will create an instance of the default token ID if found.
+  - Default token IDs can be registered for a symbol and network. And if there is only one ID for a given symbol on a network, it will be considered the default. 'Mangrove.token()' will create an instance of the default token ID if found.
 - MangroveOrder
   - feat: Add 'Market.updateRestingOrder' function which allows updating resting orders posted by 'MangroveOrder'
   - feat: Add 'Market.retractRestingOrder' function for retracting resting orders posted by 'MangroveOrder'.
