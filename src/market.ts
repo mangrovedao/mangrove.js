@@ -794,7 +794,7 @@ class Market {
   /**
    * Gets the absolute, relative, and tick spread between a bid and an ask on the market.
    */
-  public static spread(
+  static spread(
     market: Market.KeyResolvedForCalculation,
     bestAsk?: { price: Bigish; tick: number },
     bestBid?: { price: Bigish; tick: number },
