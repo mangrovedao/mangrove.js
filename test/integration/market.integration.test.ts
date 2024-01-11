@@ -110,6 +110,78 @@ describe("Market integration tests suite", () => {
     });
   });
 
+  describe("spread", () => {
+    let market: Market;
+    const createBid = async () => {
+      const { response } = await market.buy({
+        limitPrice: 2,
+        total: 1,
+        restingOrder: {},
+      });
+      const tx = await waitForTransaction(response);
+      await waitForBlock(market.mgv, tx.blockNumber);
+    };
+
+    const createAsk = async () => {
+      const { response } = await market.sell({
+        limitPrice: 3,
+        volume: 1,
+        restingOrder: {},
+      });
+      const tx = await waitForTransaction(response);
+      await waitForBlock(market.mgv, tx.blockNumber);
+    };
+
+    beforeEach(async function () {
+      market = await mgv.market({
+        base: "TokenB",
+        quote: "TokenA",
+        tickSpacing: 1,
+      });
+
+      // Approve router
+      const orderLogic = mgv.offerLogic(mgv.orderContract.address);
+      const routerAddress = (await orderLogic.router())!.address;
+      await waitForTransaction(market.base.approve(routerAddress));
+      await waitForTransaction(market.quote.approve(routerAddress));
+    });
+
+    it("with offers", async () => {
+      // Arrange
+      await createBid();
+      await createAsk();
+
+      // Act
+      const { absoluteSpread, relativeSpread, tickSpread } =
+        await market.spread();
+
+      // Assert
+      helpers.assertApproxEqRel(absoluteSpread, 1, 0.0003);
+      helpers.assertApproxEqRel(relativeSpread, 0.5, 0.0004);
+      assert.equal(tickSpread, 4056);
+    });
+
+    ["bids", "asks", "none"].forEach((ba) => {
+      it(`with ${ba} on book`, async () => {
+        // Arrange
+        if (ba === "bids") {
+          await createBid();
+        } else if (ba === "asks") {
+          await createAsk();
+        }
+
+        // Act
+        const { absoluteSpread, relativeSpread, tickSpread } =
+          await market.spread();
+
+        // Assert
+        assert.equal(absoluteSpread, undefined);
+        assert.equal(relativeSpread, undefined);
+        assert.equal(tickSpread, undefined);
+      });
+    });
+  });
+
   describe("getOutboundInbound", () => {
     it("returns base as outbound and quote as inbound, when asks", async function () {
       //Arrange
@@ -336,7 +408,7 @@ describe("Market integration tests suite", () => {
       expect(result).to.be.equal(true);
     });
 
-    it("returns false, when gives is less than 1", async function () {
+    it("returns false, when gives is 0", async function () {
       // Arrange
       const market = await mgv.market({
         base: "TokenB",
