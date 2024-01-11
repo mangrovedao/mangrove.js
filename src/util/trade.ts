@@ -25,15 +25,8 @@ class Trade {
   tradeEventManagement = new TradeEventManagement();
 
   /**
-   * Get raw parameters to send to Mangrove for a buy order for the given trade and market parameters.
+   * Get raw parameters to send to Mangrove for a buy or sell order for the given trade and market parameters.
    */
-  getParamsForBuy(
-    params: Market.TradeParams,
-    market: Market.KeyResolvedForCalculation,
-  ) {
-    return this.getParamsForTrade(params, market, "buy");
-  }
-
   getParamsForTrade(
     params: Market.TradeParams,
     market: Market.KeyResolvedForCalculation,
@@ -136,16 +129,6 @@ class Trade {
     return value.mul(100 + adjustment).div(100);
   }
 
-  /**
-   * Get raw parameters to send to Mangrove for a sell order for the given trade and market parameters.
-   */
-  getParamsForSell(
-    params: Market.TradeParams,
-    market: Market.KeyResolvedForCalculation,
-  ) {
-    return this.getParamsForTrade(params, market, "sell");
-  }
-
   validateSlippage = (slippage = 0) => {
     if (typeof slippage === "undefined") {
       return 0;
@@ -209,10 +192,11 @@ class Trade {
    * @returns raw parameters for a market order to send to Mangrove
    */
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { maxTick, fillVolume, fillWants } =
-      bs === "buy"
-        ? this.getParamsForBuy(params, market)
-        : this.getParamsForSell(params, market);
+    const { maxTick, fillVolume, fillWants } = this.getParamsForTrade(
+      params,
+      market,
+      bs,
+    );
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
 

@@ -11,7 +11,7 @@ import TickPriceHelper from "../../src/util/tickPriceHelper";
 import { TokenCalculations } from "../../src/token";
 
 describe("Trade unit tests suite", () => {
-  describe("getParamsForBuy", () => {
+  describe("getParamsForTrade bs=buy", () => {
     let market: Market.KeyResolvedForCalculation;
     let trade: Trade;
     const slippage = 3;
@@ -35,7 +35,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForBuy(params, market);
+      const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -66,7 +66,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForBuy(params, market);
+      const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -96,7 +96,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForBuy(params, market);
+      const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -128,7 +128,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForBuy(params, market);
+      const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -160,7 +160,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForBuy(params, market);
+      const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
       const givesWithSlippage = Big(params.gives)
@@ -195,11 +195,11 @@ describe("Trade unit tests suite", () => {
       };
 
       // Act
-      assert.throws(() => trade.getParamsForBuy(params, market));
+      assert.throws(() => trade.getParamsForTrade(params, market, "buy"));
     });
   });
 
-  describe("getParamsForSell", () => {
+  describe("getParamsForTrade bs=sell", () => {
     let market: Market.KeyResolvedForCalculation;
     let trade: Trade;
     const slippage = 3;
@@ -223,7 +223,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForSell(params, market);
+      const result = trade.getParamsForTrade(params, market, "sell");
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -254,7 +254,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForSell(params, market);
+      const result = trade.getParamsForTrade(params, market, "sell");
 
       //Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -284,7 +284,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForSell(params, market);
+      const result = trade.getParamsForTrade(params, market, "sell");
 
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -316,7 +316,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForSell(params, market);
+      const result = trade.getParamsForTrade(params, market, "sell");
 
       // Assert
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
@@ -348,7 +348,7 @@ describe("Trade unit tests suite", () => {
       };
 
       //Act
-      const result = trade.getParamsForSell(params, market);
+      const result = trade.getParamsForTrade(params, market, "sell");
 
       //Assert
       const wantsWithSlippage = Big(params.wants)
@@ -381,7 +381,7 @@ describe("Trade unit tests suite", () => {
       };
 
       // Act
-      assert.throws(() => trade.getParamsForSell(params, market));
+      assert.throws(() => trade.getParamsForTrade(params, market, "sell"));
     });
   });
 
