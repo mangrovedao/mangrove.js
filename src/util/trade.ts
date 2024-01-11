@@ -1,4 +1,4 @@
-import Big from "big.js";
+import Big, { BigSource } from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import Market from "../market";
 import { Bigish } from "../types";
@@ -811,7 +811,7 @@ class Trade {
     market: Market,
     ba: Market.BA,
   ): Promise<{
-    provision: Big.BigSource;
+    provision: BigSource;
     restingOrderGasreq: number;
     gaspriceFactor: number;
     restingOrderBa: string;
