@@ -1044,12 +1044,10 @@ describe("Market integration tests suite", () => {
           const overrides = { gasLimit };
 
           if (forceRouting) {
-            const orderLogic = mgvAdmin.offerLogic(mgv.orderContract.address);
+            const orderLogic = mgv.offerLogic(mgv.orderContract.address);
             const router = await orderLogic.contract.router();
             await market.quote.approve(router);
             await market.base.approve(router);
-
-            await orderLogic.activate(["TokenA", "TokenB"]);
           }
 
           const maker = await mgvTestUtil.getAccount(
