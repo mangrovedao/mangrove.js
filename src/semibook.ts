@@ -415,6 +415,30 @@ class Semibook
     return state.bestBinInCache?.firstOfferId;
   }
 
+  /** Returns the best offer if any */
+  async getBest(): Promise<Market.Offer | undefined> {
+    const state = this.getLatestState();
+    const result = await this.#foldLeftUntil<{
+      offer: Market.Offer | undefined;
+    }>(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      this.lastSeenEventBlock!,
+      state,
+      {
+        offer: undefined,
+      },
+      (acc) => {
+        return acc.offer !== undefined;
+      },
+      (cur, acc) => {
+        acc.offer = cur;
+        return acc;
+      },
+    );
+
+    return result.offer;
+  }
+
   /** Returns an iterator over the offers in the cache. */
   [Symbol.iterator](): Semibook.CacheIterator {
     const state = this.getLatestState();

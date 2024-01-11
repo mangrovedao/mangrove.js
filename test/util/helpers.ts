@@ -73,16 +73,19 @@ export const assertApproxEqAbs = (
 };
 
 export const assertApproxEqRel = (
-  actual: Bigish,
+  actual: Bigish | undefined,
   expected: Bigish,
   deltaRel: Bigish,
   message?: string,
 ) => {
-  if (!Big(actual).sub(Big(expected)).abs().div(expected).lte(Big(deltaRel))) {
+  const diff = actual
+    ? Big(actual).sub(Big(expected)).abs().div(expected)
+    : undefined;
+  if (!diff || !diff.lte(Big(deltaRel))) {
     assert.fail(
       `${
         message ? message + ": " : ""
-      }expected actual=${actual} to be within relative ${deltaRel} of expected=${expected}`,
+      }expected actual=${actual} to be within relative ${deltaRel} of expected=${expected} but was ${diff}`,
     );
   }
 };

@@ -18,6 +18,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 */
 import Big from "big.js";
 import { Density } from "./util/Density";
+import TickPriceHelper from "./util/tickPriceHelper";
 
 let canConstructMarket = false;
 
@@ -776,6 +777,42 @@ class Market {
       asks: await asksPromise,
       bids: await bidsPromise,
     };
+  }
+
+  /**
+   * Gets the absolute, relative, and tick spread between bids and asks on the market.
+   */
+  async spread() {
+    const { asks, bids } = this.getBook();
+
+    const bestAsk = await asks.getBest();
+    const bestBid = await bids.getBest();
+
+    return Market.spread(this, bestAsk, bestBid);
+  }
+
+  /**
+   * Gets the absolute, relative, and tick spread between a bid and an ask on the market.
+   */
+  public static spread(
+    market: Market.KeyResolvedForCalculation,
+    bestAsk?: { price: Bigish; tick: number },
+    bestBid?: { price: Bigish; tick: number },
+  ) {
+    if (!bestAsk || !bestBid) {
+      return {};
+    }
+    const lowestAskPrice = Big(bestAsk.price);
+    const highestBidPrice = Big(bestBid.price);
+    const absoluteSpread = lowestAskPrice.sub(highestBidPrice);
+    const tickSpread = bestAsk.tick + bestBid.tick;
+    // Intentionally using raw ratio as we do not want decimals scaling
+    // Rounding is irrelevant as ticks already respects tick spacing
+    const relativeSpread = new TickPriceHelper("asks", market)
+      .rawRatioFromTick(tickSpread, "roundUp")
+      .sub(1);
+
+    return { absoluteSpread, relativeSpread, tickSpread };
   }
 
   /**

@@ -893,6 +893,25 @@ describe("Semibook integration tests suite", function () {
         const semibook = market.getSemibook("asks");
         expect(semibook.size()).to.equal(0);
         expect(semibook.getLatestState().isComplete).to.equal(true);
+        expect(await semibook.getBest()).to.equal(undefined);
+      });
+
+      it("does not fail with empty incomplete cache", async function () {
+        await createOffers(2);
+        const market = await mgv.market({
+          base: "TokenA",
+          quote: "TokenB",
+          tickSpacing: 1,
+          bookOptions: {
+            targetNumberOfTicks: 0,
+            chunkSize: 1,
+          },
+        });
+        const semibook = market.getSemibook("asks");
+        expect(semibook.size()).to.equal(0);
+        expect(semibook.getLatestState().isComplete).to.equal(false);
+        const best = await semibook.getBest();
+        expect(best?.tick).to.equal(1);
       });
 
       it("fetches only one chunk if the first contains the target number of ticks", async function () {
@@ -947,6 +966,8 @@ describe("Semibook integration tests suite", function () {
         expect(semibook.size()).to.equal(2);
         expect(semibook.getLatestState().binCache.size).to.equal(2);
         expect(semibook.getLatestState().isComplete).to.equal(false);
+        const best = await semibook.getBest();
+        expect(best?.tick).to.equal(1);
       });
 
       it("fetches multiple chunks until at least target number of ticks have been fetched, then stops, ignoring partially fetched extra ticks", async function () {

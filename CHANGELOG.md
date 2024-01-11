@@ -1,6 +1,8 @@
 # Next version
 
 - feat: Moved MangroveJsDeploy from mangrove-strats to this package. Renamed script to EmptyChainDeployer
+- feat: Add spread to market
+- feat: Add getBest to semibook
 
 # 2.0.0
 
