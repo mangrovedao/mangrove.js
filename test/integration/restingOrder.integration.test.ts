@@ -115,7 +115,10 @@ describe("RestingOrder", () => {
         fund: askProvision,
       });
       await meAsLP.newAsk({
-        price: 10 / 10,
+        // Set price so that takers will hit it with a price of 1
+        price: market
+          .getSemibook("asks")
+          .tickPriceHelper.coercePrice(1, "roundDown"),
         volume: 10,
         fund: askProvision,
       });

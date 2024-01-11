@@ -1,6 +1,7 @@
 # Next version
 
 - feat: Moved MangroveJsDeploy from mangrove-strats to this package. Renamed script to EmptyChainDeployer
+- fix: rounding when deducing tick from price for LiquidityProvider
 
 # 2.0.0
 
