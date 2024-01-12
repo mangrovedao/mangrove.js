@@ -141,7 +141,9 @@ describe("Market integration tests suite", () => {
 
       // Approve router
       const orderLogic = mgv.offerLogic(mgv.orderContract.address);
-      const routerAddress = (await orderLogic.router())!.address;
+      const routerAddress = (await orderLogic.router(
+        await mgv.signer.getAddress(),
+      ))!.address;
       await waitForTransaction(market.base.approve(routerAddress));
       await waitForTransaction(market.quote.approve(routerAddress));
     });
@@ -1122,9 +1124,6 @@ describe("Market integration tests suite", () => {
             );
             await market.quote.approve(router);
             await market.base.approve(router);
-
-            // await orderLogic.activate("TokenA");
-            // await orderLogic.activate("TokenB");
           }
 
           const maker = await mgvTestUtil.getAccount(

@@ -6,8 +6,9 @@ import {MangroveDeployer} from "@mgv/script/core/deployers/MangroveDeployer.s.so
 import {OLKey} from "@mgv/src/core/MgvLib.sol";
 import {TestToken} from "@mgv/test/lib/tokens/TestToken.sol";
 import {MangroveOrderDeployer} from "@mgv-strats/script/strategies/mangroveOrder/deployers/MangroveOrderDeployer.s.sol";
+import {ActivateMangroveOrder} from "@mgv-strats/script/strategies/mangroveOrder/ActivateMangroveOrder.s.sol";
 import {KandelSeederDeployer} from "@mgv-strats/script/strategies/kandel/deployers/KandelSeederDeployer.s.sol";
-import {MangroveOrder} from "@mgv-strats/src/strategies/MangroveOrder.sol";
+import {MangroveOrder, RouterProxyFactory} from "@mgv-strats/src/strategies/MangroveOrder.sol";
 import {MgvReader} from "@mgv/src/periphery/MgvReader.sol";
 import {SimpleTestMaker} from "@mgv/test/lib/agents/TestMaker.sol";
 import {Mangrove} from "@mgv/src/core/Mangrove.sol";
@@ -16,6 +17,8 @@ import {Deployer} from "@mgv/script/lib/Deployer.sol";
 import {ActivateMarket, Market} from "@mgv/script/core/ActivateMarket.s.sol";
 import {PoolAddressProviderMock} from "@mgv-strats/script/toy/AaveMock.sol";
 import {IERC20} from "@mgv/lib/IERC20.sol";
+import {IPoolAddressesProvider} from
+  "@mgv-strats/src/strategies/vendor/aave/v3/contracts/interfaces/IPoolAddressesProvider.sol";
 
 /* 
 This script prepares a local chain for testing by mangrove.js.
@@ -29,6 +32,7 @@ contract EmptyChainDeployer is Deployer {
   address public weth;
   SimpleTestMaker public simpleTestMaker;
   MangroveOrder public mgo;
+  RouterProxyFactory public routerProxyFactory;
 
   function run() public {
     innerRun({gasprice: 1000, gasmax: 2_000_000, gasbot: broadcaster()});
@@ -84,11 +88,15 @@ contract EmptyChainDeployer is Deployer {
     activateMarket.innerRun(mgv, mgvReader, Market(weth, dai, 1), 1e12, 1e12 / 1000, 0);
     activateMarket.innerRun(mgv, mgvReader, Market(weth, usdc, 1), 1e12, 1e12 / 1000, 0);
 
-    MangroveOrderDeployer mangroveDeployer = new MangroveOrderDeployer();
-    mangroveDeployer.innerRun({admin: broadcaster(), mgv: IMangrove(payable(mgv))});
-    MangroveOrder mangroveOrder = MangroveOrder(fork.get("MangroveOrder"));
     broadcast();
-    mangroveOrder.activate(dynamic([IERC20(tokenA), IERC20(tokenB)]));
+    routerProxyFactory = new RouterProxyFactory();
+    fork.set("RouterProxyFactory", address(routerProxyFactory));
+
+    MangroveOrderDeployer mgoeDeployer = new MangroveOrderDeployer();
+    mgoeDeployer.innerRun({admin: broadcaster(), mgv: IMangrove(payable(mgv)), routerProxyFactory: routerProxyFactory});
+    mgo = MangroveOrder(payable(fork.get("MangroveOrder")));
+    ActivateMangroveOrder activateMangroveOrder = new ActivateMangroveOrder();
+    activateMangroveOrder.innerRun({mgvOrder: mgo, tokens: dynamic([IERC20(tokenA), IERC20(tokenB)])});
 
     address[] memory underlying = dynamic([address(tokenA), address(tokenB), dai, usdc, weth]);
     broadcast();
@@ -97,7 +105,7 @@ contract EmptyChainDeployer is Deployer {
     KandelSeederDeployer kandelSeederDeployer = new KandelSeederDeployer();
     kandelSeederDeployer.innerRun({
       mgv: IMangrove(payable(mgv)),
-      addressesProvider: aaveAddressProvider,
+      addressesProvider: IPoolAddressesProvider(aaveAddressProvider),
       aaveKandelGasreq: 629000, // see CoreKandelGasreqBaseTest
       kandelGasreq: 126000, // see CoreKandelGasreqBaseTest
       deployKandel: true,
