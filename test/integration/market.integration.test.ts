@@ -1020,7 +1020,7 @@ describe("Market integration tests suite", () => {
   });
 
   [true, false].forEach((forceRouting) => {
-    [/*undefined,*/ 500000, 6500000].forEach((gasLimit) => {
+    [undefined, 500000, 6500000].forEach((gasLimit) => {
       [undefined, 42, 7000000].forEach((gasLowerBound) => {
         it(`uses expected gasLimit and forceRoutingToMangroveOrder=${forceRouting} with gasLowerBound=${gasLowerBound} and gasLimit=${gasLimit}`, async function () {
           // Arrange
@@ -1083,7 +1083,7 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 126242;
+                expectedLimit = 271598;
               } else {
                 expectedLimit = 43475;
               }
@@ -1619,7 +1619,7 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
     // see mangroveOrder.json -> restingOrderGasreq
-    const gasreq = 152000;
+    const gasreq = 500000;
     const baseAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyBaseQuote,
       gasreq,

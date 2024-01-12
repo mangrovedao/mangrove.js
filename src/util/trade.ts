@@ -770,6 +770,8 @@ class Trade {
       restingParams,
       market,
       gasLowerBound,
+      takerGivesLogic,
+      takerWantsLogic,
     }: {
       maxTick: number;
       fillVolume: ethers.BigNumber;
@@ -813,8 +815,8 @@ class Trade {
             fok: fillOrKill,
             restingOrder: !!restingOrderParams,
           }),
-          takerGivesLogic: market.base.address,
-          takerWantsLogic: market.quote.address,
+          takerGivesLogic,
+          takerWantsLogic,
           expiryDate: expiryDate,
           offerId:
             restingParams?.offerId === undefined ? 0 : restingParams.offerId,
