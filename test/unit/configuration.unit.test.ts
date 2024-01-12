@@ -74,11 +74,11 @@ describe("Configuration unit tests suite", () => {
   it("can read mangroveOrder config", () => {
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("local"),
-      152000,
+      500000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("maticmum"),
-      152001,
+      500000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGaspriceFactor("local"),
@@ -90,11 +90,11 @@ describe("Configuration unit tests suite", () => {
     );
     assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("local"),
-      330000,
+      200000,
     );
     assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("maticmum"),
-      330001,
+      200000,
     );
   });
 });
