@@ -1,4 +1,4 @@
-import Big from "big.js";
+import Big, { BigSource } from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import Market, { MangroveOrderType } from "../market";
 import { Bigish } from "../types";
@@ -25,50 +25,55 @@ class Trade {
   tradeEventManagement = new TradeEventManagement();
 
   /**
-   * Get raw parameters to send to Mangrove for a buy order for the given trade and market parameters.
+   * Get raw parameters to send to Mangrove for a buy or sell order for the given trade and market parameters.
    */
-  getParamsForBuy(
+  getParamsForTrade(
     params: Market.TradeParams,
     market: Market.KeyResolvedForCalculation,
+    bs: Market.BS,
   ) {
-    // validate parameters and setup tickPriceHelper
-    let fillVolume: Big, maxTick: number, fillWants: boolean;
+    let fillVolume: Big,
+      maxTick: number,
+      fillWants: boolean = bs === "buy";
+    const ba = this.bsToBa(bs);
     const slippage = this.validateSlippage(params.slippage);
-    const tickPriceHelper = new TickPriceHelper("asks", market);
+    const tickPriceHelper = new TickPriceHelper(ba, market);
     if ("limitPrice" in params) {
       if (Big(params.limitPrice).lte(0)) {
         throw new Error("Cannot buy at or below price 0");
       }
-      const priceWithSlippage = this.adjustForSlippage(
+      const limitPriceWithSlippage = this.adjustForSlippage(
         Big(params.limitPrice),
         slippage,
-        "buy",
+        bs,
       );
       // round down to not exceed the price
-      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
+      maxTick = tickPriceHelper.tickFromPrice(
+        limitPriceWithSlippage,
+        "roundDown",
+      );
       if ("volume" in params) {
         fillVolume = Big(params.volume);
-        fillWants = true;
       } else {
         fillVolume = Big(params.total);
-        fillWants = false;
+        fillWants = !fillWants;
       }
     } else if ("maxTick" in params) {
       // in this case, we're merely asking to get the tick adjusted for slippage
       fillVolume = Big(params.fillVolume);
-      fillWants = params.fillWants ?? true;
+      fillWants = params.fillWants ?? fillWants;
       if (slippage > 0) {
-        // round down to not exceed the price
+        // round down to not exceed the price when buying, and up to get at least price for when selling
         const limitPrice = tickPriceHelper.priceFromTick(
           params.maxTick,
-          "roundDown",
+          bs === "buy" ? "roundDown" : "roundUp",
         );
         const limitPriceWithSlippage = this.adjustForSlippage(
           limitPrice,
           slippage,
-          "buy",
+          bs,
         );
-        // round down to not exceed the price
+        // round down to not exceed the price expectations
         maxTick = tickPriceHelper.tickFromPrice(
           limitPriceWithSlippage,
           "roundDown",
@@ -78,26 +83,32 @@ class Trade {
         maxTick = params.maxTick;
       }
     } else {
-      const givesWithSlippage = this.adjustForSlippage(
-        Big(params.gives),
-        slippage,
-        "buy",
-      );
-      fillWants = params.fillWants ?? true;
-      fillVolume = fillWants ? Big(params.wants) : givesWithSlippage;
-      // round down to not exceed price expectations
-      maxTick = tickPriceHelper.tickFromVolumes(
-        givesWithSlippage,
-        params.wants,
-        "roundDown",
-      );
+      let wants = Big(params.wants);
+      let gives = Big(params.gives);
+      if (bs === "buy") {
+        gives = this.adjustForSlippage(gives, slippage, bs);
+      } else {
+        wants = this.adjustForSlippage(wants, slippage, bs);
+      }
+      fillWants = params.fillWants ?? fillWants;
+      fillVolume = fillWants ? wants : gives;
+      // round down to not exceed the price expectations
+      maxTick = tickPriceHelper.tickFromVolumes(gives, wants, "roundDown");
     }
 
     return {
       maxTick,
       fillVolume: fillWants
-        ? market.base.toUnits(fillVolume)
-        : market.quote.toUnits(fillVolume),
+        ? Market.getOutboundInbound(
+            ba,
+            market.base,
+            market.quote,
+          ).outbound_tkn.toUnits(fillVolume)
+        : Market.getOutboundInbound(
+            ba,
+            market.base,
+            market.quote,
+          ).inbound_tkn.toUnits(fillVolume),
       fillWants: fillWants,
     };
   }
@@ -116,79 +127,6 @@ class Trade {
   ): Big {
     const adjustment = orderType === "buy" ? slippage : -slippage;
     return value.mul(100 + adjustment).div(100);
-  }
-
-  /**
-   * Get raw parameters to send to Mangrove for a sell order for the given trade and market parameters.
-   */
-  getParamsForSell(
-    params: Market.TradeParams,
-    market: Market.KeyResolvedForCalculation,
-  ) {
-    let fillVolume: Big, maxTick: number, fillWants: boolean;
-    const slippage = this.validateSlippage(params.slippage);
-    const tickPriceHelper = new TickPriceHelper("bids", market);
-    if ("limitPrice" in params) {
-      if (Big(params.limitPrice).lte(0)) {
-        throw new Error("Cannot buy at or below price 0");
-      }
-      const priceWithSlippage = this.adjustForSlippage(
-        Big(params.limitPrice),
-        slippage,
-        "sell",
-      );
-      // round down to not exceed the price
-      maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
-      if ("volume" in params) {
-        fillVolume = Big(params.volume);
-        fillWants = false;
-      } else {
-        fillVolume = Big(params.total);
-        fillWants = true;
-      }
-    } else if ("maxTick" in params) {
-      // in this case, we're merely asking to get the tick adjusted for slippage
-      fillVolume = Big(params.fillVolume);
-      fillWants = params.fillWants ?? false;
-      if (slippage > 0) {
-        // Round up since a higher price is better for sell
-        const limitPrice = tickPriceHelper.priceFromTick(
-          params.maxTick,
-          "roundUp",
-        );
-        const priceWithSlippage = this.adjustForSlippage(
-          limitPrice,
-          slippage,
-          "sell",
-        );
-        // round down to not exceed the price expectations
-        maxTick = tickPriceHelper.tickFromPrice(priceWithSlippage, "roundDown");
-      } else {
-        maxTick = params.maxTick;
-      }
-    } else {
-      const wantsWithSlippage = this.adjustForSlippage(
-        Big(params.wants),
-        slippage,
-        "sell",
-      );
-      fillWants = params.fillWants ?? false;
-      fillVolume = fillWants ? wantsWithSlippage : Big(params.gives);
-      // round down to not exceed the price expectations
-      maxTick = tickPriceHelper.tickFromVolumes(
-        params.gives,
-        wantsWithSlippage,
-        "roundDown",
-      );
-    }
-
-    return {
-      fillVolume: fillWants
-        ? market.quote.toUnits(fillVolume)
-        : market.base.toUnits(fillVolume),
-      maxTick,
-      fillWants: fillWants,
-    };
   }
 
   validateSlippage = (slippage = 0) => {
@@ -254,10 +192,11 @@ class Trade {
    * @returns raw parameters for a market order to send to Mangrove
    */
   getRawParams(bs: Market.BS, params: Market.TradeParams, market: Market) {
-    const { maxTick, fillVolume, fillWants } =
-      bs === "buy"
-        ? this.getParamsForBuy(params, market)
-        : this.getParamsForSell(params, market);
+    const { maxTick, fillVolume, fillWants } = this.getParamsForTrade(
+      params,
+      market,
+      bs,
+    );
     const restingOrderParams =
       "restingOrder" in params ? params.restingOrder : null;
 
@@ -909,7 +848,7 @@ class Trade {
     market: Market,
     ba: Market.BA,
   ): Promise<{
-    provision: Big.BigSource;
+    provision: BigSource;
     restingOrderGasreq: number;
     gaspriceFactor: number;
     restingOrderBa: string;

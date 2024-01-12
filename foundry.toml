@@ -2,7 +2,7 @@
 [profile.default]
 src='src'
 broadcast='broadcast'
-script='./node_modules/@mangrovedao/mangrove-strats/script'
+script='./src/util/test'
 test='test'
 out='out'
 libs=['lib']
