@@ -123,8 +123,8 @@ class GeometricKandelDistributionHelper {
   }
 
   /** Gets tick based parameters for a distribution based on tick or price params.
-   * @param params The distribution parameters, @see DistributionParams
-   * @returns The tick based parameters, @see TickDistributionParams
+   * @param params The distribution parameters, see {@link DistributionParams}
+   * @returns The tick based parameters, see {@link TickDistributionParams}
    */
   public getTickDistributionParams(
     params: Omit<DistributionParams, "generateFromMid">,

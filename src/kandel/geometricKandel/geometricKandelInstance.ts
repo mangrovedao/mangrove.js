@@ -33,7 +33,7 @@ export type GeometricKandelParameters = {
 /**
  * @notice Parameters specific to a geometric Kandel instance where provided properties override current values. baseQuoteTickOffset takes precedence over priceRatio. Note that baseQuoteTickOffset and pricePoints are normally provided via the KandelDistribution.
  * @see GeometricKandelParameters for more information.
- * @remarks Cannot simply be Partial<GeometricKandelParameters> due to Big vs Bigish.
+ * @remarks Cannot simply be `Partial<GeometricKandelParameters>` due to Big vs Bigish.
  */
 export type GeometricKandelParameterOverrides = {
   baseQuoteTickOffset?: number;
@@ -91,7 +91,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
     });
   }
 
-  /** Constructor. @see create */
+  /** Constructor. See {@link create} */
   protected constructor(params: {
     address: string;
     kandel: typechain.CoreKandel;
@@ -239,7 +239,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
   /** Calculates a new uniform distribution based on the available base and quote balance and min price and mid price.
    * @param params The parameters for the new distribution.
    * @param params.midPrice The current mid price of the market used to discern expected bids from asks.
-   * @param params.minPrice The minimum price to generate the distribution from; can be retrieved from the status from @see getOfferStatus or @see getOfferStatusFromOffers .
+   * @param params.minPrice The minimum price to generate the distribution from; can be retrieved from the status from {@link getOfferStatuses} or {@link getOfferStatusFromOffers} .
    * @param params.generateFromMid Whether to generate the distribution outwards from the midPrice or upwards from the minPrice.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
    * @param params.minimumQuotePerOffer The minimum quote token volume per offer. If not provided, then the minimum quote token volume is used.
@@ -289,7 +289,7 @@ class GeometricKandelInstance extends CoreKandelInstance {
    * @param params.geometricParameters The geometric parameters to set leave out values to keep their current value.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
-   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision.
+   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to {@link getRequiredProvision}.
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param params.populateMode The mode to use when populating the offers. If not provided, then "reduceCallData" is used - it computes offers on-chain but reduces the amount of call data; "saveGas" computes offers off-chain and sends them as call data, but saves gas.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.

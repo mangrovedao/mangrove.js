@@ -152,14 +152,14 @@ class LiquidityProvider {
     }
   }
 
-  /** Gets the missing provision in ethers for a bid using @see computeOfferProvision. */
+  /** Gets the missing provision in ethers for a bid using {@link computeOfferProvision}. */
   computeBidProvision(
     opts: { id?: number; gasreq?: number; gasprice?: number } = {},
   ): Promise<Big> {
     return this.computeOfferProvision("bids", opts);
   }
 
-  /** Gets the missing provision in ethers for an ask using @see computeOfferProvision. */
+  /** Gets the missing provision in ethers for an ask using {@link computeOfferProvision}. */
   computeAskProvision(
     opts: { id?: number; gasreq?: number; gasprice?: number } = {},
   ): Promise<Big> {

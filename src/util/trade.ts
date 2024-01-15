@@ -802,7 +802,7 @@ class Trade {
   }
 
   /** Determines the parameters for a resting order which can be provided via default configuration value.
-   * @param params The resting order params. @see Market.RestingOrderParams.
+   * @param params The resting order params. See {@link Market.RestingOrderParams}.
    * @param market The market.
    * @param ba The BA of the taker order; the resting order will be the opposite.
    * @returns The resting order parameters.
