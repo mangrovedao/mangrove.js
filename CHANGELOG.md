@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.2
+
 - feat: Updated exports in index.ts to export all referenced types.
 - fix: Fixed various issues in TypeDoc comments.
 
