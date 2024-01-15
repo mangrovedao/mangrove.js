@@ -4,7 +4,7 @@ import util from "util";
 
 import Market from "./market";
 // syntactic sugar
-import { Bigish } from "./types";
+import { Bigish } from "./util";
 import Mangrove from "./mangrove";
 import { typechain } from "./types";
 
@@ -29,12 +29,11 @@ namespace LiquidityProvider {
    *  offer order.
    */
 
-  type OptParams = { fund?: Bigish };
-
-  export type OfferParams =
-    | ({ price: Bigish; volume: Bigish } & OptParams)
-    | ({ tick: number; gives: Bigish } & OptParams)
-    | ({ wants: Bigish; gives: Bigish } & OptParams);
+  export type OfferParams = (
+    | { price: Bigish; volume: Bigish }
+    | { tick: number; gives: Bigish }
+    | { wants: Bigish; gives: Bigish }
+  ) & { fund?: Bigish };
 
   export type OfferActionResult = {
     offerType: Market.BA;

@@ -1,6 +1,5 @@
 import { BigNumber, BigNumberish, ContractTransaction, utils } from "ethers";
-import Mangrove, { Market, TickPriceHelper, Token } from "../../src";
-import { Bigish } from "../../src/types";
+import Mangrove, { Bigish, Market, TickPriceHelper, Token } from "../../src";
 import Big from "big.js";
 import assert from "assert";
 

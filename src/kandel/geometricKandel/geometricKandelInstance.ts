@@ -1,5 +1,6 @@
 import Market from "../../market";
-import { Bigish, typechain } from "../../types";
+import { typechain } from "../../types";
+import { Bigish } from "../../util";
 import CoreKandelInstance, {
   KandelParameterOverrides,
   MarketOrMarketFactory,

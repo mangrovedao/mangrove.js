@@ -7,12 +7,10 @@ import KandelDistribution, {
 /** @title A general distribution of bids and ask for Kandel fully specified as bids and asks with tick and volumes and no other parameters. */
 class GeneralKandelDistribution extends KandelDistribution {
   /** Constructor
-   * @param params.offers The distribution of bids and asks.
-   * @param params.baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
    * @param params.pricePoints The number of price points in the distribution.
    * @param params.stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
+   * @param params.offers The distribution of bids and asks.
    * @param params.market The key data about the market.
-   *
    */
   public constructor(params: {
     pricePoints: number;

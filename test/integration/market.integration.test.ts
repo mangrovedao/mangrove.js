@@ -13,13 +13,12 @@ import {
 } from "../../src/util/test/mgvIntegrationTestUtil";
 
 import assert from "assert";
-import { Mangrove, Market, Semibook } from "../../src";
+import { Bigish, Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
-import { Bigish } from "../../src/types";
 import { Density } from "../../src/util/Density";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import TickPriceHelper from "../../src/util/tickPriceHelper";

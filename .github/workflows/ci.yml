@@ -60,6 +60,10 @@ jobs:
       - name: Mgv cli Tests
         run: yarn mgv help
 
+      # == verify docs can be generated ==
+      - name: Generate Docs
+        run: yarn doc
+
         # == Send coverage report to Coveralls ==
         # Coverallsapp by default uses GITHUB_SHA but that does not necessarily correspond
         # to HEAD because a branch is checked out. We here find the actual SHA for HEAD.

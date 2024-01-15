@@ -13,7 +13,8 @@ import {
   ReliableHttpProvider,
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
-import { Bigish, Provider, typechain } from "./types";
+import { Provider, typechain } from "./types";
+import { Bigish } from "./util";
 import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
 import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
@@ -783,7 +784,7 @@ function readContextAaveAddresses() {
  *
  * Example for adding configuration for a new token with symbol "SYM":
  *
- *    updateConfiguration({tokens: { SYM: { decimals: 18}}})
+ *    `updateConfiguration({tokens: { SYM: { decimals: 18}}})`
  */
 export function updateConfiguration(defaults: PartialConfiguration): void {
   config = deepmerge(config, defaults) as Configuration;

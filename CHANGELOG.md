@@ -1,5 +1,8 @@
 # Next version
 
+- feat: Updated exports in index.ts to export all referenced types.
+- fix: Fixed various issues in TypeDoc comments.
+
 # 2.0.1
 
 - feat: Moved MangroveJsDeploy from mangrove-strats to this package. Renamed script to EmptyChainDeployer

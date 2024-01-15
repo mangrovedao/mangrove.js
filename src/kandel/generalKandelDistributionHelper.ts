@@ -17,7 +17,6 @@ class GeneralKandelDistributionHelper {
    * @param explicitOffers The explicit offers to use.
    * @param explicitOffers.bids The explicit bids to use.
    * @param explicitOffers.asks The explicit asks to use.
-   * @param explicitAsks The explicit asks to use.
    * @param distribution The original distribution. If pricePoints is not provided, then the number of offers is used.
    * @returns The new distribution.
    */

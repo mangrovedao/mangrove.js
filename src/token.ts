@@ -1,7 +1,7 @@
 import Big from "big.js";
 import * as ethers from "ethers";
 import Mangrove from "./mangrove";
-import { Bigish } from "./types";
+import { Bigish } from "./util";
 import { typechain } from "./types";
 import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";
@@ -19,7 +19,10 @@ namespace Token {
 }
 
 // Used to ease the use of approve functions
-type AmountAndOverrides = { amount: Bigish; overrides: ethers.Overrides };
+export type AmountAndOverrides = {
+  amount: Bigish;
+  overrides: ethers.Overrides;
+};
 export type ApproveArgs = Bigish | ethers.Overrides | AmountAndOverrides;
 
 function approveArgsIsBigish(args: ApproveArgs): args is Bigish {

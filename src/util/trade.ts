@@ -1,7 +1,7 @@
 import Big, { BigSource } from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import Market from "../market";
-import { Bigish } from "../types";
+import { Bigish } from "../util";
 import logger from "./logger";
 import TradeEventManagement, {
   OrderResultWithOptionalSummary,
@@ -9,7 +9,7 @@ import TradeEventManagement, {
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 
-type CleanUnitParams = {
+export type CleanUnitParams = {
   ba: Market.BA;
   targets: {
     offerId: number;
@@ -430,9 +430,9 @@ class Trade {
 
   /**
    * Clean a set of given offers.
-   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
-   * @param market: the market to clean on
-   * @param overrides: ethers overrides for the transaction
+   * @param params Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
+   * @param market the market to clean on
+   * @param overrides ethers overrides for the transaction
    * @returns a promise that resolves to the transaction response and the result of the cleaning.
    *
    * @see {@link Market.CleanParams} for a more thorough description of cleaning parameters.
@@ -463,8 +463,8 @@ class Trade {
   /**
    * Gets parameters to send to function `market.mgv.cleanerContract.cleanByImpersonation`.
    *
-   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
-   * @param market: the market to clean on
+   * @param params Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
+   * @param market the market to clean on
    * @returns a promise that resolves to the raw parameters to send to the cleaner contract
    *
    * @remarks
@@ -500,7 +500,8 @@ class Trade {
   /**
    * Estimate amount of gas for a buy or sell order for the given volume.
    * @param bs buy or sell
-   * @param volume volume to trade
+   * @param params The parameters for the trade
+   * @param market The market
    * @returns an estimate of the gas required for the trade
    */
   async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
@@ -522,7 +523,7 @@ class Trade {
   }
 
   /** Simulate the gas required for a market order.
-   * @param ba buy or sell
+   * @param bs buy or sell
    * @param params trade parameters - see {@link Market.TradeParams}
    * @param market the market to trade on
    * @returns an estimate of the gas required for the trade
