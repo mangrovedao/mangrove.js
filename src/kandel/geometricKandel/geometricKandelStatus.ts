@@ -122,9 +122,7 @@ class GeometricKandelStatus {
    * @param stepSize The step size used when transporting funds from an offer to its dual.
    * @param offers The offers to determine the status of.
    * @returns The status of the Kandel instance.
-   * @remarks The expected prices are determined by extrapolating from an offer closest to the mid price.
-   * @remarks Offers are expected to be live bids below the mid price and asks above.
-   * @remarks Offers are expected to be dead near the mid price due to the step size between the live bid and ask.
+   * @remarks The expected prices are determined by extrapolating from an offer closest to the mid price. Offers are expected to be live bids below the mid price and asks above. Offers are expected to be dead near the mid price due to the step size between the live bid and ask.
    */
   public getOfferStatuses(
     midPrice: Big,

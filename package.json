@@ -123,7 +123,8 @@
     "ts-mockito": "^2.0.0",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.0",
-    "typedoc": "^0.25.2",
+    "typedoc": "^0.25.7",
+    "typedoc-plugin-markdown": "^3.17.1",
     "typescript": "^5.2.2"
   },
   "packageManager": "yarn@3.5.0"

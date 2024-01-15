@@ -1,10 +1,9 @@
 import assert from "assert";
 import { Big } from "big.js";
 import { describe, it } from "mocha";
-import { Market } from "../../src";
+import { Bigish, Market } from "../../src";
 import { BigNumber } from "ethers";
 import TickPriceHelper, { RoundingMode } from "../../src/util/tickPriceHelper";
-import { Bigish } from "../../src/types";
 import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 import UnitCalculations from "../../src/util/unitCalculations";
 import * as TickLib from "../../src/util/coreCalculations/TickLib";

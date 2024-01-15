@@ -1,6 +1,6 @@
 import Big from "big.js";
 import Market from "../market";
-import { Bigish } from "../types";
+import { Bigish } from "../util";
 import TickPriceHelper from "../util/tickPriceHelper";
 
 /** Offers with their tick, Kandel index, and gives amount.
@@ -39,7 +39,7 @@ class KandelDistributionHelper {
 
   /** Uniformly changes values by a total amount without decreasing below a minimum for each value. A value already below minimum will not be changed.
    * @param values The values to change.
-   * @param totalDelta The total amount to change.
+   * @param delta The total amount to change.
    * @param minimumValue The minimum value for each value.
    * @param round The function to round the values.
    * @returns The new values and the total change.

@@ -1,3 +1,7 @@
+import { BigSource } from "big.js";
+
+export type Bigish = BigSource;
+
 export class Deferred<T = void> {
   public readonly promise: Promise<T>;
   #resolve!: (value: T | PromiseLike<T>) => void;

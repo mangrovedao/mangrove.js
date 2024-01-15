@@ -85,8 +85,8 @@ const seed = {
 };
 
 // Deploy a Kandel instance with the specified seed data (the offers are later populated based on the above distribution)
-const { result: kandelPromise } = await kandelStrategies.seeder.sow(seed);
-const kandelInstance = await kandelPromise;
+const { result } = await kandelStrategies.seeder.sow(seed);
+const kandelInstance = await result;
 
 // Approve Kandel instance to use our funds
 const approvalTxs = await kandelInstance.approveIfHigher();
