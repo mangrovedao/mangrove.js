@@ -105,6 +105,17 @@ namespace Mangrove {
   export type Configuration = MangroveJsConfiguration;
 
   export type PartialConfiguration = PartialMangroveJsConfiguration;
+
+  /** Parameters used to calculate provision for an offer
+   * @param gasprice the gas price for the offer in Mwei.
+   * @param gasreq the gas requirement for the offer
+   * @param gasbase the offer list's offer_gasbase.
+   */
+  export type OfferProvisionParams = {
+    gasprice: number;
+    gasreq: number;
+    gasbase: number;
+  };
 }
 
 class Mangrove {
@@ -662,15 +673,10 @@ class Mangrove {
   }
 
   /** Calculates the provision required or locked for offers based on the given parameters
-   * @param offers[] the offers to calculate provision for.
-   * @param offers[].gasprice the gas price for the offer in Mwei.
-   * @param offers[].gasreq the gas requirement for the offer
-   * @param offers[].gasbase the offer list's offer_gasbase.
+   * @param offers the offers to calculate provision for.
    * @returns the required provision, in ethers.
    */
-  public calculateOffersProvision(
-    offers: { gasprice: number; gasreq: number; gasbase: number }[],
-  ) {
+  public calculateOffersProvision(offers: Mangrove.OfferProvisionParams[]) {
     return offers.reduce(
       (acc, offer) =>
         acc.add(
@@ -887,9 +893,9 @@ class Mangrove {
 
   /**
    * Returns open markets data according to MgvReader.
-   * @param from start at market `from`. Default 0.
-   * @param maxLen max number of markets returned. Default all.
-   * @param configs fetch market's config information. Default true.
+   * @param params.from start at market `from`. Default 0.
+   * @param params.maxLen max number of markets returned. Default all.
+   * @param params.configs fetch market's config information. Default true.
    * @note If an open market has a token with no/bad decimals/symbol function, this function will revert.
    */
   async openMarkets(

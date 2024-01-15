@@ -100,7 +100,6 @@ class GeometricKandelDistributionGenerator {
   /** Calculates a minimal recommended volume distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
    * @param params The parameters for the geometric price distribution.
    * @param params.distributionParams The parameters for the geometric price distribution.
-   * @param params.stepSize The step size used when transporting funds from an offer to its dual.
    * @param params.constantBase Whether the base amount should be constant for all offers.
    * @param params.constantQuote Whether the quote amount should be constant for all offers.
    * @param params.minimumBasePerOffer The minimum amount of base to give for each offer. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market.
@@ -124,11 +123,11 @@ class GeometricKandelDistributionGenerator {
     );
 
     const protoDistribution =
-      await this.calculateDistributionFromGeometricParams({
+      await this.calculateDistributionFromGeometricParams(
         geometricParams,
-        initialBidGives: 1,
-        initialAskGives: 1,
-      });
+        1,
+        1,
+      );
 
     const { askGives, bidGives } =
       protoDistribution.calculateMinimumInitialGives(
@@ -136,11 +135,11 @@ class GeometricKandelDistributionGenerator {
         Big(params.minimumQuotePerOffer),
       );
 
-    return this.calculateDistributionFromGeometricParams({
+    return this.calculateDistributionFromGeometricParams(
       geometricParams,
-      initialAskGives: params.constantQuote ? undefined : askGives,
-      initialBidGives: params.constantBase ? undefined : bidGives,
-    });
+      params.constantQuote ? undefined : askGives,
+      params.constantBase ? undefined : bidGives,
+    );
   }
 
   /** Calculates distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
@@ -160,46 +159,45 @@ class GeometricKandelDistributionGenerator {
       params.distributionParams,
     );
 
-    return this.calculateDistributionFromGeometricParams({
+    return this.calculateDistributionFromGeometricParams(
       geometricParams,
-      initialAskGives: params.initialAskGives,
-      initialBidGives: params.initialBidGives,
-    });
+      params.initialAskGives,
+      params.initialBidGives,
+    );
   }
 
   /** Calculates distribution of bids and asks and their base and quote amounts to match the geometric price distribution given by parameters.
-   * @param params The parameters for the geometric distribution.
-   * @param params.geometricParams The parameters for the geometric price distribution.
-   * @param params.geometricParams.pricePoints The number of price points in the distribution.
-   * @param params.geometricParams.firstAskIndex The index of the first live ask.
-   * @param params.geometricParams.baseQuoteTickOffset The number of ticks to jump between two price points.
-   * @param params.geometricParams.baseQuoteTickIndex0 The tick of the lowest priced price point.
-   * @param params.geometricParams.stepSize The step size used when transporting funds from an offer to its dual.
-   * @param params.initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
-   * @param params.initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
+   * @param geometricParams The parameters for the geometric price distribution.
+   * @param geometricParams.pricePoints The number of price points in the distribution.
+   * @param geometricParams.firstAskIndex The index of the first live ask.
+   * @param geometricParams.baseQuoteTickOffset The number of ticks to jump between two price points.
+   * @param geometricParams.baseQuoteTickIndex0 The tick of the lowest priced price point.
+   * @param geometricParams.stepSize The step size used when transporting funds from an offer to its dual.
+   * @param initialAskGives The initial amount of base to give for all asks. Should be at least minimumBasePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialBidGives is used as quote for asks, and the base the ask gives is set to according to the price.
+   * @param initialBidGives The initial amount of quote to give for all bids. Should be at least minimumQuotePerOfferFactor from KandelConfiguration multiplied with the minimum volume for the market. If not provided, then initialAskGives is used as base for bids, and the quote the bid gives is set to according to the price.
    * @returns The distribution of bids and asks and their base and quote amounts.
    * @remarks The price distribution may not match the priceDistributionParams exactly due to limited precision.
    */
-  public async calculateDistributionFromGeometricParams(params: {
+  public async calculateDistributionFromGeometricParams(
     geometricParams: {
       baseQuoteTickOffset: number;
       pricePoints: number;
       firstAskIndex: number;
       baseQuoteTickIndex0: number;
       stepSize: number;
-    };
-    initialAskGives?: Bigish;
-    initialBidGives?: Bigish;
-  }) {
+    },
+    initialAskGives?: Bigish,
+    initialBidGives?: Bigish,
+  ) {
     const distribution =
       await this.geometricKandelLib.createFullGeometricDistribution({
-        baseQuoteTickIndex0: params.geometricParams.baseQuoteTickIndex0,
-        baseQuoteTickOffset: params.geometricParams.baseQuoteTickOffset,
-        firstAskIndex: params.geometricParams.firstAskIndex,
-        bidGives: params.initialBidGives,
-        askGives: params.initialAskGives,
-        pricePoints: params.geometricParams.pricePoints,
-        stepSize: params.geometricParams.stepSize,
+        baseQuoteTickIndex0: geometricParams.baseQuoteTickIndex0,
+        baseQuoteTickOffset: geometricParams.baseQuoteTickOffset,
+        firstAskIndex: geometricParams.firstAskIndex,
+        bidGives: initialBidGives,
+        askGives: initialAskGives,
+        pricePoints: geometricParams.pricePoints,
+        stepSize: geometricParams.stepSize,
       });
 
     return distribution;
@@ -224,11 +222,11 @@ class GeometricKandelDistributionGenerator {
       params.availableQuote ? Big(params.availableQuote) : undefined,
     );
 
-    return this.calculateDistributionFromGeometricParams({
-      geometricParams: params.distribution,
-      initialAskGives: initialGives.askGives,
-      initialBidGives: initialGives.bidGives,
-    });
+    return this.calculateDistributionFromGeometricParams(
+      params.distribution,
+      initialGives.askGives,
+      initialGives.bidGives,
+    );
   }
 
   /** Retrieves the minimum volume for a given offer type at the given index.

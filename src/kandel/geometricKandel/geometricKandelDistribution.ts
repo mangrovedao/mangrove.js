@@ -23,7 +23,7 @@ class GeometricKandelDistribution extends KandelDistribution {
    * @param pricePoints The number of price points in the distribution.
    * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
    * @param offers The distribution of bids and asks.
-   * @param params.market The key data about the market.
+   * @param market The key data about the market.
    */
   public constructor(
     geometricHelper: GeometricKandelDistributionHelper,

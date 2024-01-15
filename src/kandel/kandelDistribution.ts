@@ -31,10 +31,9 @@ class KandelDistribution {
   helper: KandelDistributionHelper;
 
   /** Constructor
-   * @param offers The distribution of bids and asks.
-   * @param baseQuoteTickOffset The number of ticks to jump between two price points - this gives the geometric progression. Should be >=1.
    * @param pricePoints The number of price points in the distribution.
    * @param stepSize The step size used when transporting funds from an offer to its dual. Should be >=1.
+   * @param offers The distribution of bids and asks.
    * @param market The key data about the market.
    */
   public constructor(

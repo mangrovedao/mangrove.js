@@ -50,8 +50,6 @@ class GeneralKandelDistributionGenerator {
   /** Creates a distribution based on an explicit set of offers. Either based on an original distribution or parameters for one.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
-   * @param params.explicitOffers.bids The explicit bids to use.
-   * @param params.explicitOffers.asks The explicit asks to use.
    * @param params.distribution The original distribution or parameters for one. If pricePoints is not provided, then the number of offers is used.
    * @returns The new distribution.
    */

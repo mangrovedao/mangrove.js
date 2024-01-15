@@ -1075,7 +1075,7 @@ class Market {
   /**
    * Clean a set of given offers.
    * @param params Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
-   * @param overrides: ethers overrides for the transaction.
+   * @param overrides ethers overrides for the transaction.
    * @returns a promise that resolves to the transasction response and the result of the cleaning.
    *
    * @see {@link Market.CleanParams} for a description of params.
@@ -1093,7 +1093,7 @@ class Market {
   /**
    * Gets parameters to send to function `market.mgv.cleanerContract.cleanByImpersonation`.
    *
-   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate
+   * @param params Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate
    *
    * @returns a promise that resolves to the raw parameters to send to the cleaner contract
    *
@@ -1143,8 +1143,8 @@ class Market {
 
   /** Uses {@link Semibook.simulateMarketOrder} to simulate the gas required for a market order. An overhead of 50% is added to account for changes to the book and failing offers.
    * @param ba bids or asks
-   * @param gives amount of inbound token to give to the makers
-   * @param wants amount of outbound token to receive from the makers
+   * @param maxTick the maximum to reach for the market order.
+   * @param fillVolume the amount to fill (wants or gives)
    * @param fillWants whether to fill wants or gives
    */
   async simulateGas(
