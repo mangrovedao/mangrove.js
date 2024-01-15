@@ -29,12 +29,11 @@ namespace LiquidityProvider {
    *  offer order.
    */
 
-  type OptParams = { fund?: Bigish };
-
-  export type OfferParams =
-    | ({ price: Bigish; volume: Bigish } & OptParams)
-    | ({ tick: number; gives: Bigish } & OptParams)
-    | ({ wants: Bigish; gives: Bigish } & OptParams);
+  export type OfferParams = (
+    | { price: Bigish; volume: Bigish }
+    | { tick: number; gives: Bigish }
+    | { wants: Bigish; gives: Bigish }
+  ) & { fund?: Bigish };
 
   export type OfferActionResult = {
     offerType: Market.BA;

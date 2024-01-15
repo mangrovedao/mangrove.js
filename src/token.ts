@@ -19,7 +19,10 @@ namespace Token {
 }
 
 // Used to ease the use of approve functions
-type AmountAndOverrides = { amount: Bigish; overrides: ethers.Overrides };
+export type AmountAndOverrides = {
+  amount: Bigish;
+  overrides: ethers.Overrides;
+};
 export type ApproveArgs = Bigish | ethers.Overrides | AmountAndOverrides;
 
 function approveArgsIsBigish(args: ApproveArgs): args is Bigish {

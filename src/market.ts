@@ -371,16 +371,6 @@ namespace Market {
     gasbase: number;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  export namespace BookReturns {
-    type _BookReturns = Awaited<
-      ReturnType<Market.MgvReader["functions"]["offerList"]>
-    >;
-    export type Indices = _BookReturns[1];
-    export type Offers = _BookReturns[2];
-    export type Details = _BookReturns[3];
-  }
-
   /**
    * Type for events emitted by the Mangrove market.
    */

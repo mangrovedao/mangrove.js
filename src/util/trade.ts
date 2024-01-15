@@ -9,7 +9,7 @@ import TradeEventManagement, {
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 
-type CleanUnitParams = {
+export type CleanUnitParams = {
   ba: Market.BA;
   targets: {
     offerId: number;
