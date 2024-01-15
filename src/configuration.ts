@@ -783,7 +783,7 @@ function readContextAaveAddresses() {
  *
  * Example for adding configuration for a new token with symbol "SYM":
  *
- *    updateConfiguration({tokens: { SYM: { decimals: 18}}})
+ *    `updateConfiguration({tokens: { SYM: { decimals: 18}}})`
  */
 export function updateConfiguration(defaults: PartialConfiguration): void {
   config = deepmerge(config, defaults) as Configuration;
