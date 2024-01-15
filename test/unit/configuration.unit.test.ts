@@ -77,8 +77,16 @@ describe("Configuration unit tests suite", () => {
       500000,
     );
     assert.equal(
+      configuration.mangroveOrder.getRestingOrderGasreq("local", "aave"),
+      600000,
+    );
+    assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("maticmum"),
       500000,
+    );
+    assert.equal(
+      configuration.mangroveOrder.getRestingOrderGasreq("maticmum", "aave"),
+      600000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGaspriceFactor("local"),
@@ -93,8 +101,16 @@ describe("Configuration unit tests suite", () => {
       300000,
     );
     assert.equal(
+      configuration.mangroveOrder.getTakeGasOverhead("local", "aave"),
+      500000,
+    );
+    assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("maticmum"),
       300000,
+    );
+    assert.equal(
+      configuration.mangroveOrder.getTakeGasOverhead("maticmum", "aave"),
+      500000,
     );
   });
 });
