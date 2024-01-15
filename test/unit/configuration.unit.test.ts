@@ -90,11 +90,11 @@ describe("Configuration unit tests suite", () => {
     );
     assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("local"),
-      200000,
+      300000,
     );
     assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("maticmum"),
-      200000,
+      300000,
     );
   });
 });
