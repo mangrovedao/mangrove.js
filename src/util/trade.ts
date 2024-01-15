@@ -1,7 +1,7 @@
 import Big, { BigSource } from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
 import Market from "../market";
-import { Bigish } from "../types";
+import { Bigish } from "../util";
 import logger from "./logger";
 import TradeEventManagement, {
   OrderResultWithOptionalSummary,

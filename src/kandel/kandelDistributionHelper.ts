@@ -1,6 +1,6 @@
 import Big from "big.js";
 import Market from "../market";
-import { Bigish } from "../types";
+import { Bigish } from "../util";
 import TickPriceHelper from "../util/tickPriceHelper";
 
 /** Offers with their tick, Kandel index, and gives amount.

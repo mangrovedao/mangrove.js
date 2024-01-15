@@ -10,7 +10,7 @@ import {
   StateLogSubscriber,
 } from "@mangrovedao/reliable-event-subscriber";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
-import { Bigish } from "./types";
+import { Bigish } from "./util";
 import {
   OfferDetailUnpackedStructOutput,
   OfferUnpackedStructOutput,

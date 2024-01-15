@@ -13,7 +13,8 @@ import {
   ReliableHttpProvider,
   ReliableWebsocketProvider,
 } from "@mangrovedao/reliable-event-subscriber";
-import { Bigish, Provider, typechain } from "./types";
+import { Provider, typechain } from "./types";
+import { Bigish } from "./util";
 import * as mgvDeployments from "@mangrovedao/mangrove-deployments";
 import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";

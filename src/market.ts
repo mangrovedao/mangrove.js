@@ -3,7 +3,8 @@ import { BigNumber } from "ethers"; // syntactic sugar
 import Mangrove from "./mangrove";
 import Token, { TokenCalculations } from "./token";
 import Semibook from "./semibook";
-import { Bigish, typechain } from "./types";
+import { typechain } from "./types";
+import { Bigish } from "./util";
 import Trade from "./util/trade";
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";

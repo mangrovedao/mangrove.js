@@ -12,14 +12,13 @@ import {
 } from "../util/helpers";
 const waitForTransaction = mgvTestUtil.waitForTransaction;
 
-import { Mangrove, Market, Semibook, TickPriceHelper } from "../../src";
+import { Bigish, Mangrove, Market, Semibook, TickPriceHelper } from "../../src";
 
 import { TransactionReceipt } from "@ethersproject/providers";
 import { Big } from "big.js";
 import { BigNumber } from "ethers";
 import { Density } from "../../src/util/Density";
 import * as DensityLib from "../../src/util/coreCalculations/DensityLib";
-import { Bigish } from "../../src/types";
 import { waitForBlock } from "../../src/util/test/mgvIntegrationTestUtil";
 
 //pretty-print when using console.log

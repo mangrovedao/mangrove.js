@@ -5,7 +5,8 @@ import configuration, {
 } from "./configuration";
 import * as eth from "./eth";
 import DevNode from "./util/devNode";
-import { Bigish, Provider, Signer, typechain } from "./types";
+import { Provider, Signer, typechain } from "./types";
+import { Bigish } from "./util";
 import { logdataLimiter, logger } from "./util/logger";
 import { TypedDataSigner } from "@ethersproject/abstract-signer";
 import { ApproveArgs, TokenCalculations } from "./token";

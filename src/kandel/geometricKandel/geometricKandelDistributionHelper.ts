@@ -2,7 +2,7 @@ import Market from "../../market";
 import { MAX_TICK, MIN_TICK } from "../../util/coreCalculations/Constants";
 import Big from "big.js";
 import { ethers } from "ethers";
-import { Bigish } from "../../types";
+import { Bigish } from "../../util";
 import KandelDistributionHelper from "../kandelDistributionHelper";
 
 /** Price and price ratio parameters for calculating a geometric price distribution.

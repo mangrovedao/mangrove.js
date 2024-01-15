@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
-import { Bigish, typechain } from "../types";
-
+import { typechain } from "../types";
+import { Bigish } from "../util";
 import * as KandelTypes from "../types/typechain/GeometricKandel";
 
 import Big from "big.js";

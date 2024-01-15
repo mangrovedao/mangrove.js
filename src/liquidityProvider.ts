@@ -4,7 +4,7 @@ import util from "util";
 
 import Market from "./market";
 // syntactic sugar
-import { Bigish } from "./types";
+import { Bigish } from "./util";
 import Mangrove from "./mangrove";
 import { typechain } from "./types";
 

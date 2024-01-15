@@ -1,7 +1,7 @@
 import Big from "big.js";
 import * as ethers from "ethers";
 import Mangrove from "./mangrove";
-import { Bigish } from "./types";
+import { Bigish } from "./util";
 import { typechain } from "./types";
 import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";

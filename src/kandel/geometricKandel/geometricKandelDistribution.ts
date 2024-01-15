@@ -1,7 +1,7 @@
 import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
-import { Bigish } from "../../types";
 import Market from "../../market";
 import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
+import { Bigish } from "../../util";
 
 /** @title A geometric distribution of bids and ask for a geometric Kandel. */
 class GeometricKandelDistribution extends KandelDistribution {

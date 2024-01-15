@@ -3,7 +3,7 @@ import * as TickLib from "./coreCalculations/TickLib";
 import Market from "../market";
 
 import Big from "big.js";
-import { Bigish } from "../types";
+import { Bigish } from "../util";
 import { MANTISSA_BITS, MIN_RATIO_EXP } from "./coreCalculations/Constants";
 
 /** roundDown rounds down to a representable value, roundUp rounds up to a representable value, and nearest rounds to the nearest representable value. */

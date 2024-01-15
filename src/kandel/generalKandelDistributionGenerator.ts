@@ -1,5 +1,5 @@
 import Big from "big.js";
-import { Bigish } from "../types";
+import { Bigish } from "../util";
 import KandelDistribution from "./kandelDistribution";
 import { OffersWithGives } from "./kandelDistributionHelper";
 import GeneralKandelDistributionHelper from "./generalKandelDistributionHelper";

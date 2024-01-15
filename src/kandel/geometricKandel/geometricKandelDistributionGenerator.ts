@@ -1,12 +1,12 @@
 import Big from "big.js";
 import Market from "../../market";
-import { Bigish } from "../../types";
 import GeometricKandelLib from "./geometricKandelLib";
 import GeometricKandelDistributionHelper, {
   DistributionParams,
 } from "./geometricKandelDistributionHelper";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
 import GeneralKandelDistributionHelper from "../generalKandelDistributionHelper";
+import { Bigish } from "../../util";
 
 /** @title Helper for generating geometric Kandel distributions. */
 class GeometricKandelDistributionGenerator {
