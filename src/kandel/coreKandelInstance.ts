@@ -43,8 +43,8 @@ export type KandelParameters = {
 
 /**
  * @notice Parameters for a Kandel instance where provided properties override current values. baseQuoteTickOffset takes precedence over priceRatio. Note that baseQuoteTickOffset and pricePoints are normally provided via the KandelDistribution.
- * @see KandelParameters for more information.
- * @remarks Cannot simply be Partial<KandelParameters> due to Big vs Bigish.
+ * @see{@link KandelParameters} for more information.
+ * @remarks Cannot simply be `Partial<KandelParameters>` due to Big vs Bigish.
  */
 export type KandelParameterOverrides = {
   gasprice?: number;
@@ -113,7 +113,7 @@ class CoreKandelInstance {
     };
   }
 
-  /** Constructor. @see create */
+  /** Constructor. See {@link createCoreParams} */
   protected constructor(params: {
     address: string;
     kandel: typechain.CoreKandel;
@@ -372,7 +372,7 @@ class CoreKandelInstance {
    * @param offerType The offer type to get the minimum volume for.
    * @param offerType The offer type to get the minimum volume for.
    * @returns The minimum volume for the given offer type.
-   * @dev @see seeder.getMinimumVolumeForGasreq for parameterized function.
+   * @see {@link KandelSeeder.getMinimumVolumeForGasreq} for parameterized function.
    */
   public async getMinimumVolume(offerType: Market.BA) {
     return this.seeder.getMinimumVolumeForGasreq({
@@ -656,7 +656,7 @@ class CoreKandelInstance {
    * @param params.parameters The parameters to set leave out values to keep their current value. If gasprice is not set, the current gasprice and cover factor is used.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
-   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision.
+   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to {@link getRequiredProvision}.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The raw parameters.
    */
@@ -710,7 +710,7 @@ class CoreKandelInstance {
    * @param params.parameters The parameters to set leave out values to keep their current value. If gasprice is not set, the current gasprice and cover factor is used.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
-   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision. (if a distribution is provided)
+   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to {@link getRequiredProvision}. (if a distribution is provided)
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.

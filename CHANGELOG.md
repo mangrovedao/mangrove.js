@@ -1,5 +1,9 @@
 # Next version
 
+# 2.0.3
+
+- fix: Fix various issues in TypeDoc comments wrt @see vs @link.
+
 # 2.0.2
 
 - feat: Updated exports in index.ts to export all referenced types.
