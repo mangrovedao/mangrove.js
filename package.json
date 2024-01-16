@@ -63,7 +63,7 @@
     "@ethersproject/experimental": "^5.7.0",
     "@mangrovedao/context-addresses": "^1.0.1",
     "@mangrovedao/mangrove-core": "^2.0.3",
-    "@mangrovedao/mangrove-deployments": "^1.0.3",
+    "@mangrovedao/mangrove-deployments": "^2.0.0",
     "@mangrovedao/mangrove-strats": "^1.0.2",
     "@mangrovedao/reliable-event-subscriber": "1.1.29",
     "@types/object-inspect": "^1.8.1",
