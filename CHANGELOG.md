@@ -1,6 +1,6 @@
 # Next version
 
-- feat: Updated CI to check CHANGELOG.md is updated with each PR
+- feat: Updated CI to check `CHANGELOG.md` is updated with each PR
 
 # 2.0.3
 
