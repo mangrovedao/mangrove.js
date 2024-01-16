@@ -20,7 +20,6 @@ import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
-import semver from "semver";
 
 // Make keys optional at all levels of T
 export type RecursivePartial<T> = {
@@ -653,66 +652,42 @@ export function resetConfiguration(): void {
 
 function readMangroveDeploymentAddresses() {
   // Note: Consider how to expose other deployments than the primary
-  const mgvCoreVersionPattern = createContractVersionPattern(
+  const mgvCoreVersionPattern = mgvDeployments.createContractVersionPattern(
     contractPackageVersions["mangrove-core"],
   );
   // Note: Make this configurable?
   const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
-  const mgvCoreContractsDeployments =
-    mgvDeployments.getCoreContractsVersionDeployments({
-      version: mgvCoreVersionPattern,
-      released: mgvCoreReleasedFilter,
-    });
-  readVersionDeploymentsAddresses(mgvCoreContractsDeployments);
+  const mgvCoreDeploymentsFilter = {
+    version: mgvCoreVersionPattern,
+    released: mgvCoreReleasedFilter,
+  };
+  const latestCoreDeployments = mgvDeployments.getLatestCoreContractsPerNetwork(
+    mgvCoreDeploymentsFilter,
+  );
 
-  const mgvStratsVersionPattern = createContractVersionPattern(
+  const mgvStratsVersionPattern = mgvDeployments.createContractVersionPattern(
     contractPackageVersions["mangrove-strats"],
   );
   // Note: Make this configurable?
   const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
-  const mgvStratsContractsDeployments =
-    mgvDeployments.getStratsContractsVersionDeployments({
-      version: mgvStratsVersionPattern,
-      released: mgvStratsReleasedFilter,
-    });
-  readVersionDeploymentsAddresses(mgvStratsContractsDeployments);
-}
+  const mgvStratsDeploymentsFilter = {
+    version: mgvStratsVersionPattern,
+    released: mgvStratsReleasedFilter,
+  };
+  const latestStratsDeployments =
+    mgvDeployments.getLatestStratContractsPerNetwork(
+      mgvStratsDeploymentsFilter,
+      mgvCoreDeploymentsFilter,
+    );
 
-function createContractVersionPattern(contractPackageVersion: string) {
-  const preleaseComponents = semver.prerelease(contractPackageVersion);
-  if (preleaseComponents === null) {
-    // For release versions of contract packages, we match any deployment of the same major version, _excluding_ prereleases.
-    return `^${semver.major(contractPackageVersion)}.0.0`;
-  } else {
-    // For pre-release versions of contract packages, we match any deployment of the same major version, _including_ prereleases.
-    // This is achieved by replacing the last prelease component by 0 and using the caret '^' pattern.
-    // This pattern is equivalent to '>= x.y.z-0 < x+1.0.0'.
-    // Examples:
-    //   2.0.0-alpha.1 => ^2.0.0-alpha.0
-    //   2.0.0-4       => ^2.0.0-0
-    const patternPreleaseComponents = [...preleaseComponents];
-    patternPreleaseComponents[patternPreleaseComponents.length - 1] = "0";
-    return `^${semver.major(contractPackageVersion)}.${semver.minor(
-      contractPackageVersion,
-    )}.${semver.patch(contractPackageVersion)}-${patternPreleaseComponents.join(
-      ".",
-    )}`;
-  }
-}
-
-function readVersionDeploymentsAddresses(
-  contractsDeployments: mgvDeployments.VersionDeployments[],
-) {
-  for (const contractDeployments of contractsDeployments) {
-    for (const [networkId, networkDeployments] of Object.entries(
-      contractDeployments.networkAddresses,
-    )) {
-      const networkName = eth.getNetworkName(+networkId);
-      addressesConfiguration.setAddress(
-        contractDeployments.deploymentName ?? contractDeployments.contractName,
-        networkDeployments.primaryAddress,
-        networkName,
-      );
+  for (const [networkName, namedAddresses] of Object.entries(
+    mgvDeployments.toNamedAddressesPerNamedNetwork(
+      latestCoreDeployments,
+      latestStratsDeployments,
+    ),
+  )) {
+    for (const { name, address } of namedAddresses) {
+      addressesConfiguration.setAddress(name, address, networkName);
     }
   }
 }
