@@ -1,6 +1,8 @@
 # Next version
 
 - Upgrade to @mangrovedao/mangrove-deployments v2.0.0
+- feat: Updated CI to check `CHANGELOG.md` is updated with each PR
+- fix: Able to handle backticks in changelog when releasing.
 
 # 2.0.3
 
