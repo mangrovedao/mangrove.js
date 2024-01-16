@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.4
+
 - Upgrade to @mangrovedao/mangrove-deployments v2.0.0
 
 # 2.0.3
