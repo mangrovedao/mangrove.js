@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to @mangrovedao/mangrove-deployments v2.0.0
+
 # 2.0.3
 
 - fix: Fix various issues in TypeDoc comments wrt @see vs @link.
