@@ -26,6 +26,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # == verify changelog has been updated ==
+      - name: Check changelog updated
+        uses: mangrovedao/.github/.github/actions/changelog-updated@master
+
       - name: Yarn setup (caching yarn dependencies)
         uses: actions/setup-node@v4
         with:
@@ -55,10 +59,6 @@ jobs:
         with:
           name: test-results
           path: ./coverage-tests-report.json
-
-      # == verify changelog has been updated ==
-      - name: Check changelog updated
-        uses: mangrovedao/.github/.github/actions/changelog-updated@feat/backtickandchangelog
 
       # == verify cli can start ==
       - name: Mgv cli Tests

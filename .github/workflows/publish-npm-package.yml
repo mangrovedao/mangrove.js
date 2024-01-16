@@ -22,7 +22,7 @@ on:
 jobs:
   call-reusable-workflow:
     name: "Publish"
-    uses: mangrovedao/.github/.github/workflows/reusable-publish-npm-package.yml@feat/backtickandchangelog
+    uses: mangrovedao/.github/.github/workflows/reusable-publish-npm-package.yml@master
     with:
       versionBumpStrategy: ${{ inputs.versionBumpStrategy }}
       withFoundry: true
