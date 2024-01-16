@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.4-0
+
 - feat: Updated CI to check `CHANGELOG.md` is updated with each PR
 
 # 2.0.3
