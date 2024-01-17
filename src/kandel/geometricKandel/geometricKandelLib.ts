@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
-import { Bigish, typechain } from "../../types";
-
+import { typechain } from "../../types";
+import { Bigish } from "../../util";
 import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
 import Market from "../../market";

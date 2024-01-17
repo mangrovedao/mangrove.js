@@ -1,5 +1,20 @@
 # Next version
 
+# 2.0.4
+
+- Upgrade to @mangrovedao/mangrove-deployments v2.0.0
+- feat: Updated CI to check `CHANGELOG.md` is updated with each PR
+- fix: Able to handle backticks in changelog when releasing.
+
+# 2.0.3
+
+- fix: Fix various issues in TypeDoc comments wrt @see vs @link.
+
+# 2.0.2
+
+- feat: Updated exports in index.ts to export all referenced types.
+- fix: Fixed various issues in TypeDoc comments.
+
 # 2.0.1
 
 - feat: Moved MangroveJsDeploy from mangrove-strats to this package. Renamed script to EmptyChainDeployer

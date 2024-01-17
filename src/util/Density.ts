@@ -127,7 +127,7 @@ export class Density {
   /**
    * Get the maximum amount of gas an offer may require for the given raw amount of outbound tokens.
    *
-   * @param outbound the raw amount of outbound tokens to calculate the maximum gas for
+   * @param rawOutboundAmt the raw amount of outbound tokens to calculate the maximum gas for
    * @returns the maximum amount of gas an offer may require for the given raw amount of outbound tokens
    */
   getMaximumGasForRawOutbound(rawOutboundAmt: BigNumberish): BigNumber {

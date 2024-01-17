@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
-import { Bigish } from "./types";
 import { typechain } from "./types";
+import { Bigish } from "./util";
 
 import { Mangrove, Market } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";

@@ -3,7 +3,8 @@ import { BigNumber } from "ethers"; // syntactic sugar
 import Mangrove from "./mangrove";
 import Token, { TokenCalculations } from "./token";
 import Semibook from "./semibook";
-import { Bigish, typechain } from "./types";
+import { typechain } from "./types";
+import { Bigish } from "./util";
 import Trade from "./util/trade";
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
@@ -391,16 +392,6 @@ namespace Market {
     prevAtTick: number | undefined;
     gasbase: number;
   };
-
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  export namespace BookReturns {
-    type _BookReturns = Awaited<
-      ReturnType<Market.MgvReader["functions"]["offerList"]>
-    >;
-    export type Indices = _BookReturns[1];
-    export type Offers = _BookReturns[2];
-    export type Details = _BookReturns[3];
-  }
 
   /**
    * Type for events emitted by the Mangrove market.
@@ -1121,7 +1112,7 @@ class Market {
   /**
    * Clean a set of given offers.
    * @param params Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate.
-   * @param overrides: ethers overrides for the transaction.
+   * @param overrides ethers overrides for the transaction.
    * @returns a promise that resolves to the transasction response and the result of the cleaning.
    *
    * @see {@link Market.CleanParams} for a description of params.
@@ -1139,7 +1130,7 @@ class Market {
   /**
    * Gets parameters to send to function `market.mgv.cleanerContract.cleanByImpersonation`.
    *
-   * @param params: Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate
+   * @param params Parameters for the cleaning, specifying the target offers, the side of the market to clean, and optionally the taker to impersonate
    *
    * @returns a promise that resolves to the raw parameters to send to the cleaner contract
    *
@@ -1189,8 +1180,8 @@ class Market {
 
   /** Uses {@link Semibook.simulateMarketOrder} to simulate the gas required for a market order. An overhead of 50% is added to account for changes to the book and failing offers.
    * @param ba bids or asks
-   * @param gives amount of inbound token to give to the makers
-   * @param wants amount of outbound token to receive from the makers
+   * @param maxTick the maximum to reach for the market order.
+   * @param fillVolume the amount to fill (wants or gives)
    * @param fillWants whether to fill wants or gives
    */
   async simulateGas(

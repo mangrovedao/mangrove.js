@@ -1,6 +1,6 @@
 import Big from "big.js";
 import * as ethers from "ethers";
-import { Bigish } from "../types";
+import { Bigish } from "../util";
 
 class UnitCalculations {
   /** Convert public token amount to internal token representation.

@@ -151,7 +151,6 @@ class KandelSeeder {
   }
 
   /** Retrieves the gasprice for the Kandel type multiplied by the buffer factor.
-   * @param params The parameters for sowing the Kandel instance.
    * @param gaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the Kandel offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
    * @param gasprice The gasprice (in Mwei) to use for the Kandel (before multiplying with the factor). If null, then Mangrove's global gasprice will be used.
    * @returns The gasprice for the Kandel type multiplied by the buffer factor.

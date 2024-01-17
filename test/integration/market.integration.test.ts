@@ -13,13 +13,12 @@ import {
 } from "../../src/util/test/mgvIntegrationTestUtil";
 
 import assert from "assert";
-import { Mangrove, Market, Semibook } from "../../src";
+import { Bigish, Mangrove, Market, Semibook } from "../../src";
 import * as helpers from "../util/helpers";
 
 import { Big } from "big.js";
 import { BigNumber, utils } from "ethers";
 import * as mockito from "ts-mockito";
-import { Bigish } from "../../src/types";
 import { Density } from "../../src/util/Density";
 import { MAX_TICK } from "../../src/util/coreCalculations/Constants";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
@@ -1701,11 +1700,15 @@ describe("Market integration tests suite", () => {
     );
 
     assert.equal(
-      market.minVolumeAsk!.mul(Big(10).pow(market.base.decimals)).toFixed(),
+      market
+        .minVolumeAsk!.value.mul(Big(10).pow(market.base.decimals))
+        .toFixed(),
       baseAsOutbound.toString(),
     );
     assert.equal(
-      market.minVolumeBid!.mul(Big(10).pow(market.quote.decimals)).toFixed(),
+      market
+        .minVolumeBid!.value.mul(Big(10).pow(market.quote.decimals))
+        .toFixed(),
       quoteAsOutbound.toString(),
     );
   });

@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
-import { Bigish, typechain } from "../types";
-
+import { typechain } from "../types";
+import { Bigish } from "../util";
 import * as KandelTypes from "../types/typechain/GeometricKandel";
 
 import Big from "big.js";
@@ -16,6 +16,7 @@ import KandelSeeder from "./kandelSeeder";
 import GeneralKandelDistribution from "./generalKandelDistribution";
 import GeneralKandelDistributionGenerator from "./generalKandelDistributionGenerator";
 import GeneralKandelDistributionHelper from "./generalKandelDistributionHelper";
+import Mangrove from "../mangrove";
 
 // The market used by the Kandel instance or a factory function to create the market.
 export type MarketOrMarketFactory =
@@ -42,8 +43,8 @@ export type KandelParameters = {
 
 /**
  * @notice Parameters for a Kandel instance where provided properties override current values. baseQuoteTickOffset takes precedence over priceRatio. Note that baseQuoteTickOffset and pricePoints are normally provided via the KandelDistribution.
- * @see KandelParameters for more information.
- * @remarks Cannot simply be Partial<KandelParameters> due to Big vs Bigish.
+ * @see{@link KandelParameters} for more information.
+ * @remarks Cannot simply be `Partial<KandelParameters>` due to Big vs Bigish.
  */
 export type KandelParameterOverrides = {
   gasprice?: number;
@@ -112,7 +113,7 @@ class CoreKandelInstance {
     };
   }
 
-  /** Constructor. @see create */
+  /** Constructor. See {@link createCoreParams} */
   protected constructor(params: {
     address: string;
     kandel: typechain.CoreKandel;
@@ -345,8 +346,6 @@ class CoreKandelInstance {
   /** Creates a distribution based on an explicit set of offers based on the Kandel parameters.
    * @param params The parameters for the distribution.
    * @param params.explicitOffers The explicit offers to use.
-   * @param params.explicitOffers.bids The explicit bids to use.
-   * @param params.explicitOffers.asks The explicit asks to use.
    * @returns The new distribution.
    */
   public async createDistributionWithOffers(params: {
@@ -368,7 +367,7 @@ class CoreKandelInstance {
    * @param offerType The offer type to get the minimum volume for.
    * @param offerType The offer type to get the minimum volume for.
    * @returns The minimum volume for the given offer type.
-   * @dev @see seeder.getMinimumVolumeForGasreq for parameterized function.
+   * @see {@link KandelSeeder.getMinimumVolumeForGasreq} for parameterized function.
    */
   public async getMinimumVolume(offerType: Market.BA) {
     return this.seeder.getMinimumVolumeForGasreq({
@@ -400,9 +399,7 @@ class CoreKandelInstance {
 
   /** Calculates a new distribution based on the provided offers and deltas.
    * @param params The parameters for the new distribution.
-   * @param params.explicitOffers The offers to use.
-   * @param params.explicitOffers.bids The explicit bids to use.
-   * @param params.explicitOffers.asks The explicit asks to use.
+   * @param params.explicitOffers The explicit offers to use.
    * @param params.baseDelta The delta to apply to the base token volume. If not provided, then the base token volume is unchanged.
    * @param params.quoteDelta The delta to apply to the quote token volume. If not provided, then the quote token volume is unchanged.
    * @param params.minimumBasePerOffer The minimum base token volume per offer. If not provided, then the minimum base token volume is used.
@@ -564,17 +561,11 @@ class CoreKandelInstance {
 
   /** Calculates the provision locked for a set of offers based on the given parameters
    * @param existingOffers the offers to calculate provision for.
-   * @param existingOffers.bids[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
-   * @param existingOffers.bids[].gasreq the gas requirement for the offer.
-   * @param existingOffers.bids[].gasbase the offer list's offer_gasbase.
-   * @param existingOffers.asks[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
-   * @param existingOffers.asks[].gasreq the gas requirement for the offer.
-   * @param existingOffers.asks[].gasbase the offer list's offer_gasbase.
    * @returns the locked provision, in ethers.
    */
   public getLockedProvisionFromOffers(existingOffers: {
-    bids: { gasprice: number; gasreq: number; gasbase: number }[];
-    asks: { gasprice: number; gasreq: number; gasbase: number }[];
+    bids: Mangrove.OfferProvisionParams[];
+    asks: Mangrove.OfferProvisionParams[];
   }) {
     return this.market.mgv.calculateOffersProvision(
       existingOffers.bids.concat(existingOffers.asks),
@@ -609,10 +600,7 @@ class CoreKandelInstance {
    * @param params.distribution The distribution to calculate the provision for. Optional.
    * @param params.bidCount The number of bids to calculate the provision for. Optional.
    * @param params.askCount The number of asks to calculate the provision for. Optional.
-   * @param existingOffers[] the offers with potential locked provision.
-   * @param existingOffers[].gasprice the gas price for the offer in Mwei. Should be 0 for deprovisioned offers.
-   * @param existingOffers[].gasreq the gas requirement for the offer.
-   * @param existingOffers[].gasbase the offer list's offer_gasbase.
+   * @param existingOffers the offers with potential locked provision.
    * @returns the additional required provision, in ethers.
    * @remarks If neither distribution nor askCount or bidCount is provided, then the current number of price points less the stepSize is used.
    */
@@ -625,8 +613,8 @@ class CoreKandelInstance {
       askCount?: number;
     },
     existingOffers: {
-      bids: { gasprice: number; gasreq: number; gasbase: number }[];
-      asks: { gasprice: number; gasreq: number; gasbase: number }[];
+      bids: Mangrove.OfferProvisionParams[];
+      asks: Mangrove.OfferProvisionParams[];
     },
   ) {
     const lockedProvision = this.getLockedProvisionFromOffers(existingOffers);
@@ -663,7 +651,7 @@ class CoreKandelInstance {
    * @param params.parameters The parameters to set leave out values to keep their current value. If gasprice is not set, the current gasprice and cover factor is used.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
-   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision.
+   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to {@link getRequiredProvision}.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The raw parameters.
    */
@@ -717,7 +705,7 @@ class CoreKandelInstance {
    * @param params.parameters The parameters to set leave out values to keep their current value. If gasprice is not set, the current gasprice and cover factor is used.
    * @param params.depositBaseAmount The amount of base to deposit. If not provided, then no base is deposited.
    * @param params.depositQuoteAmount The amount of quote to deposit. If not provided, then no quote is deposited.
-   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to @see getRequiredProvision. (if a distribution is provided)
+   * @param params.funds The amount of funds to provision. If not provided, then the required funds are provisioned according to {@link getRequiredProvision}. (if a distribution is provided)
    * @param params.maxOffersInChunk The maximum number of offers to include in a single populate transaction. If not provided, then KandelConfiguration is used.
    * @param overrides The ethers overrides to use when calling the populate and populateChunk functions.
    * @returns The transaction(s) used to populate the offers.
@@ -933,11 +921,7 @@ class CoreKandelInstance {
 
   /** Retracts offers
    * @param params The parameters.
-   * @param params.retractParams The parameters for retracting offers.
-   * @param params.retractParams.startIndex The start Kandel index of offers to retract. If not provided, then 0 is used.
-   * @param params.retractParams.endIndex The end index of offers to retract. This is exclusive of the offer the index 'endIndex'. If not provided, then the number of price points is used.
-   * @param params.retractParams.maxOffersInChunk The maximum number of offers to include in a single retract transaction. If not provided, then KandelConfiguration is used.
-   * @param params.retractParams.firstAskIndex The index of the first ask in the distribution. It is used to determine the order in which to retract offers if multiple chunks are needed; if not provided, the midpoint between start and end is used.
+   * @param params.retractParams The parameters for retracting offers. See {@link retractOffers}
    * @param params.skipLast Whether to skip the last chunk. This is used to allow the last chunk to be retracted while withdrawing funds.
    * @param overrides The ethers overrides to use when calling the retractOffers function.
    * @returns The transaction(s) used to retract the offers.

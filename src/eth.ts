@@ -8,7 +8,7 @@ import { Provider, Signer } from "./types";
 import { logger, logdataLimiter } from "./util/logger";
 import { readJsonWallet } from "./util/readJsonWallet";
 
-interface JsonWalletOptions {
+export interface JsonWalletOptions {
   // local path to json wallet file
   path: string;
   // json wallet password
