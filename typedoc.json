@@ -42,7 +42,11 @@
     "CleanStartEvent",
     "OfferFailWithPosthookDataEvent",
     "OfferSuccessWithPosthookDataEvent",
-    "MangroveOrderStartEvent"
+    "MangroveOrderStartEvent",
+    "Prettify",
+    "RouterLogic",
+    "RouterLogicOverhead",
+    "MangroveOrderType"
   ],
   "out": "docs",
   "excludePrivate": true,

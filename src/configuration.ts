@@ -137,7 +137,7 @@ export type RouterLogic = "aave";
  * @param restingOrderGasreq The gasreq for a resting order using the MangroveOrder contract.
  * @param takeGasOverhead The overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove.
  */
-export type RouterLogicOverhead = {
+type RouterLogicOverhead = {
   restingOrderGasreq: number;
   takeGasOverhead: number;
 };
