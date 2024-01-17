@@ -46,7 +46,9 @@
     "Prettify",
     "RouterLogic",
     "RouterLogicOverhead",
-    "MangroveOrderType"
+    "MangroveOrderType",
+    "AbstractRoutingLogic",
+    "SimpleAaveLogic"
   ],
   "out": "docs",
   "excludePrivate": true,
