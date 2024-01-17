@@ -8,6 +8,7 @@ import TradeEventManagement, {
 } from "./tradeEventManagement";
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
+import { SimpleAaveLogic } from "../logics/SimpleAaveLogic";
 
 export type CleanUnitParams = {
   ba: Market.BA;
@@ -842,26 +843,65 @@ class Trade {
    * @param params The resting order params. See {@link Market.RestingOrderParams}.
    * @param market The market.
    * @param ba The BA of the taker order; the resting order will be the opposite.
+   * @param logics The logics to use for the resting order.
    * @returns The resting order parameters.
    */
   public async getRestingOrderParams(
     params: Market.RestingOrderParams,
     market: Market,
     ba: Market.BA,
+    logics?: {
+      takerGivesLogic: string;
+      takerWantsLogic: string;
+    },
   ): Promise<{
     provision: BigSource;
     restingOrderGasreq: number;
     gaspriceFactor: number;
     restingOrderBa: string;
   }> {
+    let restingOrderGasreq =
+      params.restingOrderGasreq ??
+      configuration.mangroveOrder.getRestingOrderGasreq(
+        market.mgv.network.name,
+      );
+    if (!params.restingOrderGasreq && logics) {
+      const takerWants = market.mgv.getLogicByAddress(logics.takerWantsLogic);
+      const takerGives = market.mgv.getLogicByAddress(logics.takerGivesLogic);
+      if (takerGives) {
+        if (takerGives instanceof SimpleAaveLogic) {
+          restingOrderGasreq = Math.max(
+            restingOrderGasreq,
+            configuration.mangroveOrder.getRestingOrderGasreq(
+              market.mgv.network.name,
+              "aave",
+            ),
+          );
+        } else {
+          throw new Error(
+            `Unknown takerGives logic ${takerGives.constructor.name}, please provide restingOrderGasreq.`,
+          );
+        }
+      }
+      if (takerWants) {
+        if (takerWants instanceof SimpleAaveLogic) {
+          restingOrderGasreq = Math.max(
+            restingOrderGasreq,
+            configuration.mangroveOrder.getRestingOrderGasreq(
+              market.mgv.network.name,
+              "aave",
+            ),
+          );
+        } else {
+          throw new Error(
+            `Unknown takerWants logic ${takerWants.constructor.name}, please provide restingOrderGasreq.`,
+          );
+        }
+      }
+    }
     const gaspriceFactor =
       params.restingOrderGaspriceFactor ??
       configuration.mangroveOrder.getRestingOrderGaspriceFactor(
-        market.mgv.network.name,
-      );
-    const restingOrderGasreq =
-      params.restingOrderGasreq ??
-      configuration.mangroveOrder.getRestingOrderGasreq(
         market.mgv.network.name,
       );
 
