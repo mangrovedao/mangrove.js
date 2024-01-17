@@ -512,13 +512,26 @@ class Trade {
   async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { fillVolume, orderType } = this.getRawParams(bs, params, market);
 
+    let logicTakeGasOverhead = 0;
+    if (params.takerGivesLogic) {
+      const logic = market.mgv.getLogicByAddress(params.takerGivesLogic);
+      if (logic && logic instanceof SimpleAaveLogic) {
+        logicTakeGasOverhead =
+          configuration.mangroveOrder.getRestingOrderGasreq(
+            market.mgv.network.name,
+            "aave",
+          );
+      }
+    }
+
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.estimateGas(bs, fillVolume)).add(
-          configuration.mangroveOrder.getTakeGasOverhead(
-            market.mgv.network.name,
-          ),
+          logicTakeGasOverhead ||
+            configuration.mangroveOrder.getTakeGasOverhead(
+              market.mgv.network.name,
+            ),
         );
       case "marketOrder":
         return await market.estimateGas(bs, fillVolume);
