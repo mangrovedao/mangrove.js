@@ -1486,6 +1486,61 @@ class Market {
       ? 0
       : -Math.floor(Math.log10(minAbsPriceDiff.toNumber()));
   }
+
+  /**
+   * Sets the inbound routing logic for a resting order.
+   * @param params the parameters for the inbound routing logic
+   * @remarks
+   *
+   * The logic may be set after posting the offer, the offer id and side of the book has to be known.
+   *
+   * If you know the logic you want to use before posting, then pass it as params of the buy and sell functions.
+   *
+   * If the logic is changed, consider changing the gas requirement of the offer as well if it is higher.
+   *
+   * @example
+   * const market = await mgv.market({base:"USDC",quote:"DAI"});
+   * // the offer id is known beforehand
+   * const myLiveOffer = 1;
+   *
+   * const newLogicForUSDC = mgv.logics.aave;
+   *
+   * const res = await mgv.market.setRoutingLogic({
+   *   token: mgv.market.base.address, // USDC
+   *   ba: "asks", // you should know on which side your offer is
+   *   logic: newLogicForUSDC.address,
+   *   offerId: myLiveOffer,
+   * });
+   */
+  async setRoutingLogic(
+    params: {
+      token: string;
+      ba: Market.BA;
+      logic: string;
+      offerId: number;
+    },
+    overrides?: ethers.Overrides,
+  ) {
+    const user = await this.mgv.signer.getAddress();
+    const router = await this.mgv.orderContract.router(user);
+    const olKeyHash = this.mgv.getOlKeyHash(this.getOLKey(params.ba));
+    const userRouter = typechain.SmartRouter__factory.connect(
+      router,
+      this.mgv.signer,
+    );
+    const tx = await userRouter.setLogic(
+      {
+        olKeyHash,
+        token: params.token,
+        offerId: params.offerId,
+        fundOwner: ethers.constants.AddressZero, // is not useful for this function
+      },
+      params.logic,
+      overrides,
+    );
+    const res = await tx.wait();
+    return res;
+  }
 }
 
 export default Market;
