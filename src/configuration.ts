@@ -126,8 +126,9 @@ export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
   networks?: Record<network, PartialNetworkConfig>;
 };
 
-type Prettify<T> = {
+export type Prettify<T> = {
   [K in keyof T]: T[K];
+  // eslint-disable-next-line @typescript-eslint/ban-types
 } & {};
 
 export type RouterLogic = "aave";

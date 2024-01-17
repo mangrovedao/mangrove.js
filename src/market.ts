@@ -9,7 +9,7 @@ import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
-import configuration from "./configuration";
+import configuration, { Prettify, RouterLogic } from "./configuration";
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
 big.js handles arbitrary precision decimals, which is what we want
@@ -519,6 +519,17 @@ namespace Market {
     estimatedFee: Big;
     remainingFillVolume: Big;
   };
+
+  /**
+   * Minimum volume depending on the used strategy.
+   */
+  export type MinVolume = Prettify<
+    {
+      value: Big;
+    } & {
+      [key in RouterLogic]: Big;
+    }
+  >;
 }
 
 /**
@@ -551,8 +562,8 @@ class Market {
   private asksCb: Semibook.EventListener | undefined;
   private bidsCb: Semibook.EventListener | undefined;
 
-  public minVolumeAsk?: Big;
-  public minVolumeBid?: Big;
+  public minVolumeAsk?: Market.MinVolume;
+  public minVolumeBid?: Market.MinVolume;
 
   /**
    * Connect to a market.
@@ -592,12 +603,26 @@ class Market {
     const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
       market.mgv.network.name,
     );
-    market.minVolumeAsk = config.asks.density.getRequiredOutboundForGasreq(
-      config.asks.offer_gasbase + gasreq,
+    const aaveGasReq = configuration.mangroveOrder.getRestingOrderGasreq(
+      market.mgv.network.name,
+      "aave",
     );
-    market.minVolumeBid = config.bids.density.getRequiredOutboundForGasreq(
-      config.bids.offer_gasbase + gasreq,
-    );
+    market.minVolumeAsk = {
+      value: config.asks.density.getRequiredOutboundForGasreq(
+        config.asks.offer_gasbase + gasreq,
+      ),
+      aave: config.asks.density.getRequiredOutboundForGasreq(
+        config.asks.offer_gasbase + aaveGasReq,
+      ),
+    };
+    market.minVolumeBid = {
+      value: config.bids.density.getRequiredOutboundForGasreq(
+        config.bids.offer_gasbase + gasreq,
+      ),
+      aave: config.bids.density.getRequiredOutboundForGasreq(
+        config.bids.offer_gasbase + aaveGasReq,
+      ),
+    };
     return market;
   }
 
