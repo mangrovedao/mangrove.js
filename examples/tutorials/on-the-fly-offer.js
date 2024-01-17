@@ -11,17 +11,21 @@ const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider); // Use eith
 // Connect the API to Mangrove
 const mgv = await Mangrove.connect({ signer: wallet });
 
-// Connect mgv to a DAI, USDC market
-const market = await mgv.market({ base: "DAI", quote: "USDC" });
+// Connect mgv to a USDC, USDT market
+const market = await mgv.market({
+  base: "USDC",
+  quote: "USDT",
+  tickSpacing: 1,
+});
 
-// Check it's live, should display the best bids and asks of the DAI, USDC market
+// Check it's live, should display the best bids and asks of the USDC, USDT market
 market.consoleAsks();
 market.consoleBids();
 
 // Create a simple liquidity provider on `market`, using `wallet` as a source of liquidity
 const directLP = await mgv.liquidityProvider(market);
 
-// In order to post an ask, signer needs to approve Mangrove for transfer of base token (DAI) which
+// In order to post an ask, signer needs to approve Mangrove for transfer of base token (USDT) which
 // will be transferred from the wallet to Mangrove and then to the taker when the offer is taken.
 const tx = await market.base.approve(mgv.address, { amount: 100.4 });
 await tx.wait();
@@ -29,7 +33,7 @@ await tx.wait();
 // Query mangrove to know the bounty for posting a new Ask on `market`
 const provision = await directLP.computeAskProvision();
 
-// Post a new ask (requesting 100.5 USDC for 100.4 DAI) at a price of 100.5/100.4~=1.00099
+// Post a new ask (requesting 100.5 USDC for 100.4 USDT) at a price of 100.5/100.4~=1.00099
 // Consider looking at the consoleAsks above and increase gives such that the offer becomes visible in this list
 const { id: offerId } = await directLP.newAsk({
   wants: 100.5,
@@ -37,6 +41,6 @@ const { id: offerId } = await directLP.newAsk({
   fund: provision,
 });
 
-// Check the order was posted (or look at https://testnet.mangrove.exchange)
+// Check the order was posted (or look at https://testnet.mangrove.exchange, if you're not working locally)
 console.log(offerId);
 market.consoleAsks();
