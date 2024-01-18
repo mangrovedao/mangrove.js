@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade `examples/tutorials/on-the-fly-offer.js` to new Mangrove core protocol and SDK
+
 # 2.0.4
 
 - Upgrade to @mangrovedao/mangrove-deployments v2.0.0
