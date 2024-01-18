@@ -1,6 +1,5 @@
 import { logger } from "./util/logger";
 import * as ethers from "ethers";
-import util from "util";
 
 import Market from "./market";
 // syntactic sugar
@@ -384,10 +383,7 @@ class LiquidityProvider {
     if (typeof offer === "undefined") {
       throw Error(`No offer in market with id ${id}.`);
     }
-    if (typeof this.logic == "undefined") {
-      throw new Error(`${util.inspect(this)} must be defined`);
-    }
-    const thisMaker = this.eoa ? this.eoa : this.logic.address;
+    const thisMaker = this.logic ? this.logic.address : this.eoa;
     const offerMakerAddress = offer.maker;
     if (offerMakerAddress != thisMaker) {
       throw Error(
