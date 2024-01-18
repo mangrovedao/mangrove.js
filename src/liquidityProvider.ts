@@ -211,7 +211,8 @@ class LiquidityProvider {
     const tickPriceHelper = new TickPriceHelper(p.ba, market);
     let tick: number, gives: Big;
     if ("tick" in p) {
-      tick = p.tick;
+      // round up to ensure we get at least the tick we want
+      tick = tickPriceHelper.coerceTick(p.tick, "roundUp");
       gives = Big(p.gives);
     } else if ("price" in p) {
       // deduce tick & gives from volume & price
