@@ -62,26 +62,16 @@ class Trade {
       // in this case, we're merely asking to get the tick adjusted for slippage
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? fillWants;
+      maxTick = params.maxTick;
       if (slippage > 0) {
-        // round down to not exceed the price when buying, and up to get at least price for when selling
-        const limitPrice = tickPriceHelper.priceFromTick(
-          params.maxTick,
-          bs === "buy" ? "roundDown" : "roundUp",
+        // offset the tick by getting a non-rounded offset
+        maxTick += tickPriceHelper.tickOffsetFromRawRatio(
+          Big(1).sub(Big(100 + bs === "buy" ? slippage : -slippage).div(100)),
+          "none",
         );
-        const limitPriceWithSlippage = this.adjustForSlippage(
-          limitPrice,
-          slippage,
-          bs,
-        );
-        // round down to not exceed the price expectations
-        maxTick = tickPriceHelper.tickFromPrice(
-          limitPriceWithSlippage,
-          "roundDown",
-        );
-      } else {
-        // if slippage is 0, we don't need to do anything
-        maxTick = params.maxTick;
       }
+      // coerce tick - round down to not exceed the price expectations
+      maxTick = tickPriceHelper.coerceTick(maxTick, "roundDown");
     } else {
       let wants = Big(params.wants);
       let gives = Big(params.gives);

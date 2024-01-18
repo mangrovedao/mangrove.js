@@ -98,11 +98,12 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundDown")
-          .mul(100 + slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 + slippage).div(100),
         "roundDown",
       );
 
@@ -114,6 +115,34 @@ describe("Trade unit tests suite", () => {
       assert.equal(
         result.maxTick.toString(),
         expectedTickWithSlippage.toString(),
+      );
+    });
+
+    it("returns fillVolume as fillVolume, tick coerced when no slippage and fillWants as true, when params has fillVolume and tick, but no fillWants", async function () {
+      //Arrange
+      const params: Market.TradeParams = {
+        maxTick: 30,
+        fillVolume: 20,
+      };
+
+      //Act
+      const result = trade.getParamsForTrade(params, market, "buy");
+
+      //Assert
+      const expectedTick = tickPriceHelper.coerceTick(
+        params.maxTick,
+        "roundDown",
+      );
+
+      assert.equal(
+        result.fillVolume.toString(),
+        market.base.toUnits(params.fillVolume).toString(),
+      );
+      assert.equal(result.fillWants, true);
+      assert.equal(result.maxTick.toString(), expectedTick.toString());
+      assert.ok(
+        result.maxTick % 100 === 0,
+        "tick is not a multiple of tickSpacing",
       );
     });
 
@@ -130,11 +159,12 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundDown")
-          .mul(100 + slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 + slippage).div(100),
         "roundDown",
       );
 
