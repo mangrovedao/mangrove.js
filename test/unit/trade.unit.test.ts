@@ -8,6 +8,7 @@ import { Bigish, Market } from "../../src";
 import Trade from "../../src/util/trade";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 import { TokenCalculations } from "../../src/token";
+import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForTrade bs=buy", () => {
@@ -532,6 +533,28 @@ describe("Trade unit tests suite", () => {
             .toString(),
         ),
       );
+    });
+
+    bidsAsks.forEach((ba) => {
+      it(`coerces tick correctly for ${ba}`, async function () {
+        //Arrange
+        const params: Market.UpdateRestingOrderParams = {
+          tick: 20,
+          offerId: 1,
+        };
+
+        //Act
+        const result = trade.getRawUpdateRestingOrderParams(
+          params,
+          market,
+          ba,
+          42,
+          Big(1),
+        );
+
+        //Assert
+        assert.equal(result.tick, 100);
+      });
     });
   });
 

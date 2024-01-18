@@ -342,7 +342,8 @@ class Trade {
     const tickPriceHelper = new TickPriceHelper(ba, market);
 
     if ("tick" in params && params.tick !== undefined) {
-      tick = params.tick;
+      // round up to ensure we as a maker get what we want for the offer.
+      tick = tickPriceHelper.coerceTick(params.tick, "roundUp");
     }
 
     if ("price" in params && params.price !== undefined) {
