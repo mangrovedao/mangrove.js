@@ -27,6 +27,7 @@ export type Balances = {
 };
 
 export const bidsAsks: Market.BA[] = ["bids", "asks"];
+export const buySell: Market.BS[] = ["buy", "sell"];
 
 export type AddressAndSigner = { address: string; signer: string };
 
