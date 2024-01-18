@@ -1,7 +1,6 @@
 import Market from "../../market";
 import { MAX_TICK, MIN_TICK } from "../../util/coreCalculations/Constants";
 import Big from "big.js";
-import { ethers } from "ethers";
 import { Bigish } from "../../util";
 import KandelDistributionHelper from "../kandelDistributionHelper";
 
@@ -96,15 +95,9 @@ class GeometricKandelDistributionHelper {
       throw Error("priceRatio must be larger than 1");
     }
 
-    const { outbound_tkn, inbound_tkn } = Market.getOutboundInbound(
-      "asks",
-      this.helper.market.base,
-      this.helper.market.quote,
-    );
     // round down to ensure ratio is not exceeded
-    return this.helper.askTickPriceHelper.tickFromVolumes(
-      inbound_tkn.fromUnits(ethers.constants.WeiPerEther).mul(priceRatio),
-      outbound_tkn.fromUnits(ethers.constants.WeiPerEther),
+    return this.helper.askTickPriceHelper.tickOffsetFromRawRatio(
+      priceRatio,
       "roundDown",
     );
   }

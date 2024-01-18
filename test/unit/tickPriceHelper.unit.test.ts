@@ -17,6 +17,9 @@ import {
 import { TokenCalculations } from "../../src/token";
 
 const roundingModes = ["nearest", "roundDown", "roundUp"] as RoundingMode[];
+const roundingModesAndNone = (
+  roundingModes as (RoundingMode | "none")[]
+).concat(["none"]);
 
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
@@ -310,7 +313,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       assert.equal(0, result);
     });
 
-    roundingModes.forEach((roundingMode) => {
+    roundingModesAndNone.forEach((roundingMode) => {
       it(`returns expectedTick for inboundVolume=2, outboundVolume=1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 6 (asks semibook)`, () => {
         // Arrange
         const tickPriceHelper = new TickPriceHelper("asks", {
@@ -322,9 +325,12 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
         // Act
         const result = tickPriceHelper.tickFromVolumes(2, 1, roundingMode);
         // Assert
-        const expectedTick = { nearest: 6900, roundDown: 6900, roundUp: 7000 }[
-          roundingMode
-        ];
+        const expectedTick = {
+          nearest: 6900,
+          roundDown: 6900,
+          roundUp: 7000,
+          none: 6931,
+        }[roundingMode];
         assert.equal(expectedTick, result);
       });
     });
@@ -1069,6 +1075,39 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
           0.0001,
           `ratio should be slightly less than 1.0001^2 but is ${result}, due to man and exp cannot express 1.0001^2`,
         );
+      });
+    });
+  });
+
+  describe(TickPriceHelper.prototype.tickOffsetFromRawRatio.name, () => {
+    bidsAsks.forEach((ba) => {
+      let sut: TickPriceHelper;
+      beforeEach(() => {
+        sut = new TickPriceHelper(ba, {
+          base: new TokenCalculations(4, 4),
+          quote: new TokenCalculations(6, 6),
+          tickSpacing: 1,
+        });
+      });
+
+      roundingModesAndNone.forEach((roundingMode) => {
+        it(`calculates an offset that is a multiple of tickSpacing ba=${ba} for roundingMode=${roundingMode}`, () => {
+          // Arrange
+          sut.market.tickSpacing = 7;
+
+          // Act
+          const actual = sut.tickOffsetFromRawRatio(Big(1.08), roundingMode);
+
+          const expected = {
+            nearest: 770,
+            roundUp: 770,
+            roundDown: 763,
+            none: 769,
+          }[roundingMode];
+
+          // Assert
+          assert.equal(actual, expected);
+        });
       });
     });
   });
