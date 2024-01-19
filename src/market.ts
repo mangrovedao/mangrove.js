@@ -32,11 +32,11 @@ export const bookOptsDefault: Market.BookOptions = {
 };
 
 /**
- * @param GTC Good till cancelled enforces -> This order remains active until it is either filled or canceled by the trader.
+ * @param GTC Good till cancelled -> This order remains active until it is either filled or canceled by the trader.
  * If an expiry date is set, This will be a GTD (Good till date) order.
  * this will try a market order first, and if it is partially filled but the resting order fails to be posted, it won't revert the transaction.
  *
- * @param GTCE Good till cancelled -> This order remains active until it is either filled or canceled by the trader. It doesn't have the restriction of avoiding immediate execution.
+ * @param GTCE Good till cancelled enforced -> This order remains active until it is either filled or canceled by the trader. It doesn't have the restriction of avoiding immediate execution.
  * If the resting order fails to be posted, it will revert the transaction.
  * @param PO Post only -> This order will not execute immediately against the market.
  * @param IOC Immediate or cancel -> This order must be filled immediately at the limit price or better. If the full order cannot be filled, the unfilled portion is canceled.
