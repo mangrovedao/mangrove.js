@@ -2,6 +2,7 @@ import assert from "assert";
 import { LiquidityProvider } from "../../src";
 import Big from "big.js";
 import { TokenCalculations } from "../../src/token";
+import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 
 describe("Liquidity provider unit tests suite", () => {
   it("normalizeOfferParams, with gives, tick, asks and funding", async function () {
@@ -57,6 +58,26 @@ describe("Liquidity provider unit tests suite", () => {
     assert.deepStrictEqual(gives, Big(1));
     assert.deepStrictEqual(fund, undefined);
     assert.deepStrictEqual(tick, -1);
+  });
+
+  bidsAsks.forEach((ba) => {
+    it(`normalizeOfferParams, with non-equal decimals, tickSpacing=100, gives, tick, ${ba} and no funding`, async function () {
+      const { tick, gives, fund } = LiquidityProvider.normalizeOfferParams(
+        {
+          ba,
+          tick: -50,
+          gives: 1,
+        },
+        {
+          base: new TokenCalculations(16, 16),
+          quote: new TokenCalculations(18, 18),
+          tickSpacing: 100,
+        },
+      );
+      assert.deepStrictEqual(gives, Big(1));
+      assert.deepStrictEqual(fund, undefined);
+      assert.deepStrictEqual(tick, 0);
+    });
   });
 
   it("normalizeOfferParams, with volume and price 1, as asks", async function () {

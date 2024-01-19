@@ -59,13 +59,13 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
   let kandel: GeometricKandelInstance;
   let kandelStrategies: KandelStrategies;
 
-  async function createKandel(onAave: boolean) {
+  async function createKandel(onAave: boolean, tickSpacing: number = 1) {
     kandelStrategies = new KandelStrategies(mgv);
     const seeder = new KandelStrategies(mgv).seeder;
     const market = await mgv.market({
       base: "TokenA",
       quote: "TokenB",
-      tickSpacing: 1,
+      tickSpacing,
     });
     const kandelAddress = (
       await (
@@ -725,6 +725,139 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
         withdrawBaseAmount: 1,
         withdrawQuoteAmount: 10,
       });
+    });
+  });
+
+  describe("tickSpacing=100", function () {
+    beforeEach(async function () {
+      kandel = await createKandel(false, 100);
+    });
+    it(`populate for tickSpacing=100 populates a market`, async function () {
+      // Arrange
+      const market = kandel.market;
+      const priceRatio = new Big(1.08);
+      const firstBase = Big(1);
+      const firstQuote = Big(1000);
+      const pricePoints = 6;
+      const midPrice = Big(1200);
+      const distribution =
+        await kandel.geometricGenerator.calculateDistribution({
+          distributionParams: {
+            minPrice: firstQuote.div(firstBase),
+            priceRatio,
+            pricePoints,
+            midPrice,
+            generateFromMid: true,
+            stepSize: 1,
+          },
+          initialAskGives: firstBase,
+        });
+
+      const { requiredBase, requiredQuote } =
+        distribution.getOfferedVolumeForDistribution();
+
+      const approvalTxs = await kandel.approveIfHigher();
+      await approvalTxs[0]?.wait();
+      await approvalTxs[1]?.wait();
+
+      // Act
+      const receipts = await waitForTransactions(
+        await kandel.populateGeometricDistribution({
+          distribution,
+          depositBaseAmount: requiredBase,
+          depositQuoteAmount: requiredQuote,
+        }),
+      );
+
+      // Assert
+      await mgvTestUtil.waitForBlock(
+        market.mgv,
+        receipts[receipts.length - 1].blockNumber,
+      );
+
+      // assert parameters are updated
+      const params = await kandel.getParameters();
+
+      assert.equal(
+        params.pricePoints,
+        pricePoints,
+        "pricePoints should have been updated",
+      );
+      assert.equal(
+        (await kandel.getBaseQuoteTickOffset()).baseQuoteTickOffset,
+        kandel.geometricGenerator.geometricDistributionHelper.calculateBaseQuoteTickOffset(
+          priceRatio,
+        ),
+        "ratio should have been updated",
+      );
+
+      assert.ok(
+        (await kandel.getBaseQuoteTickOffset()).baseQuoteTickOffset % 100 == 0,
+        "tickSpacing should be a multiple of 100",
+      );
+
+      // assert expected offer writes
+      const book = market.getBook();
+      const asks = [...book.asks];
+      const bids = [...book.bids];
+
+      // assert asks
+      assert.equal(asks.length, 3, "3 live asks should be populated");
+      for (let i = 0; i < asks.length; i++) {
+        const offer = asks[i];
+        const d = distribution.getOfferAtIndex(
+          "asks",
+          distribution.getFirstLiveAskIndex() + i,
+        );
+        assert.ok(d !== undefined);
+        assert.equal(
+          offer.gives.toString(),
+          d.gives.toString(),
+          "gives should be base for ask",
+        );
+        assert.equal(
+          offer.tick.toString(),
+          d.tick.toString(),
+          "tick should be correct for ask",
+        );
+        assert.ok(offer.tick % 100 == 0, "tick should be a multiple of 100");
+        assert.equal(offer.id, await kandel.getOfferIdAtIndex("asks", d.index));
+        assert.equal(d.index, await kandel.getIndexOfOfferId("asks", offer.id));
+      }
+      // assert bids
+      assert.equal(bids.length, 2, "2 bids should be populated, 1 hole");
+      for (let i = 0; i < bids.length; i++) {
+        const offer = bids[bids.length - 1 - i];
+        const d = distribution.getOfferAtIndex("bids", i);
+        assert.ok(d !== undefined);
+        assert.equal(
+          offer.gives.toString(),
+          d.gives.toString(),
+          "gives should be quote for bid",
+        );
+        assert.equal(
+          offer.tick.toString(),
+          d.tick.toString(),
+          "tick should be correct for bid",
+        );
+        assert.ok(offer.tick % 100 == 0, "tick should be a multiple of 100");
+        assert.equal(offer.id, await kandel.getOfferIdAtIndex("bids", d.index));
+        assert.equal(d.index, await kandel.getIndexOfOfferId("bids", offer.id));
+      }
+
+      // assert provisions transferred is done by offers being able to be posted
+
+      // assert deposits
+      assert.equal(
+        (await kandel.getBalance("asks")).toString(),
+        requiredBase.toString(),
+        "Base should be deposited",
+      );
+      assert.equal(
+        (await kandel.getBalance("bids")).toString(),
+        requiredQuote.toString(),
+        "Quote should be deposited",
+      );
     });
   });
 

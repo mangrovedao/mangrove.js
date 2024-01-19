@@ -123,6 +123,18 @@ describe("Mangrove integration tests suite", function () {
       assert.deepEqual(tokenToData(marketData[0].base), tokenBData);
       assert.deepEqual(tokenToData(marketData[0].quote), tokenAData);
     });
+
+    it("gets two open TokenB/TokenA markets", async function () {
+      // Act
+      const markets = (await mgv.openMarkets()).filter(
+        (m) => m.base.symbol === "TokenB" && m.quote.symbol === "TokenA",
+      );
+
+      // Assert
+      assert.equal(markets.length, 2);
+      assert.equal(markets.filter((m) => m.tickSpacing === 1).length, 1);
+      assert.equal(markets.filter((m) => m.tickSpacing !== 1).length, 1);
+    });
   });
   describe("node utils", () => {
     it("can deal a test token", async () => {

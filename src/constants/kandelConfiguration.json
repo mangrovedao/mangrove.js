@@ -82,6 +82,10 @@
             "1": {
               "minimumBasePerOfferFactor": 10,
               "minimumQuotePerOfferFactor": 10
+            },
+            "100": {
+              "minimumBasePerOfferFactor": 10,
+              "minimumQuotePerOfferFactor": 10
             }
           }
         }
