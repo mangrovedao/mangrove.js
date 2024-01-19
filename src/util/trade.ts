@@ -681,6 +681,11 @@ class Trade {
     return result;
   }
 
+  /**
+   * Converts booleans for fillOrKill and restingOrder to an order type.
+   * @param params booleans for fillOrKill and restingOrder
+   * @returns the order type
+   */
   static toOrderType({
     fok,
     restingOrder,
@@ -693,6 +698,11 @@ class Trade {
     return MangroveOrderType.IOC;
   }
 
+  /**
+   * Converts an order type to booleans for fillOrKill and restingOrder.
+   * @param orderType The order type.
+   * @returns booleans for fillOrKill and restingOrder.
+   */
   static toFokRestingOrderType(orderType: MangroveOrderType): {
     fok: boolean;
     restingOrder: boolean;
@@ -706,6 +716,7 @@ class Trade {
         return { fok: false, restingOrder: false };
     }
   }
+
   /**
    * Low level resting order.
    *
