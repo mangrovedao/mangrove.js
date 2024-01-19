@@ -339,12 +339,18 @@ class TickPriceHelper {
    * NB: This is a lossy conversions since ticks are discrete and ratios are not.
    *
    * @param rawRatio inbound/outbound ratio to calculate the tick for
-   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}
+   * @param roundingMode the rounding mode for coercing tick to a representable tick. See {@link RoundingMode}. `noCoercion` does not coerce to a representable tick, i.e., as if tickSpacing=1
    * @returns a tick (coerced to nearest bin) that approximates the given ratio.
    */
-  public tickFromRawRatio(rawRatio: Big, roundingMode: RoundingMode): number {
+  public tickFromRawRatio(
+    rawRatio: Big,
+    roundingMode: RoundingMode | "noCoercion",
+  ): number {
     const { man, exp } = TickPriceHelper.rawRatioToMantissaExponent(rawRatio);
     const tick = TickLib.tickFromRatio(man, exp);
+    if (roundingMode === "noCoercion") {
+      return tick.toNumber();
+    }
     let binnedTick = this.nearestRepresentableTick(tick, roundingMode);
     // Since the `tick` can be off, the `binnedTick` can be off, so we correct it.
     if (roundingMode === "roundDown") {

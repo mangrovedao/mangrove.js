@@ -27,6 +27,7 @@ export type Balances = {
 };
 
 export const bidsAsks: Market.BA[] = ["bids", "asks"];
+export const buySell: Market.BS[] = ["buy", "sell"];
 
 export type AddressAndSigner = { address: string; signer: string };
 
@@ -44,7 +45,7 @@ const signers: any = {};
 
 // A safe minimum to be above density requirement.
 export const rawMinGivesBase = BigNumber.from("1000000000000000000");
-export const rawMinGivesQuote = BigNumber.from("1000000000000000000");
+export const rawMinGivesQuote = BigNumber.from("100000");
 
 // With the removal of hardhat, there is no "default chain" anymore
 // (it used to be implicit since we ran the ethereum local server in-process).

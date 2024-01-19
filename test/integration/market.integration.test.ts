@@ -1092,6 +1092,118 @@ describe("Market integration tests suite", () => {
     );
   });
 
+  describe("tickSpacing=100", () => {
+    let market: Market;
+    let askTickPriceHelper: TickPriceHelper;
+    let bidTickPriceHelper: TickPriceHelper;
+    beforeEach(async () => {
+      market = await mgv.market({
+        base: "TokenA",
+        quote: "TokenB",
+        tickSpacing: 100,
+      });
+      askTickPriceHelper = market.getSemibook("asks").tickPriceHelper;
+      bidTickPriceHelper = market.getSemibook("bids").tickPriceHelper;
+
+      // Mint for maker
+      const maker = await mgvTestUtil.getAccount(mgvTestUtil.AccountName.Maker);
+      await mgvTestUtil.mint(market.quote, maker, 100);
+      await mgvTestUtil.mint(market.base, maker, 100);
+
+      // post offers - intentionally rounding down for takers to be able to match offers with same price.
+
+      // post two bids
+      await mgvTestUtil.postNewOffer({
+        market,
+        ba: "bids",
+        maker,
+        tick: bidTickPriceHelper.tickFromPrice(1, "roundDown"),
+        gives: rawMinGivesQuote,
+      });
+      await mgvTestUtil.postNewOffer({
+        market,
+        ba: "bids",
+        maker,
+        tick: bidTickPriceHelper.tickFromPrice(2, "roundDown"),
+        gives: rawMinGivesQuote,
+      });
+
+      // post two asks
+      await mgvTestUtil.postNewOffer({
+        market,
+        ba: "asks",
+        maker,
+        tick: askTickPriceHelper.tickFromPrice(3, "roundDown"),
+        gives: rawMinGivesBase,
+      });
+      const tx = await mgvTestUtil.postNewOffer({
+        market,
+        ba: "asks",
+        maker,
+        tick: askTickPriceHelper.tickFromPrice(4, "roundDown"),
+        gives: rawMinGivesBase,
+      });
+
+      await waitForBlock(market.mgv, tx.blockNumber);
+    });
+
+    it("only has ticks on valid tick spacing", async function () {
+      const allOffers = [...market.getBook().asks].concat([
+        ...market.getBook().bids,
+      ]);
+
+      assert.equal(allOffers.length, 4);
+
+      allOffers.forEach((x) => {
+        assert.ok(x.tick % 100 === 0);
+      });
+    });
+
+    it("can buy at expected price", async function () {
+      const { result } = await market.buy({
+        limitPrice: 3,
+        volume: 100,
+      });
+      const orderResult = await result;
+
+      const gave = askTickPriceHelper.inboundFromOutbound(
+        askTickPriceHelper.tickFromPrice(3, "roundDown"),
+        market.base.fromUnits(rawMinGivesBase),
+        "roundUp",
+      );
+      expect(orderResult.successes).to.have.lengthOf(1);
+      expect(orderResult.tradeFailures).to.have.lengthOf(0);
+      expect(orderResult.successes[0].got.toNumber()).to.be.equal(
+        market.base.fromUnits(rawMinGivesBase).toNumber(),
+      );
+      expect(orderResult.successes[0].gave.toNumber()).to.be.equal(
+        gave.toNumber(),
+      );
+    });
+
+    it("can sell at expected price", async function () {
+      const { result } = await market.sell({
+        limitPrice: 2,
+        volume: 100,
+      });
+      const orderResult = await result;
+
+      const gave = bidTickPriceHelper.inboundFromOutbound(
+        bidTickPriceHelper.tickFromPrice(2, "roundDown"),
+        market.quote.fromUnits(rawMinGivesQuote),
+        "roundUp",
+      );
+      expect(orderResult.successes).to.have.lengthOf(1);
+      expect(orderResult.tradeFailures).to.have.lengthOf(0);
+      expect(orderResult.successes[0].got.toNumber()).to.be.equal(
+        market.quote.fromUnits(rawMinGivesQuote).toNumber(),
+      );
+      expect(orderResult.successes[0].gave.toNumber()).to.be.equal(
+        gave.toNumber(),
+      );
+    });
+  });
+
   [true, false].forEach((forceRouting) => {
     [undefined, 500000, 6500000].forEach((gasLimit) => {
       [undefined, 42, 7000000].forEach((gasLowerBound) => {

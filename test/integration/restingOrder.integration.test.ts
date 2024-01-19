@@ -11,6 +11,7 @@ import { AbstractRouter } from "../../src/types/typechain";
 import { JsonRpcProvider, TransactionResponse } from "@ethersproject/providers";
 import { Big } from "big.js";
 import {
+  buySell,
   waitForBlock,
   waitForTransaction,
 } from "../../src/util/test/mgvIntegrationTestUtil";
@@ -689,173 +690,237 @@ describe("RestingOrder", () => {
         );
       });
     });
-    ["buy", "sell"].map((tradeOperation) => {
-      describe(`update resting ${tradeOperation} order`, () => {
-        const ba = tradeOperation === "buy" ? "bids" : "asks";
-        const initialPrice = ba === "bids" ? 0.5 : 2;
-        let initialTick: number;
-        const initialGives = 10;
-        const initialVolume =
+
+    describe("update resting order", () => {
+      let initialTick: number;
+      let initialTotal: number;
+      let initialPrice: number;
+      const initialGives = 10;
+      let offerId: number;
+      // ba is the semibook where the offer is posted, while tradeOperation is the book where offers are taken.
+      let ba: Market.BA;
+      let initialVolume: number;
+
+      const setupInitialOffer = async function (
+        tradeOperation: Market.BS,
+        localMarket: Market,
+      ) {
+        ba = tradeOperation === "buy" ? "bids" : "asks";
+        initialPrice = ba === "bids" ? 0.5 : 2;
+        initialVolume =
           ba === "bids" ? initialGives * initialPrice : initialGives;
-        const initialTotal =
+        initialTotal =
           ba === "bids" ? initialGives : initialGives * initialPrice;
-        let offerId: number;
 
-        beforeEach(async () => {
-          initialTick = market
-            .getSemibook(ba)
-            .tickPriceHelper.tickFromPrice(initialPrice, "nearest");
-          const provision =
-            ba === "bids"
-              ? await orderLogic.getMissingProvision(market, "bids", gasreq)
-              : await orderLogic.getMissingProvision(market, "asks", gasreq);
+        initialTick = localMarket
+          .getSemibook(ba)
+          .tickPriceHelper.tickFromPrice(initialPrice, "nearest");
+        const provision = await orderLogic.getMissingProvision(
+          localMarket,
+          ba,
+          gasreq,
+        );
 
-          await w(tokenB.approve(router.address));
-          await w(tokenA.approve(router.address));
+        await w(tokenB.approve(router.address));
+        await w(tokenA.approve(router.address));
 
-          const tradeFunction =
-            tradeOperation === "buy" ? market.buy : market.sell;
-          const tradePromises = await tradeFunction.bind(market)({
+        const tradePromises = await localMarket.trade.order(
+          tradeOperation,
+          {
             limitPrice: initialPrice,
             volume: initialVolume,
             restingOrder: { provision: provision },
+          },
+          localMarket,
+        );
+
+        const tradeTxReceipt = await waitForTransaction(tradePromises.response);
+
+        const orderResult = await tradePromises.result;
+        orderResult.summary = orderResult.summary as Market.OrderSummary;
+
+        assert(
+          orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
+          "Resting order was not posted",
+        );
+
+        await waitForBlock(mgv, tradeTxReceipt.blockNumber);
+
+        expect([...localMarket.getSemibook(ba)].map((o) => o.id)).to.contain(
+          orderResult.restingOrder!.id,
+        );
+
+        offerId = orderResult.restingOrder!.id;
+        assert.ok(
+          orderResult.restingOrder!.tick % localMarket.tickSpacing === 0,
+        );
+      };
+      buySell.map((tradeOperation) => {
+        describe(`update resting ${tradeOperation} order`, () => {
+          beforeEach(async () => {
+            await setupInitialOffer(tradeOperation, market);
           });
 
-          const tradeTxReceipt = await waitForTransaction(
-            tradePromises.response,
-          );
+          it("update tick", async () => {
+            // Act
+            const newTick = initialTick + 1;
+            const retractPromises = await market.updateRestingOrder(ba, {
+              offerId,
+              tick: newTick,
+            });
+            const retractTxReceipt = await waitForTransaction(
+              retractPromises.response,
+            );
+            assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+            await retractPromises.result;
 
-          const orderResult = await tradePromises.result;
-          orderResult.summary = orderResult.summary as Market.OrderSummary;
+            await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
-          assert(
-            orderResult.restingOrder ? orderResult.restingOrder.id > 0 : false,
-            "Resting order was not posted",
-          );
-
-          await waitForBlock(mgv, tradeTxReceipt.blockNumber);
-
-          expect([...market.getSemibook(ba)].map((o) => o.id)).to.contain(
-            orderResult.restingOrder!.id,
-          );
-
-          offerId = orderResult.restingOrder!.id;
-        });
-
-        it("update tick", async () => {
-          // Act
-          const newTick = initialTick + 1;
-          const retractPromises = await market.updateRestingOrder(ba, {
-            offerId,
-            tick: newTick,
+            // Assert
+            const updatedOffer = await market.offerInfo(ba, offerId);
+            expect(updatedOffer.tick).to.equal(newTick);
           });
-          const retractTxReceipt = await waitForTransaction(
-            retractPromises.response,
-          );
-          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
-          await retractPromises.result;
 
-          await waitForBlock(mgv, retractTxReceipt.blockNumber);
+          it("update price", async () => {
+            // Act
+            const newPrice = initialPrice + 1;
+            const retractPromises = await market.updateRestingOrder(ba, {
+              offerId,
+              price: newPrice,
+            });
+            const retractTxReceipt = await waitForTransaction(
+              retractPromises.response,
+            );
+            assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+            await retractPromises.result;
 
-          // Assert
-          const updatedOffer = await market.offerInfo(ba, offerId);
-          expect(updatedOffer.tick).to.equal(newTick);
-        });
+            await waitForBlock(mgv, retractTxReceipt.blockNumber);
 
-        it("update price", async () => {
-          // Act
-          const newPrice = initialPrice + 1;
-          const retractPromises = await market.updateRestingOrder(ba, {
-            offerId,
-            price: newPrice,
-          });
-          const retractTxReceipt = await waitForTransaction(
-            retractPromises.response,
-          );
-          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
-          await retractPromises.result;
-
-          await waitForBlock(mgv, retractTxReceipt.blockNumber);
-
-          // Assert
-          const updatedOffer = await market.offerInfo(ba, offerId);
-          expect(updatedOffer.price.toNumber()).to.be.approximately(
-            newPrice,
-            0.001,
-          );
-        });
-
-        it("update gives", async () => {
-          // Act
-          const newGives = initialGives + 1;
-          const retractPromises = await market.updateRestingOrder(ba, {
-            offerId,
-            gives: newGives,
-          });
-          const retractTxReceipt = await waitForTransaction(
-            retractPromises.response,
-          );
-          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
-          await retractPromises.result;
-
-          await waitForBlock(mgv, retractTxReceipt.blockNumber);
-
-          // Assert
-          const updatedOffer = await market.offerInfo(ba, offerId);
-          expect(updatedOffer.gives.toNumber()).to.equal(newGives);
-        });
-
-        it("update volume", async () => {
-          // Act
-          const newVolume = initialVolume + 1;
-          const retractPromises = await market.updateRestingOrder(ba, {
-            offerId,
-            volume: newVolume,
-          });
-          const retractTxReceipt = await waitForTransaction(
-            retractPromises.response,
-          );
-          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
-          await retractPromises.result;
-
-          await waitForBlock(mgv, retractTxReceipt.blockNumber);
-
-          // Assert
-          const updatedOffer = await market.offerInfo(ba, offerId);
-          expect(updatedOffer.volume.toNumber()).to.be.approximately(
-            newVolume,
-            0.001,
-          );
-        });
-
-        it("update total", async () => {
-          // Act
-          const newTotal = initialTotal + 1;
-          const retractPromises = await market.updateRestingOrder(ba, {
-            offerId,
-            total: newTotal,
-          });
-          const retractTxReceipt = await waitForTransaction(
-            retractPromises.response,
-          );
-          assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
-          await retractPromises.result;
-
-          await waitForBlock(mgv, retractTxReceipt.blockNumber);
-
-          // Assert
-          const updatedOffer = await market.offerInfo(ba, offerId);
-          if (ba === "bids") {
-            expect(updatedOffer.gives.toNumber()).to.be.approximately(
-              newTotal,
+            // Assert
+            const updatedOffer = await market.offerInfo(ba, offerId);
+            expect(updatedOffer.price.toNumber()).to.be.approximately(
+              newPrice,
               0.001,
             );
-          } else {
-            expect(updatedOffer.wants.toNumber()).to.be.approximately(
-              newTotal,
+          });
+
+          it("update gives", async () => {
+            // Act
+            const newGives = initialGives + 1;
+            const retractPromises = await market.updateRestingOrder(ba, {
+              offerId,
+              gives: newGives,
+            });
+            const retractTxReceipt = await waitForTransaction(
+              retractPromises.response,
+            );
+            assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+            await retractPromises.result;
+
+            await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+            // Assert
+            const updatedOffer = await market.offerInfo(ba, offerId);
+            expect(updatedOffer.gives.toNumber()).to.equal(newGives);
+          });
+
+          it("update volume", async () => {
+            // Act
+            const newVolume = initialVolume + 1;
+            const retractPromises = await market.updateRestingOrder(ba, {
+              offerId,
+              volume: newVolume,
+            });
+            const retractTxReceipt = await waitForTransaction(
+              retractPromises.response,
+            );
+            assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+            await retractPromises.result;
+
+            await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+            // Assert
+            const updatedOffer = await market.offerInfo(ba, offerId);
+            expect(updatedOffer.volume.toNumber()).to.be.approximately(
+              newVolume,
               0.001,
             );
-          }
+          });
+
+          it("update total", async () => {
+            // Act
+            const newTotal = initialTotal + 1;
+            const retractPromises = await market.updateRestingOrder(ba, {
+              offerId,
+              total: newTotal,
+            });
+            const retractTxReceipt = await waitForTransaction(
+              retractPromises.response,
+            );
+            assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+            await retractPromises.result;
+
+            await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+            // Assert
+            const updatedOffer = await market.offerInfo(ba, offerId);
+            if (ba === "bids") {
+              expect(updatedOffer.gives.toNumber()).to.be.approximately(
+                newTotal,
+                0.001,
+              );
+            } else {
+              expect(updatedOffer.wants.toNumber()).to.be.approximately(
+                newTotal,
+                0.001,
+              );
+            }
+          });
+        });
+        describe(`update tickSpacing=100 resting ${tradeOperation} order`, () => {
+          let market100: Market;
+          beforeEach(async () => {
+            market100 = await mgv.market({
+              base: "TokenA",
+              quote: "TokenB",
+              tickSpacing: 100,
+            });
+            await setupInitialOffer(tradeOperation, market100);
+          });
+
+          it("update price", async () => {
+            // Act
+            const newPrice = initialPrice + 1;
+            const retractPromises = await market100.updateRestingOrder(ba, {
+              offerId,
+              price: newPrice,
+            });
+            const retractTxReceipt = await waitForTransaction(
+              retractPromises.response,
+            );
+            assert(retractTxReceipt.blockNumber > 0, "Update tx was not mined");
+            await retractPromises.result;
+
+            await waitForBlock(mgv, retractTxReceipt.blockNumber);
+
+            // Assert
+            const updatedOffer = await market100.offerInfo(ba, offerId);
+            expect(updatedOffer.price.toNumber()).to.not.be.approximately(
+              newPrice,
+              0.001,
+            );
+            // For asks the price should be rounded up, for bids it should be rounded down, so that maker gets at least what she wants.
+            expect(updatedOffer.price.toNumber()).to.be.approximately(
+              market100
+                .getSemibook(ba)
+                .tickPriceHelper.coercePrice(
+                  newPrice,
+                  ba === "asks" ? "roundUp" : "roundDown",
+                )
+                .toNumber(),
+              0.001,
+            );
+          });
         });
       });
     });

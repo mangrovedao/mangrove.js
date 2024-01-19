@@ -8,6 +8,7 @@ import { Bigish, Market } from "../../src";
 import Trade from "../../src/util/trade";
 import TickPriceHelper from "../../src/util/tickPriceHelper";
 import { TokenCalculations } from "../../src/token";
+import { bidsAsks } from "../../src/util/test/mgvIntegrationTestUtil";
 
 describe("Trade unit tests suite", () => {
   describe("getParamsForTrade bs=buy", () => {
@@ -89,7 +90,7 @@ describe("Trade unit tests suite", () => {
     it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as true, when params has fillVolume and tick, but no fillWants", async function () {
       //Arrange
       const params: Market.TradeParams = {
-        maxTick: 30,
+        maxTick: 930,
         fillVolume: 20,
         slippage: slippage,
       };
@@ -98,11 +99,12 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundDown")
-          .mul(100 + slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 + slippage).div(100),
         "roundDown",
       );
 
@@ -117,10 +119,38 @@ describe("Trade unit tests suite", () => {
       );
     });
 
+    it("returns fillVolume as fillVolume, tick coerced when no slippage and fillWants as true, when params has fillVolume and tick, but no fillWants", async function () {
+      //Arrange
+      const params: Market.TradeParams = {
+        maxTick: 930,
+        fillVolume: 20,
+      };
+
+      //Act
+      const result = trade.getParamsForTrade(params, market, "buy");
+
+      //Assert
+      const expectedTick = tickPriceHelper.coerceTick(
+        params.maxTick,
+        "roundDown",
+      );
+
+      assert.equal(
+        result.fillVolume.toString(),
+        market.base.toUnits(params.fillVolume).toString(),
+      );
+      assert.equal(result.fillWants, true);
+      assert.equal(result.maxTick.toString(), expectedTick.toString());
+      assert.ok(
+        result.maxTick % 100 === 0,
+        "tick is not a multiple of tickSpacing",
+      );
+    });
+
     it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has tick, fillVolume and fillWants", async function () {
       //Arrange
       const params: Market.TradeParams = {
-        maxTick: 30,
+        maxTick: 930,
         fillVolume: 20,
         fillWants: false,
         slippage: slippage,
@@ -130,11 +160,12 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForTrade(params, market, "buy");
 
       //Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundDown")
-          .mul(100 + slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 + slippage).div(100),
         "roundDown",
       );
 
@@ -142,10 +173,7 @@ describe("Trade unit tests suite", () => {
         result.fillVolume.toString(),
         market.quote.toUnits(params.fillVolume).toString(),
       );
-      assert.deepStrictEqual(
-        result.maxTick.toString(),
-        expectedTickWithSlippage.toString(),
-      );
+      assert.equal(result.maxTick, expectedTickWithSlippage);
       assert.equal(result.fillWants, params.fillWants);
     });
 
@@ -278,7 +306,7 @@ describe("Trade unit tests suite", () => {
       //Arrange
       const params: Market.TradeParams = {
         fillVolume: 20,
-        maxTick: 30,
+        maxTick: 930,
         slippage: slippage,
       };
 
@@ -286,11 +314,12 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForTrade(params, market, "sell");
 
       // Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundUp")
-          .mul(100 - slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 - slippage).div(100),
         "roundDown",
       );
 
@@ -308,8 +337,8 @@ describe("Trade unit tests suite", () => {
     it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has tick, fillVolume and fillWants", async function () {
       //Arrange
       const params: Market.TradeParams = {
+        maxTick: 930,
         fillVolume: 20,
-        maxTick: 30,
         fillWants: true,
         slippage: slippage,
       };
@@ -317,12 +346,13 @@ describe("Trade unit tests suite", () => {
       //Act
       const result = trade.getParamsForTrade(params, market, "sell");
 
-      // Assert
+      //Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundUp")
-          .mul(100 - slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 - slippage).div(100),
         "roundDown",
       );
 
@@ -330,11 +360,8 @@ describe("Trade unit tests suite", () => {
         result.fillVolume.toString(),
         market.quote.toUnits(params.fillVolume).toString(),
       );
-      assert.equal(
-        result.maxTick.toString(),
-        expectedTickWithSlippage.toString(),
-      );
-      assert.equal(result.fillWants, true);
+      assert.equal(result.maxTick, expectedTickWithSlippage);
+      assert.equal(result.fillWants, params.fillWants);
     });
 
     it("returns fillVolume as gives, tick corrected for slippage and fillWants as fillWants, when params has gives, wants and fillWants", async function () {
@@ -502,6 +529,28 @@ describe("Trade unit tests suite", () => {
             .toString(),
         ),
       );
+    });
+
+    bidsAsks.forEach((ba) => {
+      it(`coerces tick correctly for ${ba}`, async function () {
+        //Arrange
+        const params: Market.UpdateRestingOrderParams = {
+          tick: 20,
+          offerId: 1,
+        };
+
+        //Act
+        const result = trade.getRawUpdateRestingOrderParams(
+          params,
+          market,
+          ba,
+          42,
+          Big(1),
+        );
+
+        //Assert
+        assert.equal(result.tick, 100);
+      });
     });
   });
 

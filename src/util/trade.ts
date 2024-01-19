@@ -63,26 +63,17 @@ class Trade {
       // in this case, we're merely asking to get the tick adjusted for slippage
       fillVolume = Big(params.fillVolume);
       fillWants = params.fillWants ?? fillWants;
+      maxTick = params.maxTick;
       if (slippage > 0) {
-        // round down to not exceed the price when buying, and up to get at least price for when selling
-        const limitPrice = tickPriceHelper.priceFromTick(
-          params.maxTick,
-          bs === "buy" ? "roundDown" : "roundUp",
+        // add slippage to the tick with an offset given by the tick representing the same slippage as a ratio (not coerced to tickSpacing, we do that after the addition)
+        // the slippage is added for both buy and sell, since a higher tick means a worse price.
+        maxTick += tickPriceHelper.tickFromRawRatio(
+          Big(100 + slippage).div(100),
+          "noCoercion",
         );
-        const limitPriceWithSlippage = this.adjustForSlippage(
-          limitPrice,
-          slippage,
-          bs,
-        );
-        // round down to not exceed the price expectations
-        maxTick = tickPriceHelper.tickFromPrice(
-          limitPriceWithSlippage,
-          "roundDown",
-        );
-      } else {
-        // if slippage is 0, we don't need to do anything
-        maxTick = params.maxTick;
       }
+      // coerce tick - round down to not exceed the price expectations
+      maxTick = tickPriceHelper.coerceTick(maxTick, "roundDown");
     } else {
       let wants = Big(params.wants);
       let gives = Big(params.gives);
@@ -357,7 +348,8 @@ class Trade {
     const tickPriceHelper = new TickPriceHelper(ba, market);
 
     if ("tick" in params && params.tick !== undefined) {
-      tick = params.tick;
+      // round up to ensure we as a maker get what we want for the offer.
+      tick = tickPriceHelper.coerceTick(params.tick, "roundUp");
     }
 
     if ("price" in params && params.price !== undefined) {
