@@ -21,6 +21,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 import { Density } from "./util/Density";
 import TickPriceHelper from "./util/tickPriceHelper";
+import { AbstractRoutingLogic } from "./logics/AbstractRoutingLogic";
 
 let canConstructMarket = false;
 
@@ -239,8 +240,8 @@ namespace Market {
     fillOrKill?: boolean;
     expiryDate?: number;
     gasLowerBound?: ethers.BigNumberish;
-    takerGivesLogic?: string;
-    takerWantsLogic?: string;
+    takerGivesLogic?: AbstractRoutingLogic;
+    takerWantsLogic?: AbstractRoutingLogic;
   } & {
     restingOrder?: RestingOrderParams;
   } & (

@@ -25,7 +25,7 @@ export abstract class AbstractRoutingLogic {
   /**
    * @desc A cache of overlying addresses.
    */
-  private overlyingCache: Map<string, string> = new Map();
+  private overlyingCache: Map<string, Token> = new Map();
 
   /**
    * @desc The address of the routing logic.
@@ -50,47 +50,34 @@ export abstract class AbstractRoutingLogic {
 
   /**
    * @desc Returns the overlying address for a token from the network.
-   * @param tokenAddress The address of the token.
+   * @param token The token.
    * @returns The overlying address.
    */
-  protected abstract overlyingFromNetwork(
-    tokenAddress: string,
-  ): Promise<string>;
+  protected abstract overlyingFromNetwork(token: Token): Promise<Token>;
 
   /**
-   * @desc Returns the overlying address for a token.
+   * @desc Returns the overlying token.
    * * It will first check the cache, and if it is not there, it will query the network.
-   * @param tokenAddress the address of the token
+   * @param token The token.
    * @returns The overlying address.
    */
-  async overlyingAddress(tokenAddress: string): Promise<string> {
-    tokenAddress = tokenAddress.toLowerCase();
-    const fromCache = this.overlyingCache.get(tokenAddress);
+  async overlying(token: Token): Promise<Token> {
+    const fromCache = this.overlyingCache.get(token.address.toLowerCase());
     if (fromCache) {
       return Promise.resolve(fromCache);
     }
-    const res = await this.overlyingFromNetwork(tokenAddress);
-    this.overlyingCache.set(tokenAddress, res);
+    const res = await this.overlyingFromNetwork(token);
+    this.overlyingCache.set(token.address.toLowerCase(), res);
     return res;
   }
 
   /**
    * @desc Returns whether or not the logic can be used for a token.
-   * @param tokenAddress the address of the token
+   * @param token The token.
    * @returns Whether or not the logic can be used for the token.
    */
-  async canUseLogicFor(tokenAddress: string): Promise<boolean> {
-    const address = await this.overlyingAddress(tokenAddress);
-    return address !== ethers.constants.AddressZero;
-  }
-
-  /**
-   * @desc Returns the overlying token for a token.
-   * @param tokenAddress the address of the token
-   * @returns The overlying token as `Token` instance
-   */
-  async overlying(tokenAddress: string): Promise<Token> {
-    const address = await this.overlyingAddress(tokenAddress);
-    return Token.createTokenFromAddress(address, this.mgv);
+  async canUseLogicFor(token: Token): Promise<boolean> {
+    const _token = await this.overlying(token);
+    return _token.address !== ethers.constants.AddressZero;
   }
 }

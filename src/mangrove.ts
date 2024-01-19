@@ -38,6 +38,7 @@ import { OLKeyStruct } from "./types/typechain/Mangrove";
 import { Density } from "./util/Density";
 import { SimpleAaveLogic } from "./logics/SimpleAaveLogic";
 import { AbstractRoutingLogic } from "./logics/AbstractRoutingLogic";
+import { NoLogic } from "./logics/NoLogic";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -141,6 +142,7 @@ class Mangrove {
   eventEmitter: EventEmitter;
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
   logics: {
+    noLogic: NoLogic;
     aave: SimpleAaveLogic;
   };
 
@@ -249,6 +251,7 @@ class Mangrove {
       "SimpleAaveLogic",
       network.name,
     );
+
     const simpleAaveLogic = typechain.SimpleAaveLogic__factory.connect(
       simpleAaveLogicAddress,
       signer,
@@ -345,10 +348,11 @@ class Mangrove {
   }) {
     this.logics = {
       aave: new SimpleAaveLogic({
-        title: "Aave Logic",
-        description: "Source liquidity from and to Aave (if token exists)",
         mgv: this,
         aaveLogic: params.logics.aave,
+      }),
+      noLogic: new NoLogic({
+        mgv: this,
       }),
     };
     if (!canConstructMangrove) {

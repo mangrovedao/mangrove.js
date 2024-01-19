@@ -1,25 +1,34 @@
+import Token from "../token";
 import { typechain } from "../types";
 import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
 
+/**
+ * @title SimpleAaveLogic
+ * @desc Defines the interaction for Aave routing logic.
+ */
 export class SimpleAaveLogic extends AbstractRoutingLogic {
   logic: typechain.SimpleAaveLogic;
 
   constructor(
     params: Prettify<
-      Omit<ConstructorParameters<typeof AbstractRoutingLogic>[0], "address"> & {
+      Pick<ConstructorParameters<typeof AbstractRoutingLogic>[0], "mgv"> & {
         aaveLogic: typechain.SimpleAaveLogic;
       }
     >,
   ) {
     super({
-      ...params,
+      title: "Simple Aave Logic",
+      description: "Pull and push tokens directly from your Aave positions.",
+      mgv: params.mgv,
       address: params.aaveLogic.address,
     });
     this.logic = params.aaveLogic;
   }
 
-  protected async overlyingFromNetwork(tokenAddress: string): Promise<string> {
-    return this.logic.overlying(tokenAddress).then((res) => res.toLowerCase());
+  protected async overlyingFromNetwork(token: Token): Promise<Token> {
+    return this.logic.overlying(token.address).then((res) => {
+      return Token.createTokenFromAddress(res, this.mgv);
+    });
   }
 }

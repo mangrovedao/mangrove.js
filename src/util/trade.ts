@@ -9,6 +9,7 @@ import TradeEventManagement, {
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 import { SimpleAaveLogic } from "../logics/SimpleAaveLogic";
+import { AbstractRoutingLogic } from "../logics/AbstractRoutingLogic";
 
 export type CleanUnitParams = {
   ba: Market.BA;
@@ -248,9 +249,9 @@ class Trade {
             fillOrKill: params.fillOrKill ? params.fillOrKill : false,
             gasLowerBound: params.gasLowerBound ?? 0,
             takerGivesLogic:
-              params.takerGivesLogic ?? ethers.constants.AddressZero,
+              params.takerGivesLogic ?? market.mgv.logics.noLogic,
             takerWantsLogic:
-              params.takerWantsLogic ?? ethers.constants.AddressZero,
+              params.takerWantsLogic ?? market.mgv.logics.noLogic,
           },
           overrides,
         );
@@ -513,15 +514,14 @@ class Trade {
     const { fillVolume, orderType } = this.getRawParams(bs, params, market);
 
     let logicTakeGasOverhead = 0;
-    if (params.takerGivesLogic) {
-      const logic = market.mgv.getLogicByAddress(params.takerGivesLogic);
-      if (logic && logic instanceof SimpleAaveLogic) {
-        logicTakeGasOverhead =
-          configuration.mangroveOrder.getRestingOrderGasreq(
-            market.mgv.network.name,
-            "aave",
-          );
-      }
+    if (
+      params.takerGivesLogic &&
+      params.takerGivesLogic instanceof SimpleAaveLogic
+    ) {
+      logicTakeGasOverhead = configuration.mangroveOrder.getRestingOrderGasreq(
+        market.mgv.network.name,
+        "aave",
+      );
     }
 
     switch (orderType) {
@@ -747,8 +747,8 @@ class Trade {
       restingParams: Market.RestingOrderParams | undefined;
       market: Market;
       gasLowerBound: ethers.BigNumberish;
-      takerGivesLogic: string;
-      takerWantsLogic: string;
+      takerGivesLogic: AbstractRoutingLogic;
+      takerWantsLogic: AbstractRoutingLogic;
     },
     overrides: ethers.Overrides,
   ): Promise<Market.Transaction<Market.OrderResult>> {
@@ -780,8 +780,8 @@ class Trade {
             fok: fillOrKill,
             restingOrder: !!restingOrderParams,
           }),
-          takerGivesLogic,
-          takerWantsLogic,
+          takerGivesLogic: takerGivesLogic.address,
+          takerWantsLogic: takerWantsLogic.address,
           expiryDate: expiryDate,
           offerId:
             restingParams?.offerId === undefined ? 0 : restingParams.offerId,
