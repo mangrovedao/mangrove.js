@@ -937,7 +937,7 @@ class Trade {
     let provision = params.provision;
     if (!provision) {
       const mangroveOrder = market.mgv.offerLogic(
-        (market.mgv.orderContract as any).address,
+        market.mgv.orderContract.address,
       );
       provision = await mangroveOrder.getMissingProvision(
         market,
