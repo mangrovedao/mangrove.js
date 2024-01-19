@@ -32,6 +32,8 @@ export abstract class AbstractRoutingLogic {
    */
   address: string;
 
+  public abstract get gasOverhead(): number;
+
   /**
    * @desc Creates a new routing logic.
    * @param params The parameters for the routing logic.

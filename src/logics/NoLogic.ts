@@ -2,12 +2,19 @@ import { ethers } from "ethers";
 import Token from "../token";
 import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
+import configuration from "../configuration";
 
 /**
  * @title NoLogic
  * @desc Defines the interaction for no logic.
  */
 export class NoLogic extends AbstractRoutingLogic {
+  public get gasOverhead(): number {
+    return configuration.mangroveOrder.getRestingOrderGasreq(
+      this.mgv.network.name,
+    );
+  }
+
   constructor(
     params: Prettify<
       Pick<ConstructorParameters<typeof AbstractRoutingLogic>[0], "mgv">

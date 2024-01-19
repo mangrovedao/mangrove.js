@@ -1,3 +1,4 @@
+import configuration from "../configuration";
 import Token from "../token";
 import { typechain } from "../types";
 import type { Prettify } from "../util/types";
@@ -9,6 +10,13 @@ import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
  */
 export class SimpleAaveLogic extends AbstractRoutingLogic {
   logic: typechain.SimpleAaveLogic;
+
+  public get gasOverhead(): number {
+    return configuration.mangroveOrder.getRestingOrderGasreq(
+      this.mgv.network.name,
+      "aave",
+    );
+  }
 
   constructor(
     params: Prettify<

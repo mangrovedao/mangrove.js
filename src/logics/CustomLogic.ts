@@ -17,11 +17,18 @@ export class CustomLogic extends AbstractRoutingLogic {
   overlyingList: OverlyingList;
   defaultTokenCache: Token | undefined;
 
+  _gasOverhead: number;
+
+  public get gasOverhead(): number {
+    return this._gasOverhead;
+  }
+
   constructor(
     params: Prettify<
       Pick<ConstructorParameters<typeof AbstractRoutingLogic>[0], "mgv"> & {
         logicAddress: string;
         overlyingList?: OverlyingList;
+        gasOverhead: number;
       }
     >,
   ) {
@@ -36,6 +43,7 @@ export class CustomLogic extends AbstractRoutingLogic {
       params.mgv.signer,
     );
     this.overlyingList = params.overlyingList || {};
+    this._gasOverhead = params.gasOverhead;
   }
 
   private async defaultToken(): Promise<Token> {
