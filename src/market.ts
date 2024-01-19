@@ -516,13 +516,9 @@ namespace Market {
   /**
    * Minimum volume depending on the used strategy.
    */
-  export type MinVolume = Prettify<
-    {
-      value: Big;
-    } & {
-      [key in RouterLogic]: Big;
-    }
-  >;
+  export type MinVolume = {
+    [key in RouterLogic]: Big;
+  };
 }
 
 /**
@@ -555,8 +551,35 @@ class Market {
   private asksCb: Semibook.EventListener | undefined;
   private bidsCb: Semibook.EventListener | undefined;
 
-  public minVolumeAsk?: Market.MinVolume;
-  public minVolumeBid?: Market.MinVolume;
+  private minVolumeAskInternal(key: RouterLogic): Big.Big {
+    const config = this.config();
+    return config.asks.density.getRequiredOutboundForGasreq(
+      config.asks.offer_gasbase + this.mgv.logics[key].gasOverhead,
+    );
+  }
+
+  private minVolumeBidInternal(key: RouterLogic): Big.Big {
+    const config = this.config();
+    return config.bids.density.getRequiredOutboundForGasreq(
+      config.bids.offer_gasbase + this.mgv.logics[key].gasOverhead,
+    );
+  }
+
+  public get minVolumeAsk(): Market.MinVolume {
+    return Object.keys(this.mgv.logics).reduce((acc, _key) => {
+      const key = _key as RouterLogic;
+      acc[key] = this.minVolumeAskInternal(key as RouterLogic);
+      return acc;
+    }, {} as Market.MinVolume);
+  }
+
+  public get minVolumeBid(): Market.MinVolume {
+    return Object.keys(this.mgv.logics).reduce((acc, _key) => {
+      const key = _key as RouterLogic;
+      acc[key] = this.minVolumeBidInternal(key as RouterLogic);
+      return acc;
+    }, {} as Market.MinVolume);
+  }
 
   /**
    * Connect to a market.
@@ -592,30 +615,6 @@ class Market {
     } else {
       await market.#initialize(params.bookOptions);
     }
-    const config = market.config();
-    const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
-      market.mgv.network.name,
-    );
-    const aaveGasReq = configuration.mangroveOrder.getRestingOrderGasreq(
-      market.mgv.network.name,
-      "aave",
-    );
-    market.minVolumeAsk = {
-      value: config.asks.density.getRequiredOutboundForGasreq(
-        config.asks.offer_gasbase + gasreq,
-      ),
-      aave: config.asks.density.getRequiredOutboundForGasreq(
-        config.asks.offer_gasbase + aaveGasReq,
-      ),
-    };
-    market.minVolumeBid = {
-      value: config.bids.density.getRequiredOutboundForGasreq(
-        config.bids.offer_gasbase + gasreq,
-      ),
-      aave: config.bids.density.getRequiredOutboundForGasreq(
-        config.bids.offer_gasbase + aaveGasReq,
-      ),
-    };
     return market;
   }
 

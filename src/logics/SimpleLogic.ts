@@ -8,7 +8,7 @@ import configuration from "../configuration";
  * @title NoLogic
  * @desc Defines the interaction for no logic.
  */
-export class SimpleLogic extends AbstractRoutingLogic {
+export class SimpleLogic extends AbstractRoutingLogic<"simple"> {
   public get gasOverhead(): number {
     return configuration.mangroveOrder.getRestingOrderGasreq(
       this.mgv.network.name,
@@ -21,6 +21,7 @@ export class SimpleLogic extends AbstractRoutingLogic {
     >,
   ) {
     super({
+      id: "simple",
       title: "No Logic",
       description: "Simply pull and push tokens directly from your wallet.",
       mgv: params.mgv,

@@ -3,6 +3,7 @@ import Token from "../token";
 import { typechain } from "../types";
 import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
+import Big from "big.js";
 
 type OverlyingList = {
   [key: string]: string;
@@ -12,7 +13,7 @@ type OverlyingList = {
  * @title SimpleAaveLogic
  * @desc Defines the interaction for Aave routing logic.
  */
-export class CustomLogic extends AbstractRoutingLogic {
+export class CustomLogic extends AbstractRoutingLogic<string> {
   logic: typechain.AbstractRoutingLogic;
   overlyingList: OverlyingList;
   defaultTokenCache: Token | undefined;
@@ -27,14 +28,19 @@ export class CustomLogic extends AbstractRoutingLogic {
     params: Prettify<
       Pick<ConstructorParameters<typeof AbstractRoutingLogic>[0], "mgv"> & {
         logicAddress: string;
+        name: string;
         overlyingList?: OverlyingList;
+        description?: string;
         gasOverhead: number;
       }
     >,
   ) {
     super({
-      title: "Simple Aave Logic",
-      description: "Pull and push tokens directly from your Aave positions.",
+      id: params.name,
+      title: params.name,
+      description:
+        params.description ??
+        "Custom defined logic to pull and push tokens to Mangrove",
       mgv: params.mgv,
       address: params.logicAddress,
     });

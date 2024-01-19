@@ -1,12 +1,25 @@
+import Big from "big.js";
 import Mangrove from "..";
 import Token from "../token";
 import { ethers } from "ethers";
 
 /**
+ * Creates a dictionary of routing logics from a list of routing logics.
+ */
+export type IDsDictFromLogics<T extends AbstractRoutingLogic<any>> = {
+  [P in T as P["id"]]: P;
+};
+
+/**
  * @title AbstractRoutingLogic
  * @desc Defines the base interaction for a routing logic.
  */
-export abstract class AbstractRoutingLogic {
+export abstract class AbstractRoutingLogic<TId extends string = string> {
+  /**
+   * @desc The id of the routing logic.
+   */
+  readonly id: TId;
+
   /**
    * @desc The title of the routing logic.
    */
@@ -42,11 +55,13 @@ export abstract class AbstractRoutingLogic {
    * @param params The parameters for the routing logic.
    */
   constructor(params: {
+    id: TId;
     title: string;
     description: string;
     mgv: Mangrove;
     address: string;
   }) {
+    this.id = params.id;
     this.title = params.title;
     this.description = params.description;
     this.mgv = params.mgv;

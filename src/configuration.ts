@@ -21,6 +21,7 @@ import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
 import type { Prettify } from "./util/types";
+import type Mangrove from "./mangrove";
 
 // Make keys optional at all levels of T
 export type RecursivePartial<T> = {
@@ -127,7 +128,11 @@ export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
   networks?: Record<network, PartialNetworkConfig>;
 };
 
-export type RouterLogic = "aave";
+/**
+ * The logics available out of the box in Mangrove.
+ * @dev this does not include custom logics
+ */
+export type RouterLogic = keyof Mangrove["logics"];
 
 /** Mangrove order configuration for a specific Routing Logic.
  * @param restingOrderGasreq The gasreq for a resting order using the MangroveOrder contract.
@@ -143,8 +148,8 @@ type RouterLogicOverhead = {
  */
 export type MangroveOrderNetworkConfiguration = Prettify<
   {
-    [logic in RouterLogic]?: RouterLogicOverhead;
-  } & RouterLogicOverhead & { restingOrderGaspriceFactor: number }
+    [logic in RouterLogic]: RouterLogicOverhead;
+  } & { restingOrderGaspriceFactor: number }
 >;
 
 export type PartialMangroveOrderConfiguration = Prettify<
@@ -560,17 +565,11 @@ export const reliableEventSubscriberConfiguration = {
 
 export const mangroveOrderConfiguration = {
   /** Gets the gasreq for a resting order using the MangroveOrder contract. */
-  getRestingOrderGasreq: (network: string, logic?: RouterLogic) => {
+  getRestingOrderGasreq: (network: string, logic: RouterLogic = "simple") => {
     let value: number | undefined;
-    if (logic) {
-      value =
-        config.mangroveOrder.networks?.[network]?.[logic]?.restingOrderGasreq ??
-        config.mangroveOrder[logic]?.restingOrderGasreq;
-    } else {
-      value =
-        config.mangroveOrder.networks?.[network]?.restingOrderGasreq ??
-        config.mangroveOrder.restingOrderGasreq;
-    }
+    value =
+      config.mangroveOrder.networks?.[network]?.[logic]?.restingOrderGasreq ??
+      config.mangroveOrder[logic]?.restingOrderGasreq;
     if (!value) {
       throw Error("No restingOrderGasreq configured");
     }
@@ -589,17 +588,10 @@ export const mangroveOrderConfiguration = {
   },
 
   /** Gets the overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove. */
-  getTakeGasOverhead: (network: string, logic?: RouterLogic) => {
-    let value: number | undefined;
-    if (logic) {
-      value =
-        config.mangroveOrder.networks?.[network]?.[logic]?.takeGasOverhead ??
-        config.mangroveOrder[logic]?.takeGasOverhead;
-    } else {
-      value =
-        config.mangroveOrder.networks?.[network]?.takeGasOverhead ??
-        config.mangroveOrder.takeGasOverhead;
-    }
+  getTakeGasOverhead: (network: string, logic: RouterLogic = "simple") => {
+    const value =
+      config.mangroveOrder.networks?.[network]?.[logic]?.takeGasOverhead ??
+      config.mangroveOrder[logic]?.takeGasOverhead;
     if (!value) {
       throw Error("No takeGasOverhead configured");
     }

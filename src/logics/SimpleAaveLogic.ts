@@ -8,13 +8,13 @@ import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
  * @title SimpleAaveLogic
  * @desc Defines the interaction for Aave routing logic.
  */
-export class SimpleAaveLogic extends AbstractRoutingLogic {
+export class SimpleAaveLogic extends AbstractRoutingLogic<"aave"> {
   logic: typechain.SimpleAaveLogic;
 
   public get gasOverhead(): number {
     return configuration.mangroveOrder.getRestingOrderGasreq(
       this.mgv.network.name,
-      "aave",
+      this.id,
     );
   }
 
@@ -26,6 +26,7 @@ export class SimpleAaveLogic extends AbstractRoutingLogic {
     >,
   ) {
     super({
+      id: "aave",
       title: "Simple Aave Logic",
       description: "Pull and push tokens directly from your Aave positions.",
       mgv: params.mgv,

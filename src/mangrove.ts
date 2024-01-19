@@ -37,7 +37,10 @@ import EventEmitter from "events";
 import { OLKeyStruct } from "./types/typechain/Mangrove";
 import { Density } from "./util/Density";
 import { SimpleAaveLogic } from "./logics/SimpleAaveLogic";
-import { AbstractRoutingLogic } from "./logics/AbstractRoutingLogic";
+import {
+  AbstractRoutingLogic,
+  IDsDictFromLogics,
+} from "./logics/AbstractRoutingLogic";
 import { SimpleLogic } from "./logics/SimpleLogic";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -141,10 +144,7 @@ class Mangrove {
 
   eventEmitter: EventEmitter;
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
-  logics: {
-    simple: SimpleLogic;
-    aave: SimpleAaveLogic;
-  };
+  logics: IDsDictFromLogics<SimpleAaveLogic | SimpleLogic>;
 
   static devNode: DevNode;
   static typechain = typechain;

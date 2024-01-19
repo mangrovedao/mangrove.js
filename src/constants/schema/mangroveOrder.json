@@ -28,16 +28,14 @@
           "type": "object",
           "$ref": "#/definitions/RouterLogicOverhead",
           "description": "Properties related to Aave routing logic"
+        },
+        "simple": {
+          "type": "object",
+          "$ref": "#/definitions/RouterLogicOverhead",
+          "description": "Properties related to Simple routing logic"
         }
       },
       "required": ["restingOrderGaspriceFactor", "aave"]
-    },
-    "MangroveOrderNetworkConfiguration": {
-      "type": "object",
-      "allOf": [
-        { "$ref": "#/definitions/NetworkWideConfiguration" },
-        { "$ref": "#/definitions/RouterLogicOverhead" }
-      ]
     }
   },
   "type": "object",
@@ -49,13 +47,13 @@
           "description": "List of network specific configuration.",
           "patternProperties": {
             "^[a-zA-Z0-9]+$": {
-              "$ref": "#/definitions/MangroveOrderNetworkConfiguration",
+              "$ref": "#/definitions/NetworkWideConfiguration",
               "description": "Network specific configuration."
             }
           }
         }
       }
     },
-    { "$ref": "#/definitions/MangroveOrderNetworkConfiguration" }
+    { "$ref": "#/definitions/NetworkWideConfiguration" }
   ]
 }
