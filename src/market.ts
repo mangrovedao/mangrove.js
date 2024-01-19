@@ -1521,7 +1521,7 @@ class Market {
       offerId: number;
     },
     overrides?: ethers.Overrides,
-  ) {
+  ): Promise<Market.Transaction<boolean>> {
     const user = await this.mgv.signer.getAddress();
     const router = await this.mgv.orderContract.router(user);
     const olKeyHash = this.mgv.getOlKeyHash(this.getOLKey(params.ba));
@@ -1529,7 +1529,7 @@ class Market {
       router,
       this.mgv.signer,
     );
-    const tx = await userRouter.setLogic(
+    const txPromise = userRouter.setLogic(
       {
         olKeyHash,
         token: params.token,
@@ -1539,8 +1539,19 @@ class Market {
       params.logic,
       overrides,
     );
-    const res = await tx.wait();
-    return res;
+    const wasSet = new Promise<boolean>(async (res, rej) => {
+      const tx = await txPromise;
+      const receipt = await tx.wait();
+      if (receipt.status === 1) {
+        res(true);
+      } else {
+        res(false);
+      }
+    });
+    return {
+      response: txPromise,
+      result: wasSet,
+    };
   }
 }
 
