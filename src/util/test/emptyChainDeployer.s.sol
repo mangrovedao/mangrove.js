@@ -80,6 +80,7 @@ contract EmptyChainDeployer is Deployer {
     ActivateMarket activateMarket = new ActivateMarket();
 
     activateMarket.innerRun(mgv, mgvReader, Market(address(tokenA), address(tokenB), 1), 2 * 1e12, 3 * 1e12, 250);
+    activateMarket.innerRun(mgv, mgvReader, Market(address(tokenA), address(tokenB), 100), 2 * 1e12, 3 * 1e12, 250);
     activateMarket.innerRun(mgv, mgvReader, Market(dai, usdc, 1), 1e12 / 1000, 1e12 / 1000, 0);
     activateMarket.innerRun(mgv, mgvReader, Market(weth, dai, 1), 1e12, 1e12 / 1000, 0);
     activateMarket.innerRun(mgv, mgvReader, Market(weth, usdc, 1), 1e12, 1e12 / 1000, 0);
