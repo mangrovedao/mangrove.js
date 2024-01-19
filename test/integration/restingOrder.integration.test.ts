@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, it } from "mocha";
 import { expect } from "chai";
 
-import { ethers, utils } from "ethers";
+import { utils } from "ethers";
 
 import assert from "assert";
 import { Mangrove, Market, Token, OfferLogic, mgvTestUtil } from "../../src";
