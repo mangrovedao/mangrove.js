@@ -64,10 +64,11 @@ class Trade {
       fillWants = params.fillWants ?? fillWants;
       maxTick = params.maxTick;
       if (slippage > 0) {
-        // offset the tick by getting a non-rounded offset
-        maxTick += tickPriceHelper.tickOffsetFromRawRatio(
-          Big(1).sub(Big(100 + bs === "buy" ? slippage : -slippage).div(100)),
-          "none",
+        // add slippage to the tick with an offset given by the tick representing the same slippage as a ratio (not coerced to tickSpacing, we do that after the addition)
+        // the slippage is added for both buy and sell, since a higher tick means a worse price.
+        maxTick += tickPriceHelper.tickFromRawRatio(
+          Big(100 + slippage).div(100),
+          "noCoercion",
         );
       }
       // coerce tick - round down to not exceed the price expectations

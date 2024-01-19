@@ -96,7 +96,7 @@ class GeometricKandelDistributionHelper {
     }
 
     // round down to ensure ratio is not exceeded
-    return this.helper.askTickPriceHelper.tickOffsetFromRawRatio(
+    return this.helper.askTickPriceHelper.tickFromRawRatio(
       priceRatio,
       "roundDown",
     );

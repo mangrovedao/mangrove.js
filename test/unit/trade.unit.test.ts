@@ -90,7 +90,7 @@ describe("Trade unit tests suite", () => {
     it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as true, when params has fillVolume and tick, but no fillWants", async function () {
       //Arrange
       const params: Market.TradeParams = {
-        maxTick: 30,
+        maxTick: 930,
         fillVolume: 20,
         slippage: slippage,
       };
@@ -122,7 +122,7 @@ describe("Trade unit tests suite", () => {
     it("returns fillVolume as fillVolume, tick coerced when no slippage and fillWants as true, when params has fillVolume and tick, but no fillWants", async function () {
       //Arrange
       const params: Market.TradeParams = {
-        maxTick: 30,
+        maxTick: 930,
         fillVolume: 20,
       };
 
@@ -150,7 +150,7 @@ describe("Trade unit tests suite", () => {
     it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has tick, fillVolume and fillWants", async function () {
       //Arrange
       const params: Market.TradeParams = {
-        maxTick: 30,
+        maxTick: 930,
         fillVolume: 20,
         fillWants: false,
         slippage: slippage,
@@ -173,10 +173,7 @@ describe("Trade unit tests suite", () => {
         result.fillVolume.toString(),
         market.quote.toUnits(params.fillVolume).toString(),
       );
-      assert.deepStrictEqual(
-        result.maxTick.toString(),
-        expectedTickWithSlippage.toString(),
-      );
+      assert.equal(result.maxTick, expectedTickWithSlippage);
       assert.equal(result.fillWants, params.fillWants);
     });
 
@@ -309,7 +306,7 @@ describe("Trade unit tests suite", () => {
       //Arrange
       const params: Market.TradeParams = {
         fillVolume: 20,
-        maxTick: 30,
+        maxTick: 930,
         slippage: slippage,
       };
 
@@ -317,11 +314,12 @@ describe("Trade unit tests suite", () => {
       const result = trade.getParamsForTrade(params, market, "sell");
 
       // Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundUp")
-          .mul(100 - slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 - slippage).div(100),
         "roundDown",
       );
 
@@ -339,8 +337,8 @@ describe("Trade unit tests suite", () => {
     it("returns fillVolume as fillVolume, tick corrected for slippage and fillWants as fillWants, when params has tick, fillVolume and fillWants", async function () {
       //Arrange
       const params: Market.TradeParams = {
+        maxTick: 930,
         fillVolume: 20,
-        maxTick: 30,
         fillWants: true,
         slippage: slippage,
       };
@@ -348,12 +346,13 @@ describe("Trade unit tests suite", () => {
       //Act
       const result = trade.getParamsForTrade(params, market, "sell");
 
-      // Assert
+      //Assert
+      const nonRoundedPrice = new TickPriceHelper(tickPriceHelper.ba, {
+        ...tickPriceHelper.market,
+        tickSpacing: 1,
+      }).priceFromTick(params.maxTick, "roundDown");
       const expectedTickWithSlippage = tickPriceHelper.tickFromPrice(
-        tickPriceHelper
-          .priceFromTick(params.maxTick, "roundUp")
-          .mul(100 - slippage)
-          .div(100),
+        nonRoundedPrice.mul(100 - slippage).div(100),
         "roundDown",
       );
 
@@ -361,11 +360,8 @@ describe("Trade unit tests suite", () => {
         result.fillVolume.toString(),
         market.quote.toUnits(params.fillVolume).toString(),
       );
-      assert.equal(
-        result.maxTick.toString(),
-        expectedTickWithSlippage.toString(),
-      );
-      assert.equal(result.fillWants, true);
+      assert.equal(result.maxTick, expectedTickWithSlippage);
+      assert.equal(result.fillWants, params.fillWants);
     });
 
     it("returns fillVolume as gives, tick corrected for slippage and fillWants as fillWants, when params has gives, wants and fillWants", async function () {

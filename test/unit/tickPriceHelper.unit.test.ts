@@ -17,9 +17,9 @@ import {
 import { TokenCalculations } from "../../src/token";
 
 const roundingModes = ["nearest", "roundDown", "roundUp"] as RoundingMode[];
-const roundingModesAndNone = (
-  roundingModes as (RoundingMode | "none")[]
-).concat(["none"]);
+const roundingModesAndNoCoercion = (
+  roundingModes as (RoundingMode | "noCoercion")[]
+).concat(["noCoercion"]);
 
 describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () => {
   const priceAndTickPairs: {
@@ -313,7 +313,7 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       assert.equal(0, result);
     });
 
-    roundingModesAndNone.forEach((roundingMode) => {
+    roundingModes.forEach((roundingMode) => {
       it(`returns expectedTick for inboundVolume=2, outboundVolume=1 roundingMode=${roundingMode} with base decimals: 6, quote decimals: 6 (asks semibook)`, () => {
         // Arrange
         const tickPriceHelper = new TickPriceHelper("asks", {
@@ -329,7 +329,6 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
           nearest: 6900,
           roundDown: 6900,
           roundUp: 7000,
-          none: 6931,
         }[roundingMode];
         assert.equal(expectedTick, result);
       });
@@ -1079,39 +1078,6 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
     });
   });
 
-  describe(TickPriceHelper.prototype.tickOffsetFromRawRatio.name, () => {
-    bidsAsks.forEach((ba) => {
-      let sut: TickPriceHelper;
-      beforeEach(() => {
-        sut = new TickPriceHelper(ba, {
-          base: new TokenCalculations(4, 4),
-          quote: new TokenCalculations(6, 6),
-          tickSpacing: 1,
-        });
-      });
-
-      roundingModesAndNone.forEach((roundingMode) => {
-        it(`calculates an offset that is a multiple of tickSpacing ba=${ba} for roundingMode=${roundingMode}`, () => {
-          // Arrange
-          sut.market.tickSpacing = 7;
-
-          // Act
-          const actual = sut.tickOffsetFromRawRatio(Big(1.08), roundingMode);
-
-          const expected = {
-            nearest: 770,
-            roundUp: 770,
-            roundDown: 763,
-            none: 769,
-          }[roundingMode];
-
-          // Assert
-          assert.equal(actual, expected);
-        });
-      });
-    });
-  });
-
   describe(TickPriceHelper.prototype.tickFromRawRatio.name, () => {
     let sut: TickPriceHelper;
 
@@ -1140,11 +1106,16 @@ describe(`${TickPriceHelper.prototype.constructor.name} unit tests suite`, () =>
       assert.deepStrictEqual(result, 1);
     });
 
-    roundingModes.forEach((roundingMode) => {
-      it("should return the correct tick for ratio = 1.0001, tickSpacing=2", () => {
-        sut.market.tickSpacing = 2;
-        const result = sut.tickFromRawRatio(Big(1.0001), roundingMode);
-        const expected = { nearest: 2, roundUp: 2, roundDown: 0 }[roundingMode];
+    roundingModesAndNoCoercion.forEach((roundingMode) => {
+      it("should return the correct tick for ratio = 1.08, tickSpacing=7", () => {
+        sut.market.tickSpacing = 7;
+        const result = sut.tickFromRawRatio(Big(1.08), roundingMode);
+        const expected = {
+          nearest: 770,
+          roundUp: 770,
+          roundDown: 763,
+          noCoercion: 769,
+        }[roundingMode];
         assert.deepStrictEqual(result, expected);
       });
     });
