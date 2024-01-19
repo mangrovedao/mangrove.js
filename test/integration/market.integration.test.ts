@@ -1688,28 +1688,50 @@ describe("Market integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
-    // see mangroveOrder.json -> restingOrderGasreq
-    const gasreq = 500000;
+    const gasreqSimple = mgv.logics.simple.gasOverhead;
+    const gasreqAave = mgv.logics.aave.gasOverhead;
+
     const baseAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyBaseQuote,
-      gasreq,
+      gasreqSimple,
     );
     const quoteAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyQuoteBase,
-      gasreq,
+      gasreqSimple,
+    );
+
+    const baseAsOutboundAave = await mgv.readerContract.minVolume(
+      market.olKeyBaseQuote,
+      gasreqAave,
+    );
+    const quoteAsOutboundAave = await mgv.readerContract.minVolume(
+      market.olKeyQuoteBase,
+      gasreqAave,
     );
 
     assert.equal(
       market
-        .minVolumeAsk!.value.mul(Big(10).pow(market.base.decimals))
+        .minVolumeAsk!.simple.mul(Big(10).pow(market.base.decimals))
         .toFixed(),
       baseAsOutbound.toString(),
     );
     assert.equal(
       market
-        .minVolumeBid!.value.mul(Big(10).pow(market.quote.decimals))
+        .minVolumeBid!.simple.mul(Big(10).pow(market.quote.decimals))
         .toFixed(),
       quoteAsOutbound.toString(),
+    );
+    assert.equal(
+      market
+        .minVolumeAsk!.aave.mul(Big(10).pow(market.base.decimals))
+        .toFixed(),
+      baseAsOutboundAave.toString(),
+    );
+    assert.equal(
+      market
+        .minVolumeBid!.aave.mul(Big(10).pow(market.quote.decimals))
+        .toFixed(),
+      quoteAsOutboundAave.toString(),
     );
   });
 });
