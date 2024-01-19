@@ -890,10 +890,14 @@ class Trade {
         market.mgv.network.name,
       );
     if (!params.restingOrderGasreq && logics) {
-      const takerWants = market.mgv.getLogicByAddress(logics.takerWantsLogic);
-      const takerGives = market.mgv.getLogicByAddress(logics.takerGivesLogic);
-      if (takerGives) {
-        if (takerGives instanceof SimpleAaveLogic) {
+      const takerWantsResolvedLogic = market.mgv.getLogicByAddress(
+        logics.takerWantsLogic,
+      );
+      const takerGivesResolvedLogic = market.mgv.getLogicByAddress(
+        logics.takerGivesLogic,
+      );
+      if (takerGivesResolvedLogic) {
+        if (takerGivesResolvedLogic instanceof SimpleAaveLogic) {
           restingOrderGasreq = Math.max(
             restingOrderGasreq,
             configuration.mangroveOrder.getRestingOrderGasreq(
@@ -903,12 +907,12 @@ class Trade {
           );
         } else {
           throw new Error(
-            `Unknown takerGives logic ${takerGives.constructor.name}, please provide restingOrderGasreq.`,
+            `Unknown takerGives logic ${takerGivesResolvedLogic.constructor.name}, please provide restingOrderGasreq.`,
           );
         }
       }
-      if (takerWants) {
-        if (takerWants instanceof SimpleAaveLogic) {
+      if (takerWantsResolvedLogic) {
+        if (takerWantsResolvedLogic instanceof SimpleAaveLogic) {
           restingOrderGasreq = Math.max(
             restingOrderGasreq,
             configuration.mangroveOrder.getRestingOrderGasreq(
@@ -918,7 +922,7 @@ class Trade {
           );
         } else {
           throw new Error(
-            `Unknown takerWants logic ${takerWants.constructor.name}, please provide restingOrderGasreq.`,
+            `Unknown takerWants logic ${takerWantsResolvedLogic.constructor.name}, please provide restingOrderGasreq.`,
           );
         }
       }
