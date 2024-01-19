@@ -248,10 +248,8 @@ class Trade {
             market: market,
             fillOrKill: params.fillOrKill ? params.fillOrKill : false,
             gasLowerBound: params.gasLowerBound ?? 0,
-            takerGivesLogic:
-              params.takerGivesLogic ?? market.mgv.logics.noLogic,
-            takerWantsLogic:
-              params.takerWantsLogic ?? market.mgv.logics.noLogic,
+            takerGivesLogic: params.takerGivesLogic ?? market.mgv.logics.simple,
+            takerWantsLogic: params.takerWantsLogic ?? market.mgv.logics.simple,
           },
           overrides,
         );

@@ -32,6 +32,9 @@ export abstract class AbstractRoutingLogic {
    */
   address: string;
 
+  /**
+   * @desc The gas overhead of the routing logic.
+   */
   public abstract get gasOverhead(): number;
 
   /**

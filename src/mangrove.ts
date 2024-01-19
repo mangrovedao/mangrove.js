@@ -38,7 +38,7 @@ import { OLKeyStruct } from "./types/typechain/Mangrove";
 import { Density } from "./util/Density";
 import { SimpleAaveLogic } from "./logics/SimpleAaveLogic";
 import { AbstractRoutingLogic } from "./logics/AbstractRoutingLogic";
-import { NoLogic } from "./logics/NoLogic";
+import { SimpleLogic } from "./logics/SimpleLogic";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -142,7 +142,7 @@ class Mangrove {
   eventEmitter: EventEmitter;
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
   logics: {
-    noLogic: NoLogic;
+    simple: SimpleLogic;
     aave: SimpleAaveLogic;
   };
 
@@ -351,7 +351,7 @@ class Mangrove {
         mgv: this,
         aaveLogic: params.logics.aave,
       }),
-      noLogic: new NoLogic({
+      simple: new SimpleLogic({
         mgv: this,
       }),
     };

@@ -8,7 +8,7 @@ import configuration from "../configuration";
  * @title NoLogic
  * @desc Defines the interaction for no logic.
  */
-export class NoLogic extends AbstractRoutingLogic {
+export class SimpleLogic extends AbstractRoutingLogic {
   public get gasOverhead(): number {
     return configuration.mangroveOrder.getRestingOrderGasreq(
       this.mgv.network.name,
