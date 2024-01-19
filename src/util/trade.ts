@@ -304,7 +304,7 @@ class Trade {
     if (offer === undefined) {
       throw Error(`No offer in market with id ${id}.`);
     }
-    if (offer.maker !== (market.mgv.orderContract as any).address) {
+    if (offer.maker !== market.mgv.orderContract.address) {
       throw Error(
         `The offer is not a MangroveOrder offer, it belongs to ${offer.maker}`,
       );
