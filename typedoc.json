@@ -48,7 +48,9 @@
     "RouterLogicOverhead",
     "MangroveOrderType",
     "AbstractRoutingLogic",
-    "SimpleAaveLogic"
+    "SimpleAaveLogic",
+    "SimpleLogic",
+    "IDsDictFromLogics"
   ],
   "out": "docs",
   "excludePrivate": true,
