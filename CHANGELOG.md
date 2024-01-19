@@ -1,6 +1,7 @@
 # Next version
 
-- Upgrade to mangrove strats v2.0.0
+- Upgrade to mangrove strats v2.0.0-b1.2
+- Upgrade `examples/tutorials/on-the-fly-offer.js` to new Mangrove core protocol and SDK
 
 # 2.0.4
 
