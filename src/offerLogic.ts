@@ -28,7 +28,7 @@ class OfferLogic {
 
   /**
    * @note Returns this logic's router. If logic has no router this call will return `undefined`
-   * @param owner the user for which to get the router.
+   * @param owner the address of the user for which to get the router.
    * @returns the router ethers.js contract responding to the `AbstractRouter` abi.
    */
   async router(owner: string): Promise<typechain.AbstractRouter | undefined> {
@@ -42,7 +42,7 @@ class OfferLogic {
   }
 
   /** Determines whether the offer logic has a router
-   * @param owner the user for which to get the router.
+   * @param owner the address of the user for which to get the router.
    * @returns True if the offer logic has a router, false otherwise.
    */
   public async hasRouter(owner: string) {
