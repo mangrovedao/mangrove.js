@@ -345,8 +345,14 @@ export const tokensConfiguration = {
    * Read decimals for `tokenId`. Fails if the decimals are not in the configuration.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimals: (tokenId: tokenId): number => {
+  getDecimals: <TNoError extends boolean | undefined = undefined>(
+    tokenId: tokenId,
+    forced?: TNoError,
+  ): TNoError extends true ? number | undefined : number => {
     const decimals = getOrCreateTokenConfig(tokenId).decimals;
+    if (forced === true) {
+      return decimals as TNoError extends true ? number | undefined : never;
+    }
     if (decimals === undefined) {
       throw Error(`No decimals on record for token ${tokenId}`);
     }
@@ -362,7 +368,7 @@ export const tokensConfiguration = {
     tokenId: tokenId,
     provider: Provider,
   ): Promise<number> => {
-    const decimals = tokensConfiguration.getDecimals(tokenId);
+    const decimals = tokensConfiguration.getDecimals(tokenId, true);
     if (decimals !== undefined) {
       return decimals;
     }
@@ -437,6 +443,28 @@ export const tokensConfiguration = {
   ): Promise<tokenSymbol> => {
     const token = typechain.IERC20__factory.connect(address, provider);
     return await token.symbol();
+  },
+
+  /**
+   * Read decimals of `address` on current network.
+   */
+  fetchDecimalsFromAddress: async (
+    address: address,
+    provider: Provider,
+  ): Promise<number> => {
+    const token = typechain.IERC20__factory.connect(address, provider);
+    return await token.decimals();
+  },
+
+  /**
+   * Read display name for `address` on current network.
+   */
+  fetchDisplayNameFromAddress: async (
+    address: address,
+    provider: Provider,
+  ): Promise<string> => {
+    const token = typechain.IERC20__factory.connect(address, provider);
+    return await token.name();
   },
 
   /**

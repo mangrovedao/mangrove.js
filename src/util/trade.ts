@@ -204,7 +204,9 @@ class Trade {
     const orderType =
       !!params.fillOrKill ||
       !!restingOrderParams ||
-      !!params.forceRoutingToMangroveOrder
+      !!params.forceRoutingToMangroveOrder ||
+      !!params.takerGivesLogic ||
+      !!params.takerWantsLogic
         ? "restingOrder"
         : "marketOrder";
 
