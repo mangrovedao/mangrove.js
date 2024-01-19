@@ -10,7 +10,8 @@ import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
-import configuration, { Prettify, RouterLogic } from "./configuration";
+import configuration, { RouterLogic } from "./configuration";
+import type { Prettify } from "./util/types";
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
 big.js handles arbitrary precision decimals, which is what we want

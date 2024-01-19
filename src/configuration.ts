@@ -20,6 +20,7 @@ import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
+import type { Prettify } from "./util/types";
 
 // Make keys optional at all levels of T
 export type RecursivePartial<T> = {
@@ -125,11 +126,6 @@ export type PartialNetworkConfig = PartialKandelAllConfigurationFields & {
 export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
   networks?: Record<network, PartialNetworkConfig>;
 };
-
-export type Prettify<T> = {
-  [K in keyof T]: T[K];
-  // eslint-disable-next-line @typescript-eslint/ban-types
-} & {};
 
 export type RouterLogic = "aave";
 

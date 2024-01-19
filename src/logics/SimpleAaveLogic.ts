@@ -1,5 +1,5 @@
 import { typechain } from "../types";
-import { Prettify } from "../configuration";
+import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
 
 export class SimpleAaveLogic extends AbstractRoutingLogic {
