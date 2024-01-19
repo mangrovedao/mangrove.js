@@ -10,8 +10,7 @@ import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
-import configuration, { RouterLogic } from "./configuration";
-import type { Prettify } from "./util/types";
+import { RouterLogic } from "./configuration";
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
 big.js handles arbitrary precision decimals, which is what we want
@@ -1539,14 +1538,13 @@ class Market {
       params.logic,
       overrides,
     );
-    const wasSet = new Promise<boolean>(async (res, rej) => {
-      const tx = await txPromise;
-      const receipt = await tx.wait();
-      if (receipt.status === 1) {
-        res(true);
-      } else {
-        res(false);
-      }
+    const wasSet = new Promise<boolean>((res, rej) => {
+      txPromise
+        .then((tx) => tx.wait())
+        .then((receipt) => {
+          res(receipt.status === 1);
+        })
+        .catch(rej);
     });
     return {
       response: txPromise,

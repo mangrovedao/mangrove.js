@@ -566,8 +566,7 @@ export const reliableEventSubscriberConfiguration = {
 export const mangroveOrderConfiguration = {
   /** Gets the gasreq for a resting order using the MangroveOrder contract. */
   getRestingOrderGasreq: (network: string, logic: RouterLogic = "simple") => {
-    let value: number | undefined;
-    value =
+    const value =
       config.mangroveOrder.networks?.[network]?.[logic]?.restingOrderGasreq ??
       config.mangroveOrder[logic]?.restingOrderGasreq;
     if (!value) {
