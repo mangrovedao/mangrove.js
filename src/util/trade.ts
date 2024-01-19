@@ -8,7 +8,6 @@ import TradeEventManagement, {
 } from "./tradeEventManagement";
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
-import { SimpleAaveLogic } from "../logics/SimpleAaveLogic";
 import { AbstractRoutingLogic } from "../logics/AbstractRoutingLogic";
 
 export type CleanUnitParams = {
@@ -511,25 +510,11 @@ class Trade {
   async estimateGas(bs: Market.BS, params: Market.TradeParams, market: Market) {
     const { fillVolume, orderType } = this.getRawParams(bs, params, market);
 
-    let logicTakeGasOverhead = 0;
-    if (
-      params.takerGivesLogic &&
-      params.takerGivesLogic instanceof SimpleAaveLogic
-    ) {
-      logicTakeGasOverhead = configuration.mangroveOrder.getRestingOrderGasreq(
-        market.mgv.network.name,
-        "aave",
-      );
-    }
-
     switch (orderType) {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.estimateGas(bs, fillVolume)).add(
-          logicTakeGasOverhead ||
-            configuration.mangroveOrder.getTakeGasOverhead(
-              market.mgv.network.name,
-            ),
+          (params.takerGivesLogic || market.mgv.logics.simple).gasOverhead,
         );
       case "marketOrder":
         return await market.estimateGas(bs, fillVolume);
@@ -557,11 +542,7 @@ class Trade {
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (
           await market.simulateGas(ba, maxTick, fillVolume, fillWants)
-        ).add(
-          configuration.mangroveOrder.getTakeGasOverhead(
-            market.mgv.network.name,
-          ),
-        );
+        ).add((params.takerGivesLogic || market.mgv.logics.simple).gasOverhead);
       case "marketOrder":
         return await market.simulateGas(ba, maxTick, fillVolume, fillWants);
     }
@@ -873,8 +854,8 @@ class Trade {
     market: Market,
     ba: Market.BA,
     logics?: {
-      takerGivesLogic: string;
-      takerWantsLogic: string;
+      takerGivesLogic: AbstractRoutingLogic;
+      takerWantsLogic: AbstractRoutingLogic;
     },
   ): Promise<{
     provision: BigSource;
@@ -882,49 +863,15 @@ class Trade {
     gaspriceFactor: number;
     restingOrderBa: string;
   }> {
-    let restingOrderGasreq =
-      params.restingOrderGasreq ??
-      configuration.mangroveOrder.getRestingOrderGasreq(
-        market.mgv.network.name,
-      );
-    if (!params.restingOrderGasreq && logics) {
-      const takerWantsResolvedLogic = market.mgv.getLogicByAddress(
-        logics.takerWantsLogic,
-      );
-      const takerGivesResolvedLogic = market.mgv.getLogicByAddress(
-        logics.takerGivesLogic,
-      );
-      if (takerGivesResolvedLogic) {
-        if (takerGivesResolvedLogic instanceof SimpleAaveLogic) {
-          restingOrderGasreq = Math.max(
-            restingOrderGasreq,
-            configuration.mangroveOrder.getRestingOrderGasreq(
-              market.mgv.network.name,
-              "aave",
-            ),
-          );
-        } else {
-          throw new Error(
-            `Unknown takerGives logic ${takerGivesResolvedLogic.constructor.name}, please provide restingOrderGasreq.`,
-          );
-        }
-      }
-      if (takerWantsResolvedLogic) {
-        if (takerWantsResolvedLogic instanceof SimpleAaveLogic) {
-          restingOrderGasreq = Math.max(
-            restingOrderGasreq,
-            configuration.mangroveOrder.getRestingOrderGasreq(
-              market.mgv.network.name,
-              "aave",
-            ),
-          );
-        } else {
-          throw new Error(
-            `Unknown takerWants logic ${takerWantsResolvedLogic.constructor.name}, please provide restingOrderGasreq.`,
-          );
-        }
-      }
-    }
+    const restingOrderGasreq = params.restingOrderGasreq
+      ? params.restingOrderGasreq
+      : logics
+        ? Math.max(
+            logics.takerGivesLogic.gasOverhead,
+            logics.takerWantsLogic.gasOverhead,
+          )
+        : market.mgv.logics.simple.gasOverhead;
+
     const gaspriceFactor =
       params.restingOrderGaspriceFactor ??
       configuration.mangroveOrder.getRestingOrderGaspriceFactor(
