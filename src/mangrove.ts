@@ -10,7 +10,6 @@ import { Bigish } from "./util";
 import { logdataLimiter, logger } from "./util/logger";
 import { TypedDataSigner } from "@ethersproject/abstract-signer";
 import { ApproveArgs, TokenCalculations } from "./token";
-
 import Big from "big.js";
 // Configure big.js global constructor
 Big.DP = 20; // precision when dividing
@@ -36,6 +35,7 @@ import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
 import { OLKeyStruct } from "./types/typechain/Mangrove";
 import { Density } from "./util/Density";
+import { Multicall2 } from "./types/typechain";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -990,6 +990,59 @@ class Mangrove {
     } else {
       return { base: token1, quote: token0 };
     }
+  }
+
+  async getTokenBalancesForEveryOpenMarkets(address: string) {
+    const openMarkets = await this.openMarkets();
+
+    const tokens = Object.values(
+      openMarkets.reduce(
+        (acc, market) => {
+          [market.base, market.quote].forEach((token) => {
+            const addr = token.address.toLowerCase();
+            if (addr in acc) {
+              return;
+            }
+
+            acc[addr] = token;
+          });
+          return acc;
+        },
+        {} as Record<string, Token>,
+      ),
+    );
+
+    const callData = tokens.reduce((acc, token) => {
+      acc.push({
+        target: token.address,
+        callData: token.contract.interface.encodeFunctionData("balanceOf", [
+          token.address,
+        ]),
+      });
+
+      return acc;
+    }, [] as Multicall2.CallStruct[]);
+
+    const results = await this.multicallContract.callStatic.tryAggregate(
+      true,
+      callData,
+    );
+
+    return tokens.reduce(
+      (acc, token, index) => {
+        const value = token.contract.interface.decodeFunctionResult(
+          "balanceOf",
+          results[index].returnData,
+        )[0];
+
+        acc.push({
+          token,
+          balance: token.fromUnits(value),
+        });
+        return acc;
+      },
+      [] as { token: Token; balance: Big }[],
+    );
   }
 }
 
