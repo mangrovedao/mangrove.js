@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Mangrove order config schema",
+  "description": "Mangrove order config schema",
+  "definitions": {
+    "RouterLogicOverhead": {
+      "type": "object",
+      "properties": {
+        "restingOrderGasreq": {
+          "type": "number",
+          "description": "The gasreq for a resting order using the MangroveOrder contract."
+        },
+        "takeGasOverhead": {
+          "type": "number",
+          "description": "The overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove."
+        }
+      },
+      "required": ["restingOrderGasreq", "takeGasOverhead"]
+    },
+    "NetworkWideConfiguration": {
+      "type": "object",
+      "properties": {
+        "restingOrderGaspriceFactor": {
+          "type": "number",
+          "description": "The factor to multiply the gasprice by. This is used to ensure that the offers do not fail to be reposted even if Mangrove's gasprice increases up to this."
+        },
+        "aave": {
+          "type": "object",
+          "$ref": "#/definitions/RouterLogicOverhead",
+          "description": "Properties related to Aave routing logic"
+        },
+        "simple": {
+          "type": "object",
+          "$ref": "#/definitions/RouterLogicOverhead",
+          "description": "Properties related to Simple routing logic"
+        }
+      },
+      "required": ["restingOrderGaspriceFactor", "aave"]
+    }
+  },
+  "type": "object",
+  "allOf": [
+    {
+      "properties": {
+        "networks": {
+          "type": "object",
+          "description": "List of network specific configuration.",
+          "patternProperties": {
+            "^[a-zA-Z0-9]+$": {
+              "$ref": "#/definitions/NetworkWideConfiguration",
+              "description": "Network specific configuration."
+            }
+          }
+        }
+      }
+    },
+    { "$ref": "#/definitions/NetworkWideConfiguration" }
+  ]
+}

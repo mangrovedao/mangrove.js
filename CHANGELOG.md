@@ -1,8 +1,10 @@
 # Next version
 
+- Upgrade to mangrove strats v2.0.0-b1.2
 - Upgrade `examples/tutorials/on-the-fly-offer.js` to new Mangrove core protocol and SDK
 - fix: Coerce ticks to tickSpacing when given as arguments
 - feat: Add integration test of tickSpacing>1
+- feat!: `configuration.tokensConfiguration.getDecimals` now returns `undefined` instead of throwing if the token decimals are not in the configuration
 
 # 2.0.4
 

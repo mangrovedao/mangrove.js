@@ -10,7 +10,7 @@ import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
 import PrettyPrint, { prettyPrintFilter } from "./util/prettyPrint";
 import { MgvLib, OLKeyStruct } from "./types/typechain/Mangrove";
-import configuration from "./configuration";
+import { RouterLogic } from "./configuration";
 /* Note on big.js:
 ethers.js's BigNumber (actually BN.js) only handles integers
 big.js handles arbitrary precision decimals, which is what we want
@@ -20,6 +20,7 @@ for more on big.js vs decimals.js vs. bignumber.js (which is *not* ethers's BigN
 import Big from "big.js";
 import { Density } from "./util/Density";
 import TickPriceHelper from "./util/tickPriceHelper";
+import { AbstractRoutingLogic } from "./logics/AbstractRoutingLogic";
 
 let canConstructMarket = false;
 
@@ -29,6 +30,25 @@ export const bookOptsDefault: Market.BookOptions = {
   targetNumberOfTicks: Semibook.DEFAULT_TARGET_NUMBER_OF_TICKS,
   chunkSize: Semibook.DEFAULT_CHUNK_SIZE,
 };
+
+/**
+ * @param GTC Good till cancelled -> This order remains active until it is either filled or canceled by the trader.
+ * If an expiry date is set, This will be a GTD (Good till date) order.
+ * this will try a market order first, and if it is partially filled but the resting order fails to be posted, it won't revert the transaction.
+ *
+ * @param GTCE Good till cancelled enforced -> This order remains active until it is either filled or canceled by the trader. It doesn't have the restriction of avoiding immediate execution.
+ * If the resting order fails to be posted, it will revert the transaction.
+ * @param PO Post only -> This order will not execute immediately against the market.
+ * @param IOC Immediate or cancel -> This order must be filled immediately at the limit price or better. If the full order cannot be filled, the unfilled portion is canceled.
+ * @param FOK Fill or kill -> This order must be filled in its entirety immediately at the limit price or better, or it is entirely canceled. There is no partial fulfillment.
+ */
+export enum MangroveOrderType {
+  GTC = 0,
+  GTCE = 1,
+  PO = 2,
+  IOC = 3,
+  FOK = 4,
+}
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Market {
@@ -219,6 +239,8 @@ namespace Market {
     fillOrKill?: boolean;
     expiryDate?: number;
     gasLowerBound?: ethers.BigNumberish;
+    takerGivesLogic?: AbstractRoutingLogic;
+    takerWantsLogic?: AbstractRoutingLogic;
   } & {
     restingOrder?: RestingOrderParams;
   } & (
@@ -489,6 +511,13 @@ namespace Market {
     estimatedFee: Big;
     remainingFillVolume: Big;
   };
+
+  /**
+   * Minimum volume depending on the used strategy.
+   */
+  export type MinVolume = {
+    [key in RouterLogic]: Big;
+  };
 }
 
 /**
@@ -521,8 +550,35 @@ class Market {
   private asksCb: Semibook.EventListener | undefined;
   private bidsCb: Semibook.EventListener | undefined;
 
-  public minVolumeAsk?: Big;
-  public minVolumeBid?: Big;
+  private minVolumeAskInternal(key: RouterLogic): Big.Big {
+    const config = this.config();
+    return config.asks.density.getRequiredOutboundForGasreq(
+      config.asks.offer_gasbase + this.mgv.logics[key].gasOverhead,
+    );
+  }
+
+  private minVolumeBidInternal(key: RouterLogic): Big.Big {
+    const config = this.config();
+    return config.bids.density.getRequiredOutboundForGasreq(
+      config.bids.offer_gasbase + this.mgv.logics[key].gasOverhead,
+    );
+  }
+
+  public get minVolumeAsk(): Market.MinVolume {
+    return Object.keys(this.mgv.logics).reduce((acc, _key) => {
+      const key = _key as RouterLogic;
+      acc[key] = this.minVolumeAskInternal(key as RouterLogic);
+      return acc;
+    }, {} as Market.MinVolume);
+  }
+
+  public get minVolumeBid(): Market.MinVolume {
+    return Object.keys(this.mgv.logics).reduce((acc, _key) => {
+      const key = _key as RouterLogic;
+      acc[key] = this.minVolumeBidInternal(key as RouterLogic);
+      return acc;
+    }, {} as Market.MinVolume);
+  }
 
   /**
    * Connect to a market.
@@ -558,16 +614,6 @@ class Market {
     } else {
       await market.#initialize(params.bookOptions);
     }
-    const config = market.config();
-    const gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
-      market.mgv.network.name,
-    );
-    market.minVolumeAsk = config.asks.density.getRequiredOutboundForGasreq(
-      config.asks.offer_gasbase + gasreq,
-    );
-    market.minVolumeBid = config.bids.density.getRequiredOutboundForGasreq(
-      config.bids.offer_gasbase + gasreq,
-    );
     return market;
   }
 
@@ -1439,6 +1485,71 @@ class Market {
     return minAbsPriceDiff === undefined
       ? 0
       : -Math.floor(Math.log10(minAbsPriceDiff.toNumber()));
+  }
+
+  /**
+   * Sets the inbound routing logic for a resting order.
+   * @param params the parameters for the inbound routing logic
+   * @remarks
+   *
+   * The logic may be set after posting the offer, the offer id and side of the book has to be known.
+   *
+   * If you know the logic you want to use before posting, then pass it as params of the buy and sell functions.
+   *
+   * If the logic is changed, consider changing the gas requirement of the offer as well if it is higher.
+   *
+   * @example
+   * const market = await mgv.market({base:"USDC",quote:"DAI"});
+   * // the offer id is known beforehand
+   * const myLiveOffer = 1;
+   *
+   * const newLogicForUSDC = mgv.logics.aave;
+   *
+   * const res = await mgv.market.setRoutingLogic({
+   *   token: mgv.market.base.address, // USDC
+   *   ba: "asks", // you should know on which side your offer is
+   *   logic: newLogicForUSDC.address,
+   *   offerId: myLiveOffer,
+   * });
+   */
+  async setRoutingLogic(
+    params: {
+      token: string;
+      ba: Market.BA;
+      logic: string;
+      offerId: number;
+    },
+    overrides?: ethers.Overrides,
+  ): Promise<Market.Transaction<boolean>> {
+    const user = await this.mgv.signer.getAddress();
+    const router = await this.mgv.orderContract.router(user);
+    const olKeyHash = this.mgv.getOlKeyHash(this.getOLKey(params.ba));
+    const userRouter = typechain.SmartRouter__factory.connect(
+      router,
+      this.mgv.signer,
+    );
+    const txPromise = userRouter.setLogic(
+      {
+        olKeyHash,
+        token: params.token,
+        offerId: params.offerId,
+        fundOwner: ethers.constants.AddressZero, // is not useful for this function
+      },
+      params.logic,
+      overrides,
+    );
+    const wasSet = new Promise<boolean>((res, rej) => {
+      txPromise
+        .then((tx) => tx.wait())
+        .then((receipt) => {
+          res(receipt.status === 1);
+        })
+        .catch(rej);
+    });
+    return {
+      response: txPromise,
+      result: wasSet,
+    };
   }
 }
 

@@ -33,7 +33,6 @@ import CoreKandelInstance, {
   KandelParameters,
   MarketOrMarketFactory,
 } from "./kandel/coreKandelInstance";
-import OfferMaker from "./offerMaker";
 import { enableLogging } from "./util/logger";
 import configuration, {
   AddressesConfig,
@@ -106,7 +105,7 @@ export type { Bigish };
 export type { Optional };
 export type { JsonWalletOptions };
 export type { MangroveEventSubscriber };
-export { Density, eth, typechain, ethers, OfferMaker, enableLogging };
+export { Density, eth, typechain, ethers, enableLogging };
 
 // Test utils
 export { mgvTestUtil };

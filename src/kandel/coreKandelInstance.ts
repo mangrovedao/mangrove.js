@@ -150,11 +150,6 @@ class CoreKandelInstance {
     return this.market.tickSpacing;
   }
 
-  /** Retrieves the identifier of this contract's reserve when using a router */
-  public async getReserveId() {
-    return await this.kandel.RESERVE_ID();
-  }
-
   /** Retrieves the total balance available for this Kandel instance of the offered token for the given offer type.
    * @param offerType The offer type.
    * @returns The balance of the asset.

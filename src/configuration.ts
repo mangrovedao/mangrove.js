@@ -20,6 +20,8 @@ import * as contextAddresses from "@mangrovedao/context-addresses";
 import * as eth from "./eth";
 import clone from "just-clone";
 import deepmerge from "deepmerge";
+import type { Prettify } from "./util/types";
+import type Mangrove from "./mangrove";
 
 // Make keys optional at all levels of T
 export type RecursivePartial<T> = {
@@ -126,21 +128,37 @@ export type PartialKandelConfiguration = PartialKandelAllConfigurationFields & {
   networks?: Record<network, PartialNetworkConfig>;
 };
 
-/** Mangrove order configuration for a specific chain.
+/**
+ * The logics available out of the box in Mangrove.
+ * @dev this does not include custom logics
+ */
+export type RouterLogic = keyof Mangrove["logics"];
+
+/** Mangrove order configuration for a specific Routing Logic.
  * @param restingOrderGasreq The gasreq for a resting order using the MangroveOrder contract.
- * @param restingOrderGaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
  * @param takeGasOverhead The overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove.
  */
-export type MangroveOrderNetworkConfiguration = {
+type RouterLogicOverhead = {
   restingOrderGasreq: number;
-  restingOrderGaspriceFactor: number;
   takeGasOverhead: number;
 };
 
-export type PartialMangroveOrderConfiguration =
+/** Mangrove order configuration for a specific chain.
+ * @param restingOrderGaspriceFactor The factor to multiply the gasprice by. This is used to ensure that the offers do not fail to be reposted even if Mangrove's gasprice increases up to this.
+ */
+export type MangroveOrderNetworkConfiguration = Prettify<
+  {
+    [logic in RouterLogic]: RouterLogicOverhead;
+  } & { restingOrderGaspriceFactor: number }
+>;
+
+export type PartialMangroveOrderConfiguration = Prettify<
   Partial<MangroveOrderNetworkConfiguration> & {
-    networks?: Record<network, Partial<MangroveOrderNetworkConfiguration>>;
-  };
+    networks?: Prettify<
+      Record<network, Prettify<Partial<MangroveOrderNetworkConfiguration>>>
+    >;
+  }
+>;
 
 export type Configuration = {
   addressesByNetwork: AddressesConfig;
@@ -324,21 +342,16 @@ export const tokensConfiguration = {
   },
 
   /**
-   * Read decimals for `tokenId`. Fails if the decimals are not in the configuration.
+   * Read decimals for `tokenId`.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimals: (tokenId: tokenId): number => {
-    const decimals = getOrCreateTokenConfig(tokenId).decimals;
-    if (decimals === undefined) {
-      throw Error(`No decimals on record for token ${tokenId}`);
-    }
-
-    return decimals;
+  getDecimals(tokenId: tokenId): number | undefined {
+    return getOrCreateTokenConfig(tokenId).decimals;
   },
 
   /**
    * Read decimals for `tokenId` on given network.
-   * If not found in the local configuration, fetch them from the current network and save them
+   * If not found in the local configuration, fetch them from the current network and save them.
    */
   getOrFetchDecimals: async (
     tokenId: tokenId,
@@ -419,6 +432,28 @@ export const tokensConfiguration = {
   ): Promise<tokenSymbol> => {
     const token = typechain.IERC20__factory.connect(address, provider);
     return await token.symbol();
+  },
+
+  /**
+   * Read decimals of `address` on current network.
+   */
+  fetchDecimalsFromAddress: async (
+    address: address,
+    provider: Provider,
+  ): Promise<number> => {
+    const token = typechain.IERC20__factory.connect(address, provider);
+    return await token.decimals();
+  },
+
+  /**
+   * Read display name for `address` on current network.
+   */
+  fetchDisplayNameFromAddress: async (
+    address: address,
+    provider: Provider,
+  ): Promise<string> => {
+    const token = typechain.IERC20__factory.connect(address, provider);
+    return await token.name();
   },
 
   /**
@@ -547,10 +582,10 @@ export const reliableEventSubscriberConfiguration = {
 
 export const mangroveOrderConfiguration = {
   /** Gets the gasreq for a resting order using the MangroveOrder contract. */
-  getRestingOrderGasreq: (network: string) => {
+  getRestingOrderGasreq: (network: string, logic: RouterLogic = "simple") => {
     const value =
-      config.mangroveOrder.networks?.[network]?.restingOrderGasreq ??
-      config.mangroveOrder.restingOrderGasreq;
+      config.mangroveOrder.networks?.[network]?.[logic]?.restingOrderGasreq ??
+      config.mangroveOrder[logic]?.restingOrderGasreq;
     if (!value) {
       throw Error("No restingOrderGasreq configured");
     }
@@ -569,10 +604,10 @@ export const mangroveOrderConfiguration = {
   },
 
   /** Gets the overhead of making a market order using the take function on MangroveOrder vs a market order directly on Mangrove. */
-  getTakeGasOverhead: (network: string) => {
+  getTakeGasOverhead: (network: string, logic: RouterLogic = "simple") => {
     const value =
-      config.mangroveOrder.networks?.[network]?.takeGasOverhead ??
-      config.mangroveOrder.takeGasOverhead;
+      config.mangroveOrder.networks?.[network]?.[logic]?.takeGasOverhead ??
+      config.mangroveOrder[logic]?.takeGasOverhead;
     if (!value) {
       throw Error("No takeGasOverhead configured");
     }

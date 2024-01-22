@@ -232,15 +232,19 @@ class Token extends TokenCalculations {
       return this.createTokenFromId(tokenId, mgv, { address });
     }
 
-    const symbol = await configuration.tokens.fetchSymbolFromAddress(
-      address,
-      mgv.provider,
-    );
+    const [symbol, decimals, displayName] = await Promise.all([
+      configuration.tokens.fetchSymbolFromAddress(address, mgv.provider),
+      configuration.tokens.fetchDecimalsFromAddress(address, mgv.provider),
+      configuration.tokens.fetchDisplayNameFromAddress(address, mgv.provider),
+    ]);
+
     tokenId = symbol ?? address;
 
     return this.createTokenFromId(tokenId, mgv, {
       address,
       symbol,
+      decimals,
+      displayName,
     });
   }
 

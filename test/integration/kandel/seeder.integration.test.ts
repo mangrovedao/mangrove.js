@@ -106,18 +106,6 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
         assert.equal("TokenA", kandel.getBase().id, "wrong base");
         assert.equal("TokenB", kandel.getQuote().id, "wrong base");
         assert.equal(market, kandel.market, "wrong market");
-        assert.equal(
-          liquiditySharing && onAave
-            ? await mgv.signer.getAddress()
-            : kandel.address,
-          await kandel.getReserveId(),
-          "wrong reserve",
-        );
-        assert.equal(
-          await kandel.offerLogic.hasRouter(),
-          onAave,
-          "router should only be there for aave",
-        );
         assert.equal(params.stepSize, 0, "stepSize should be default");
         assert.equal(
           (await kandel.getBaseQuoteTickOffset()).baseQuoteTickOffset,

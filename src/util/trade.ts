@@ -1,6 +1,6 @@
 import Big, { BigSource } from "big.js";
 import { BigNumber, ContractTransaction, ethers } from "ethers";
-import Market from "../market";
+import Market, { MangroveOrderType } from "../market";
 import { Bigish } from "../util";
 import logger from "./logger";
 import TradeEventManagement, {
@@ -8,6 +8,7 @@ import TradeEventManagement, {
 } from "./tradeEventManagement";
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
+import { AbstractRoutingLogic } from "../logics/AbstractRoutingLogic";
 
 export type CleanUnitParams = {
   ba: Market.BA;
@@ -194,7 +195,9 @@ class Trade {
     const orderType =
       !!params.fillOrKill ||
       !!restingOrderParams ||
-      !!params.forceRoutingToMangroveOrder
+      !!params.forceRoutingToMangroveOrder ||
+      !!params.takerGivesLogic ||
+      !!params.takerWantsLogic
         ? "restingOrder"
         : "marketOrder";
 
@@ -237,6 +240,8 @@ class Trade {
             market: market,
             fillOrKill: params.fillOrKill ? params.fillOrKill : false,
             gasLowerBound: params.gasLowerBound ?? 0,
+            takerGivesLogic: params.takerGivesLogic ?? market.mgv.logics.simple,
+            takerWantsLogic: params.takerWantsLogic ?? market.mgv.logics.simple,
           },
           overrides,
         );
@@ -503,9 +508,7 @@ class Trade {
       case "restingOrder":
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (await market.estimateGas(bs, fillVolume)).add(
-          configuration.mangroveOrder.getTakeGasOverhead(
-            market.mgv.network.name,
-          ),
+          (params.takerGivesLogic || market.mgv.logics.simple).gasOverhead,
         );
       case "marketOrder":
         return await market.estimateGas(bs, fillVolume);
@@ -533,11 +536,7 @@ class Trade {
         // add an overhead of the MangroveOrder contract on top of the estimated market order.
         return (
           await market.simulateGas(ba, maxTick, fillVolume, fillWants)
-        ).add(
-          configuration.mangroveOrder.getTakeGasOverhead(
-            market.mgv.network.name,
-          ),
-        );
+        ).add((params.takerGivesLogic || market.mgv.logics.simple).gasOverhead);
       case "marketOrder":
         return await market.simulateGas(ba, maxTick, fillVolume, fillWants);
     }
@@ -656,6 +655,42 @@ class Trade {
   }
 
   /**
+   * Converts booleans for fillOrKill and restingOrder to an order type.
+   * @param params booleans for fillOrKill and restingOrder
+   * @returns the order type
+   */
+  static toOrderType({
+    fok,
+    restingOrder,
+  }: {
+    fok: boolean;
+    restingOrder: boolean;
+  }): MangroveOrderType {
+    if (fok) return MangroveOrderType.FOK;
+    if (restingOrder) return MangroveOrderType.GTC;
+    return MangroveOrderType.IOC;
+  }
+
+  /**
+   * Converts an order type to booleans for fillOrKill and restingOrder.
+   * @param orderType The order type.
+   * @returns booleans for fillOrKill and restingOrder.
+   */
+  static toFokRestingOrderType(orderType: MangroveOrderType): {
+    fok: boolean;
+    restingOrder: boolean;
+  } {
+    switch (orderType) {
+      case MangroveOrderType.FOK:
+        return { fok: true, restingOrder: false };
+      case MangroveOrderType.GTC:
+        return { fok: false, restingOrder: true };
+      default:
+        return { fok: false, restingOrder: false };
+    }
+  }
+
+  /**
    * Low level resting order.
    *
    * Returns a promise for market order result after 1 confirmation.
@@ -673,6 +708,8 @@ class Trade {
       restingParams,
       market,
       gasLowerBound,
+      takerGivesLogic,
+      takerWantsLogic,
     }: {
       maxTick: number;
       fillVolume: ethers.BigNumber;
@@ -683,6 +720,8 @@ class Trade {
       restingParams: Market.RestingOrderParams | undefined;
       market: Market;
       gasLowerBound: ethers.BigNumberish;
+      takerGivesLogic: AbstractRoutingLogic;
+      takerWantsLogic: AbstractRoutingLogic;
     },
     overrides: ethers.Overrides,
   ): Promise<Market.Transaction<Market.OrderResult>> {
@@ -707,11 +746,15 @@ class Trade {
       [
         {
           olKey: olKey,
-          fillOrKill: fillOrKill,
           tick: maxTick,
           fillVolume: fillVolume,
           fillWants: fillWants,
-          restingOrder: !!restingOrderParams,
+          orderType: Trade.toOrderType({
+            fok: fillOrKill,
+            restingOrder: !!restingOrderParams,
+          }),
+          takerGivesLogic: takerGivesLogic.address,
+          takerWantsLogic: takerWantsLogic.address,
           expiryDate: expiryDate,
           offerId:
             restingParams?.offerId === undefined ? 0 : restingParams.offerId,
@@ -797,26 +840,35 @@ class Trade {
    * @param params The resting order params. See {@link Market.RestingOrderParams}.
    * @param market The market.
    * @param ba The BA of the taker order; the resting order will be the opposite.
+   * @param logics The logics to use for the resting order.
    * @returns The resting order parameters.
    */
   public async getRestingOrderParams(
     params: Market.RestingOrderParams,
     market: Market,
     ba: Market.BA,
+    logics?: {
+      takerGivesLogic: AbstractRoutingLogic;
+      takerWantsLogic: AbstractRoutingLogic;
+    },
   ): Promise<{
     provision: BigSource;
     restingOrderGasreq: number;
     gaspriceFactor: number;
     restingOrderBa: string;
   }> {
+    const restingOrderGasreq = params.restingOrderGasreq
+      ? params.restingOrderGasreq
+      : logics
+        ? Math.max(
+            logics.takerGivesLogic.gasOverhead,
+            logics.takerWantsLogic.gasOverhead,
+          )
+        : market.mgv.logics.simple.gasOverhead;
+
     const gaspriceFactor =
       params.restingOrderGaspriceFactor ??
       configuration.mangroveOrder.getRestingOrderGaspriceFactor(
-        market.mgv.network.name,
-      );
-    const restingOrderGasreq =
-      params.restingOrderGasreq ??
-      configuration.mangroveOrder.getRestingOrderGasreq(
         market.mgv.network.name,
       );
 
