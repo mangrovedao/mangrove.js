@@ -342,33 +342,22 @@ export const tokensConfiguration = {
   },
 
   /**
-   * Read decimals for `tokenId`. Fails if the decimals are not in the configuration.
+   * Read decimals for `tokenId`.
    * To read decimals directly onchain, use `fetchDecimals`.
    */
-  getDecimals: <TNoError extends boolean | undefined = undefined>(
-    tokenId: tokenId,
-    forced?: TNoError,
-  ): TNoError extends true ? number | undefined : number => {
-    const decimals = getOrCreateTokenConfig(tokenId).decimals;
-    if (forced === true) {
-      return decimals as TNoError extends true ? number | undefined : never;
-    }
-    if (decimals === undefined) {
-      throw Error(`No decimals on record for token ${tokenId}`);
-    }
-
-    return decimals;
+  getDecimals(tokenId: tokenId): number | undefined {
+    return getOrCreateTokenConfig(tokenId).decimals;
   },
 
   /**
    * Read decimals for `tokenId` on given network.
-   * If not found in the local configuration, fetch them from the current network and save them
+   * If not found in the local configuration, fetch them from the current network and save them.
    */
   getOrFetchDecimals: async (
     tokenId: tokenId,
     provider: Provider,
   ): Promise<number> => {
-    const decimals = tokensConfiguration.getDecimals(tokenId, true);
+    const decimals = tokensConfiguration.getDecimals(tokenId);
     if (decimals !== undefined) {
       return decimals;
     }
