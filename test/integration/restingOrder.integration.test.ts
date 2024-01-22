@@ -754,6 +754,7 @@ describe("RestingOrder", () => {
           orderResult.restingOrder!.tick % localMarket.tickSpacing === 0,
         );
       };
+
       buySell.map((tradeOperation) => {
         describe(`update resting ${tradeOperation} order`, () => {
           beforeEach(async () => {
