@@ -166,7 +166,6 @@ describe("RestingOrder", () => {
         fundOwner,
         utils.parseUnits("100000", 6),
       );
-      console.log(depositTx.hash);
       await depositTx.wait();
 
       const initBalanceATokenB = await aTokenB.balanceOf(fundOwner);
