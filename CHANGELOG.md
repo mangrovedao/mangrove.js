@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-1
+
 - Upgrade to mangrove-deployments v2.0.1-0
 
 # 2.0.5-0
