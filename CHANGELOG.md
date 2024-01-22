@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to mangrove-deployments v2.0.1-0
+
 # 2.0.5-0
 
 - Upgrade to mangrove strats v2.0.0-b1.2
