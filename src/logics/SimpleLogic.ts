@@ -22,7 +22,7 @@ export class SimpleLogic extends AbstractRoutingLogic<"simple"> {
   ) {
     super({
       id: "simple",
-      title: "No Logic",
+      title: "Simple Logic",
       description: "Simply pull and push tokens directly from your wallet.",
       mgv: params.mgv,
       address: ethers.constants.AddressZero,
