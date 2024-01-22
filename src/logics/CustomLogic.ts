@@ -3,15 +3,14 @@ import Token from "../token";
 import { typechain } from "../types";
 import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
-import Big from "big.js";
 
 type OverlyingList = {
   [key: string]: string;
 };
 
 /**
- * @title SimpleAaveLogic
- * @desc Defines the interaction for Aave routing logic.
+ * @title CustomLogic
+ * @desc Defines a custom logic to pull and push tokens to Mangrove.
  */
 export class CustomLogic extends AbstractRoutingLogic<string> {
   logic: typechain.AbstractRoutingLogic;
@@ -64,7 +63,7 @@ export class CustomLogic extends AbstractRoutingLogic<string> {
   }
 
   /**
-   * @dev Returns true anyway.
+   * @dev Returns true always.
    */
   override canUseLogicFor(token: Token): Promise<boolean> {
     return Promise.resolve(true);

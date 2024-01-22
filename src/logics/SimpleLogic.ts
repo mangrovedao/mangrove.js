@@ -5,8 +5,8 @@ import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
 import configuration from "../configuration";
 
 /**
- * @title NoLogic
- * @desc Defines the interaction for no logic.
+ * @title SimpleLogic
+ * @desc Defines the interaction for a simple logic to pull and push tokens directly from your wallet.
  */
 export class SimpleLogic extends AbstractRoutingLogic<"simple"> {
   public get gasOverhead(): number {
