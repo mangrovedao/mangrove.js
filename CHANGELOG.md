@@ -1,6 +1,7 @@
 # Next version
 
 - feat: Add `Mangrove.getRestingOrderRouterAddress` which gets the address of the router contract for resting orders belonging to the connected user (`Mangrove.signer`).
+- Upgrade to mangrove-deployments v2.0.1-2
 
 # 2.0.5-2
 
