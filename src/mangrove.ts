@@ -1033,6 +1033,19 @@ class Mangrove {
       (logic) => logic.address.toLowerCase() === address.toLowerCase(),
     );
   }
+
+  /**
+   * Get the address of the router contract for resting orders belonging to `this.signer`, i.e, the connected user.
+   *
+   * This is the contract that will be transferring funds on behalf of the signer
+   * and will have to be approved to do so.
+   *
+   * @returns the address of the router contract for resting orders belonging to `this.signer`, i.e, the connected user.
+   */
+  async getRestingOrderRouterAddress(): Promise<string> {
+    const user = await this.signer.getAddress();
+    return await this.orderContract.router(user);
+  }
 }
 
 export default Mangrove;
