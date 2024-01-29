@@ -34,8 +34,8 @@ const restingOrderRouterAddress = await mgv.getRestingOrderRouterAddress();
 await usdtToken.approve(restingOrderRouterAddress);
 
 let buyPromises = await market.buy({
-  volume: 1,
-  limitPrice: 133,
+  volume: 2000,
+  limitPrice: 1.3,
   fillOrKill: true,
 });
 
