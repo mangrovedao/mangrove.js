@@ -1,5 +1,6 @@
 # Next version
 
+- Upgrade or remove `examples/how-tos` so they match the new version of the Mangrove core protocol and SDK
 - Upgrade `examples/tutorials/on-the-fly-offer.js` to new Mangrove core protocol and SDK
 - fix: Coerce ticks to tickSpacing when given as arguments
 - feat: Add integration test of tickSpacing>1
