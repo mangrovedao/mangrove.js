@@ -12,26 +12,32 @@ const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider); // Use eith
 // Connect the API to Mangrove
 const mgv = await Mangrove.connect({ signer: wallet });
 
-// Connect mgv to a DAI, USDC market
-const market = await mgv.market({ base: "DAI", quote: "USDC" });
+// Connect mgv to a USDC, USDT market
+const market = await mgv.market({
+  base: "USDC",
+  quote: "USDT",
+  tickSpacing: 1,
+});
 
-// await market.quote.contract.mintTo( // minting USDC if you are on testnet
+const usdtToken = await mgv.token("USDT");
+
+// await market.quote.contract.mintTo( // minting USDT if you are on testnet
 //   process.env.ADMIN_ADDRESS,
-//   mgv.toUnits(10000, market.quote.decimals)
+//   usdtToken.toUnits(100000)
 // );
 
-// Check it's live, should display the best asks of the DAI, USDC market
+// Check that we're live. Should display the best asks of the USDC, USDT market.
 market.consoleAsks();
 
-// approve that the mangroveOrder contract can use your USDC (quote) funds
-await mgv.offerLogic(mgv.orderContract.address).approveToken(market.quote.name);
+const restingOrderRouterAddress = await mgv.getRestingOrderRouterAddress();
+
+await usdtToken.approve(restingOrderRouterAddress);
 
 let buyPromises = await market.buy({
-  volume: 2000,
-  price: 1.3,
+  volume: 1,
+  limitPrice: 133,
   fillOrKill: true,
 });
 
 const result = await buyPromises.result;
-
 console.log(result);
