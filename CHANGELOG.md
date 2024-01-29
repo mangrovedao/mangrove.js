@@ -1,9 +1,27 @@
 # Next version
 
 - Upgrade or remove `examples/how-tos` so they match the new version of the Mangrove core protocol and SDK
+
+# 2.0.5-3
+
+- feat: Add `Mangrove.getRestingOrderRouterAddress` which gets the address of the router contract for resting orders belonging to the connected user (`Mangrove.signer`).
+- Upgrade to mangrove-deployments v2.0.1-2
+
+# 2.0.5-2
+
+- Upgrade to mangrove-deployments v2.0.1-1
+
+# 2.0.5-1
+
+- Upgrade to mangrove-deployments v2.0.1-0
+
+# 2.0.5-0
+
+- Upgrade to mangrove strats v2.0.0-b1.2
 - Upgrade `examples/tutorials/on-the-fly-offer.js` to new Mangrove core protocol and SDK
 - fix: Coerce ticks to tickSpacing when given as arguments
 - feat: Add integration test of tickSpacing>1
+- feat!: `configuration.tokensConfiguration.getDecimals` now returns `undefined` instead of throwing if the token decimals are not in the configuration
 
 # 2.0.4
 

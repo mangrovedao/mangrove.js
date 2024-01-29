@@ -36,6 +36,12 @@ import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
 import { OLKeyStruct } from "./types/typechain/Mangrove";
 import { Density } from "./util/Density";
+import { SimpleAaveLogic } from "./logics/SimpleAaveLogic";
+import {
+  AbstractRoutingLogic,
+  IDsDictFromLogics,
+} from "./logics/AbstractRoutingLogic";
+import { SimpleLogic } from "./logics/SimpleLogic";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -138,6 +144,7 @@ class Mangrove {
 
   eventEmitter: EventEmitter;
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
+  logics: IDsDictFromLogics<SimpleAaveLogic | SimpleLogic>;
 
   static devNode: DevNode;
   static typechain = typechain;
@@ -240,6 +247,16 @@ class Mangrove {
       signer,
     );
 
+    const simpleAaveLogicAddress = Mangrove.getAddress(
+      "SimpleAaveLogic",
+      network.name,
+    );
+
+    const simpleAaveLogic = typechain.SimpleAaveLogic__factory.connect(
+      simpleAaveLogicAddress,
+      signer,
+    );
+
     const config = Mangrove.rawConfigToConfig(
       await readerContract.globalUnpacked(),
     );
@@ -269,6 +286,9 @@ class Mangrove {
       readerContract,
       orderContract,
       config,
+      logics: {
+        aave: simpleAaveLogic,
+      },
     });
 
     await mgv.initializeProvider();
@@ -322,7 +342,19 @@ class Mangrove {
     readerContract: typechain.MgvReader;
     orderContract: typechain.MangroveOrder;
     config: Mangrove.GlobalConfig;
+    logics: {
+      aave: typechain.SimpleAaveLogic;
+    };
   }) {
+    this.logics = {
+      aave: new SimpleAaveLogic({
+        mgv: this,
+        aaveLogic: params.logics.aave,
+      }),
+      simple: new SimpleLogic({
+        mgv: this,
+      }),
+    };
     if (!canConstructMangrove) {
       throw Error(
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)",
@@ -990,6 +1022,29 @@ class Mangrove {
     } else {
       return { base: token1, quote: token0 };
     }
+  }
+
+  getLogicsList(): AbstractRoutingLogic[] {
+    return Object.values(this.logics);
+  }
+
+  getLogicByAddress(address: string): AbstractRoutingLogic | undefined {
+    return this.getLogicsList().find(
+      (logic) => logic.address.toLowerCase() === address.toLowerCase(),
+    );
+  }
+
+  /**
+   * Get the address of the router contract for resting orders belonging to `this.signer`, i.e, the connected user.
+   *
+   * This is the contract that will be transferring funds on behalf of the signer
+   * and will have to be approved to do so.
+   *
+   * @returns the address of the router contract for resting orders belonging to `this.signer`, i.e, the connected user.
+   */
+  async getRestingOrderRouterAddress(): Promise<string> {
+    const user = await this.signer.getAddress();
+    return await this.orderContract.router(user);
   }
 }
 

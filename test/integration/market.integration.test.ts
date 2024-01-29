@@ -140,7 +140,9 @@ describe("Market integration tests suite", () => {
 
       // Approve router
       const orderLogic = mgv.offerLogic(mgv.orderContract.address);
-      const routerAddress = (await orderLogic.router())!.address;
+      const routerAddress = (await orderLogic.router(
+        await mgv.signer.getAddress(),
+      ))!.address;
       await waitForTransaction(market.base.approve(routerAddress));
       await waitForTransaction(market.quote.approve(routerAddress));
     });
@@ -1203,7 +1205,7 @@ describe("Market integration tests suite", () => {
   });
 
   [true, false].forEach((forceRouting) => {
-    [undefined, 6500000].forEach((gasLimit) => {
+    [undefined, 500000, 6500000].forEach((gasLimit) => {
       [undefined, 42, 7000000].forEach((gasLowerBound) => {
         it(`uses expected gasLimit and forceRoutingToMangroveOrder=${forceRouting} with gasLowerBound=${gasLowerBound} and gasLimit=${gasLimit}`, async function () {
           // Arrange
@@ -1228,7 +1230,9 @@ describe("Market integration tests suite", () => {
 
           if (forceRouting) {
             const orderLogic = mgv.offerLogic(mgv.orderContract.address);
-            const router = await orderLogic.contract.router();
+            const router = await orderLogic.contract.router(
+              await mgv.signer.getAddress(),
+            );
             await market.quote.approve(router);
             await market.base.approve(router);
           }
@@ -1261,7 +1265,7 @@ describe("Market integration tests suite", () => {
             } else {
               // Use ethers estimation, if these values are too unstable, then refactor.
               if (forceRouting) {
-                expectedLimit = 126242;
+                expectedLimit = 271598;
               } else {
                 expectedLimit = 43475;
               }
@@ -1796,24 +1800,50 @@ describe("Market integration tests suite", () => {
       quote: "TokenB",
       tickSpacing: 1,
     });
-    // see mangroveOrder.json -> restingOrderGasreq
-    const gasreq = 152000;
+    const gasreqSimple = mgv.logics.simple.gasOverhead;
+    const gasreqAave = mgv.logics.aave.gasOverhead;
+
     const baseAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyBaseQuote,
-      gasreq,
+      gasreqSimple,
     );
     const quoteAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyQuoteBase,
-      gasreq,
+      gasreqSimple,
+    );
+
+    const baseAsOutboundAave = await mgv.readerContract.minVolume(
+      market.olKeyBaseQuote,
+      gasreqAave,
+    );
+    const quoteAsOutboundAave = await mgv.readerContract.minVolume(
+      market.olKeyQuoteBase,
+      gasreqAave,
     );
 
     assert.equal(
-      market.minVolumeAsk!.mul(Big(10).pow(market.base.decimals)).toFixed(),
+      market
+        .minVolumeAsk!.simple.mul(Big(10).pow(market.base.decimals))
+        .toFixed(),
       baseAsOutbound.toString(),
     );
     assert.equal(
-      market.minVolumeBid!.mul(Big(10).pow(market.quote.decimals)).toFixed(),
+      market
+        .minVolumeBid!.simple.mul(Big(10).pow(market.quote.decimals))
+        .toFixed(),
       quoteAsOutbound.toString(),
+    );
+    assert.equal(
+      market
+        .minVolumeAsk!.aave.mul(Big(10).pow(market.base.decimals))
+        .toFixed(),
+      baseAsOutboundAave.toString(),
+    );
+    assert.equal(
+      market
+        .minVolumeBid!.aave.mul(Big(10).pow(market.quote.decimals))
+        .toFixed(),
+      quoteAsOutboundAave.toString(),
     );
   });
 });

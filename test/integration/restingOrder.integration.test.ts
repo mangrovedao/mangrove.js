@@ -91,7 +91,9 @@ describe("RestingOrder", () => {
       gasreq = configuration.mangroveOrder.getRestingOrderGasreq(
         mgv.network.name,
       );
-      router = (await orderLogic.router()) as AbstractRouter;
+      router = (await orderLogic.router(
+        await mgv.signer.getAddress(),
+      )) as AbstractRouter;
 
       // minting As and Bs for test runner
       const me = await mgv.signer.getAddress();
@@ -140,6 +142,70 @@ describe("RestingOrder", () => {
         fund: bidProvision,
       });
       mgvTestUtil.initPollOfTransactionTracking(mgv.provider);
+    });
+
+    it("should post a resting order using aave", async () => {
+      // create a buy order (buy a with b)
+      const simpleAaveLogic = mgv.logics.aave.logic;
+      const fundOwner = await mgv.signer.getAddress();
+      const aTokenB = await Token.createTokenFromAddress(
+        await simpleAaveLogic.overlying(tokenB.address),
+        mgv,
+      );
+      const aTokenA = await Token.createTokenFromAddress(
+        await simpleAaveLogic.overlying(tokenA.address),
+        mgv,
+      );
+
+      // First approve a logic to deposit on aave for me
+      await w(tokenB.approve(simpleAaveLogic.address));
+
+      // deposit 50 B on aave
+      const depositTx = await simpleAaveLogic.pushLogic(
+        tokenB.address,
+        fundOwner,
+        utils.parseUnits("100000", 6),
+      );
+      await depositTx.wait();
+
+      const initBalanceATokenB = await aTokenB.balanceOf(fundOwner);
+      // check we have a correct aave token balance
+      assert.equal(initBalanceATokenB.toNumber(), 100000);
+
+      const gives = initBalanceATokenB.div(Big(10).pow(14));
+
+      // Then approve the overlying to the user router
+      await w(aTokenB.approve(router.address));
+
+      // make the order
+      const buyPromises = await market.buy({
+        total: gives,
+        limitPrice: 1,
+        takerGivesLogic: mgv.logics.aave,
+        takerWantsLogic: mgv.logics.aave,
+      });
+
+      const tx = await waitForTransaction(buyPromises.response);
+      await mgvTestUtil.waitForBlock(mgv, tx.blockNumber);
+
+      const orderResult = await buyPromises.result;
+      orderResult.summary = orderResult.summary as Market.OrderSummary;
+      const newBalanceATokenA = await aTokenA.balanceOf(fundOwner);
+      const newBalanceATokenB = await aTokenB.balanceOf(fundOwner);
+      assert(
+        orderResult.summary.totalGot.eq(newBalanceATokenA),
+        `Taker received an incorrect amount of Base aToken ${newBalanceATokenA}`,
+      );
+      assert(
+        orderResult.summary.totalGave
+          .minus(initBalanceATokenB.minus(newBalanceATokenB))
+          .abs()
+          .lt(0.001),
+        `Taker gave an incorrect amount of Quote aToken ${initBalanceATokenB.minus(
+          newBalanceATokenB,
+        )}`,
+      );
+      assert(orderResult.summary.bounty!.eq(0), "No offer should have failed");
     });
 
     ["default", "provideFactor", "provided"].forEach((provisionOption) => {
@@ -341,7 +407,7 @@ describe("RestingOrder", () => {
         "Resting order was not posted",
       );
       const olKeyHash = mgv.getOlKeyHash(market.getOLKey("bids"));
-      const ttl = await mgv.orderContract.expiring(
+      const renegingCondition = await mgv.orderContract.reneging(
         olKeyHash!,
         orderResult.restingOrder ? orderResult.restingOrder.id : 0,
       );
@@ -417,7 +483,7 @@ describe("RestingOrder", () => {
       await (mgv.provider as JsonRpcProvider).send("anvil_mine", ["0x100"]);
 
       assert(
-        ttl.lt(
+        renegingCondition[0].lt(
           (await mgv.provider.getBlock(mgv.provider.getBlockNumber()))
             .timestamp,
         ),
@@ -688,6 +754,7 @@ describe("RestingOrder", () => {
           orderResult.restingOrder!.tick % localMarket.tickSpacing === 0,
         );
       };
+
       buySell.map((tradeOperation) => {
         describe(`update resting ${tradeOperation} order`, () => {
           beforeEach(async () => {

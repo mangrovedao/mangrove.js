@@ -8,7 +8,7 @@ describe("Configuration unit tests suite", () => {
   });
 
   it("Can add token config of unknown token", () => {
-    assert.throws(() => configuration.tokens.getDecimals("UnknownToken"));
+    assert.equal(configuration.tokens.getDecimals("UnknownToken"), undefined);
 
     configuration.updateConfiguration({
       tokens: {
@@ -22,8 +22,8 @@ describe("Configuration unit tests suite", () => {
   });
 
   it("Adding token config does not affect existing config", () => {
-    assert.throws(() => configuration.tokens.getDecimals("UnknownToken1"));
-    assert.throws(() => configuration.tokens.getDecimals("UnknownToken2"));
+    assert.equal(configuration.tokens.getDecimals("UnknownToken1"), undefined);
+    assert.equal(configuration.tokens.getDecimals("UnknownToken2"), undefined);
 
     configuration.updateConfiguration({
       tokens: {
@@ -49,7 +49,7 @@ describe("Configuration unit tests suite", () => {
 
   it("Reset of configuration reverts additions and changes", () => {
     assert.equal(configuration.tokens.getDecimals("TokenA"), 18);
-    assert.throws(() => configuration.tokens.getDecimals("UnknownToken"));
+    assert.equal(configuration.tokens.getDecimals("UnknownToken"), undefined);
 
     configuration.updateConfiguration({
       tokens: {
@@ -68,17 +68,25 @@ describe("Configuration unit tests suite", () => {
     configuration.resetConfiguration();
 
     assert.equal(configuration.tokens.getDecimals("TokenA"), 18);
-    assert.throws(() => configuration.tokens.getDecimals("UnknownToken"));
+    assert.equal(configuration.tokens.getDecimals("UnknownToken"), undefined);
   });
 
   it("can read mangroveOrder config", () => {
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("local"),
-      152000,
+      500000,
+    );
+    assert.equal(
+      configuration.mangroveOrder.getRestingOrderGasreq("local", "aave"),
+      600000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("maticmum"),
-      152001,
+      500000,
+    );
+    assert.equal(
+      configuration.mangroveOrder.getRestingOrderGasreq("maticmum", "aave"),
+      600000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGaspriceFactor("local"),
@@ -90,11 +98,19 @@ describe("Configuration unit tests suite", () => {
     );
     assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("local"),
-      330000,
+      300000,
+    );
+    assert.equal(
+      configuration.mangroveOrder.getTakeGasOverhead("local", "aave"),
+      500000,
     );
     assert.equal(
       configuration.mangroveOrder.getTakeGasOverhead("maticmum"),
-      330001,
+      300000,
+    );
+    assert.equal(
+      configuration.mangroveOrder.getTakeGasOverhead("maticmum", "aave"),
+      500000,
     );
   });
 });

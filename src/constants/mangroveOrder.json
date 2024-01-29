@@ -1,11 +1,24 @@
 {
-  "takeGasOverhead": 330000,
-  "restingOrderGasreq": 152000,
+  "$schema": "./schema/mangroveOrder.json",
   "restingOrderGaspriceFactor": 5,
+  "simple": {
+    "restingOrderGasreq": 500000,
+    "takeGasOverhead": 300000
+  },
+  "aave": {
+    "restingOrderGasreq": 600000,
+    "takeGasOverhead": 500000
+  },
   "networks": {
     "maticmum": {
-      "restingOrderGasreq": 152001,
-      "takeGasOverhead": 330001,
+      "simple": {
+        "restingOrderGasreq": 500000,
+        "takeGasOverhead": 300000
+      },
+      "aave": {
+        "restingOrderGasreq": 600000,
+        "takeGasOverhead": 500000
+      },
       "restingOrderGaspriceFactor": 6
     }
   }
