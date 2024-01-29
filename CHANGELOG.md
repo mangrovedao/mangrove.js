@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade or remove `examples/how-tos` so they match the new version of the Mangrove core protocol and SDK
+
 # 2.0.5-3
 
 - feat: Add `Mangrove.getRestingOrderRouterAddress` which gets the address of the router contract for resting orders belonging to the connected user (`Mangrove.signer`).
