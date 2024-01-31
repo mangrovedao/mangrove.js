@@ -873,7 +873,7 @@ describe("Market integration tests suite", () => {
     assert.deepStrictEqual(latestAsks2, [offer1], "asks semibook not correct");
     assert.deepStrictEqual(latestBids2, [offer2], "bids semibook not correct");
 
-    market2.close();
+    market2.disconnect();
     await market.sell({ maxTick: bidTick, fillVolume: "1.3" });
 
     const offerFail = await queue.get();

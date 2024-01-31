@@ -618,6 +618,22 @@ class Market {
   }
 
   /**
+   * Disconnect from a market.
+   */
+  disconnect() {
+    if (
+      !this.asksCb ||
+      !this.bidsCb ||
+      !this.#asksSemibook ||
+      !this.#bidsSemibook
+    ) {
+      throw Error("Market is not initialized");
+    }
+    this.#asksSemibook.removeEventListener(this.asksCb);
+    this.#bidsSemibook.removeEventListener(this.bidsCb);
+  }
+
+  /**
    * Initialize a new market.
    *
    * @param params A set of parameters identifying the `params.base`:`params.quote` market on Mangrove to connect to.
@@ -649,22 +665,6 @@ class Market {
       inbound_tkn: this.base.address,
       tickSpacing: this.tickSpacing,
     };
-  }
-
-  /**
-   * Close a Market instance.
-   */
-  public close() {
-    if (
-      !this.asksCb ||
-      !this.bidsCb ||
-      !this.#asksSemibook ||
-      !this.#bidsSemibook
-    ) {
-      throw Error("Market is not initialized");
-    }
-    this.#asksSemibook.removeEventListener(this.asksCb);
-    this.#bidsSemibook.removeEventListener(this.bidsCb);
   }
 
   /**
