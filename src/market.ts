@@ -547,35 +547,35 @@ class Market {
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
   prettyP = new PrettyPrint();
 
-  private asksCb: Semibook.EventListener | undefined;
-  private bidsCb: Semibook.EventListener | undefined;
+  #asksCb: Semibook.EventListener | undefined;
+  #bidsCb: Semibook.EventListener | undefined;
 
-  private minVolumeAskInternal(key: RouterLogic): Big.Big {
+  #minVolumeAskInternal(key: RouterLogic): Big.Big {
     const config = this.config();
     return config.asks.density.getRequiredOutboundForGasreq(
       config.asks.offer_gasbase + this.mgv.logics[key].gasOverhead,
     );
   }
 
-  private minVolumeBidInternal(key: RouterLogic): Big.Big {
+  #minVolumeBidInternal(key: RouterLogic): Big.Big {
     const config = this.config();
     return config.bids.density.getRequiredOutboundForGasreq(
       config.bids.offer_gasbase + this.mgv.logics[key].gasOverhead,
     );
   }
 
-  public get minVolumeAsk(): Market.MinVolume {
+  get minVolumeAsk(): Market.MinVolume {
     return Object.keys(this.mgv.logics).reduce((acc, _key) => {
       const key = _key as RouterLogic;
-      acc[key] = this.minVolumeAskInternal(key as RouterLogic);
+      acc[key] = this.#minVolumeAskInternal(key as RouterLogic);
       return acc;
     }, {} as Market.MinVolume);
   }
 
-  public get minVolumeBid(): Market.MinVolume {
+  get minVolumeBid(): Market.MinVolume {
     return Object.keys(this.mgv.logics).reduce((acc, _key) => {
       const key = _key as RouterLogic;
-      acc[key] = this.minVolumeBidInternal(key as RouterLogic);
+      acc[key] = this.#minVolumeBidInternal(key as RouterLogic);
       return acc;
     }, {} as Market.MinVolume);
   }
@@ -622,15 +622,15 @@ class Market {
    */
   disconnect() {
     if (
-      !this.asksCb ||
-      !this.bidsCb ||
+      !this.#asksCb ||
+      !this.#bidsCb ||
       !this.#asksSemibook ||
       !this.#bidsSemibook
     ) {
       throw Error("Market is not initialized");
     }
-    this.#asksSemibook.removeEventListener(this.asksCb);
-    this.#bidsSemibook.removeEventListener(this.bidsCb);
+    this.#asksSemibook.removeEventListener(this.#asksCb);
+    this.#bidsSemibook.removeEventListener(this.#bidsCb);
   }
 
   /**
@@ -712,18 +712,18 @@ class Market {
       }
     };
 
-    this.asksCb = this.#semibookEventCallback.bind(this);
+    this.#asksCb = this.#semibookEventCallback.bind(this);
     const asksPromise = Semibook.connect(
       this,
       "asks",
-      this.asksCb,
+      this.#asksCb,
       getSemibookOpts("asks"),
     );
-    this.bidsCb = this.#semibookEventCallback.bind(this);
+    this.#bidsCb = this.#semibookEventCallback.bind(this);
     const bidsPromise = Semibook.connect(
       this,
       "bids",
-      this.bidsCb,
+      this.#bidsCb,
       getSemibookOpts("bids"),
     );
     this.#asksSemibook = await asksPromise;
