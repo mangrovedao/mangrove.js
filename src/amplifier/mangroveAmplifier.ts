@@ -26,9 +26,7 @@ const addBundleParams = z.object({
 
 const updateBundleParams = z.object({
   bundleId: liberalBigInt,
-  outboundToken: z
-    .string()
-    .refine((v) => ethers.utils.isAddress(v), "Invalid EVM Address"),
+  outboundToken: evmAddress,
   outboundVolume: liberalBigInt,
   updateExpiry: z.boolean(),
   expiryDate: liberalBigInt,
