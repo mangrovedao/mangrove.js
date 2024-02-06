@@ -1,5 +1,6 @@
 # Next version
 
+- feat: Add `MangroveAmplifier` to support working with amplified orders on mangrove
 - feat: Rename `Market.close()` to `Market.disconnect()` to more clearly signal that it's dual to `Market.connect()` and does not close the market on Mangrove.
 - Upgrade or remove `examples/how-tos` so they match the new version of the Mangrove core protocol and SDK
 
