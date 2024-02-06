@@ -46,41 +46,47 @@ describe("BinLib unit test suite", () => {
   //   super.setUp();
   // }
 
-  generateRandomSignedBigNumberRange(24, 32).map((bin) => {
-  generateRandomBigNumberRange(16, 32).map((tickSpacing) => {
-  it(`test_bin_to_tick(int24 bin: ${bin.toString()}, uint16 tickSpacing: ${tickSpacing.toString()})`, () => {
-    // vm.assume(tickSpacing != 0);
-    if (tickSpacing.eq(_0)) return;
-    // const bin: Bin = Bin.wrap(_bin);
-    assertEq(BinLib.tick(bin, tickSpacing), Int.mul(int(bin), int(uint(tickSpacing))), "wrong bin -> tick");
-  })})});
+  it(`test_bin_to_tick(int24 bin, uint16 tickSpacing)`, () => {
+    generateRandomSignedBigNumberRange(24, 32).map((bin) => {
+      generateRandomBigNumberRange(16, 32).map((tickSpacing) => {
+        // vm.assume(tickSpacing != 0);
+        if (tickSpacing.eq(_0)) return;
+        // const bin: Bin = Bin.wrap(_bin);
+        assertEq(BinLib.tick(bin, tickSpacing), Int.mul(int(bin), int(uint(tickSpacing))), "wrong bin -> tick for bin: " + bin.toString() + " and tickSpacing: " + tickSpacing.toString());
+      })
+    })
+  });
 
-  generateRandomSignedBigNumberRange(24, 32).map((itick) => {
-  generateRandomBigNumberRange(16, 32).map((_tickSpacing) => {
-  it(`test_tick_to_nearest_bin(int24 itick: ${itick}, uint16 _tickSpacing: ${_tickSpacing})`, () => {
-    // vm.assume(_tickSpacing != 0);
-    if (_tickSpacing.eq(_0)) return;
-    const bin: Bin = TickLib.nearestBin(itick, _tickSpacing);
-    assertGe(BinLib.tick(bin, _tickSpacing), itick, "tick -> bin -> tick must give same or lower bin");
+  it(`test_tick_to_nearest_bin(int24 itick, uint16 _tickSpacing)`, () => {
+    generateRandomSignedBigNumberRange(24, 32).map((itick) => {
+      generateRandomBigNumberRange(16, 32).map((_tickSpacing) => {
+        // vm.assume(_tickSpacing != 0);
+        if (_tickSpacing.eq(_0)) return;
+        const bin: Bin = TickLib.nearestBin(itick, _tickSpacing);
+        assertGe(BinLib.tick(bin, _tickSpacing), itick, "tick -> bin -> tick must give same or lower bin for tick: " + itick.toString() + " and tickSpacing: " + _tickSpacing.toString());
+        
+        const tickSpacing: int = int(uint(_tickSpacing));
+        let expectedBin: int = Int.div(itick, tickSpacing);
+        if (itick.gt(0) && !Int.mod(itick, tickSpacing).eq(_0)) {
+          expectedBin = expectedBin.add(_1);
+        }
+         assertEq(bin, expectedBin, "wrong tick -> bin for tick: " + itick.toString() + " and tickSpacing: " + _tickSpacing.toString());
+      })
+    })
+  });
 
-    const tickSpacing: int = int(uint(_tickSpacing));
-    let expectedBin: int = Int.div(itick, tickSpacing);
-    if (itick.gt(0) && !Int.mod(itick, tickSpacing).eq(_0)) {
-      expectedBin = expectedBin.add(_1);
-    }
-    assertEq(bin, expectedBin, "wrong tick -> bin");
-  })})});
-
-  generateRandomSignedBigNumberRange(96, 32).map((tick) => {
-  generateRandomBigNumberRange(256, 32).map((_tickSpacing) => {
   it(`test_aligned_tick_to_bin(int96 tick, uint _tickSpacing)`, () => {
-    // vm.assume(_tickSpacing != 0);
-    if (_tickSpacing.eq(_0)) return;
-    // vm.assume(tick % int(uint(_tickSpacing)) == 0);
-    if (!Int.mod(tick, int(uint(_tickSpacing))).eq(_0)) return;
-    const bin: Bin = TickLib.nearestBin(tick, _tickSpacing);
-    assertEq(BinLib.tick(bin, _tickSpacing), tick, "aligned tick -> bin -> tick must give same tick");
-  })})});
+    generateRandomSignedBigNumberRange(96, 32).map((tick) => {
+      generateRandomBigNumberRange(256, 32).map((_tickSpacing) => {
+        // vm.assume(_tickSpacing != 0);
+        if (_tickSpacing.eq(_0)) return;
+        // vm.assume(tick % int(uint(_tickSpacing)) == 0);
+        if (!Int.mod(tick, int(uint(_tickSpacing))).eq(_0)) return;
+        const bin: Bin = TickLib.nearestBin(tick, _tickSpacing);
+        assertEq(BinLib.tick(bin, _tickSpacing), tick, "aligned tick -> bin -> tick must give same tick for tick: " + tick.toString() + " and tickSpacing: " + _tickSpacing.toString());
+      })
+    })
+  });
 
   // // get a valid tick from a random int24
   // function boundTick(int24 tick) internal view returns (int24) {
