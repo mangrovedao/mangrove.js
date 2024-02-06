@@ -1,5 +1,7 @@
 # Next version
 
+- feat: Allow add chunk to contains offer without its dual
+
 # 2.0.5-4
 
 - feat: Allow for non symmetrical Kandel distribution
