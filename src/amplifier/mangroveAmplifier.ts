@@ -6,6 +6,20 @@ import { createTxWithOptionalGasEstimation } from "../util/transactions";
 import { AbstractRoutingLogic } from "../logics/AbstractRoutingLogic";
 import { z } from "zod";
 import { evmAddress, liberalBigInt, liberalPositiveBigInt } from "../schemas";
+import { OLKeyStruct } from "../types/typechain/MangroveAmplifier";
+
+export type Transaction<TResult> = {
+  /** The result of the market transaction.
+   *
+   * Resolves when the transaction has been included on-chain.
+   *
+   * Rejects if the transaction fails.
+   */
+  result: Promise<TResult>;
+
+  /** The low-level transaction that has been submitted to the chain. */
+  response: Promise<ethers.ContractTransaction>;
+};
 
 const inboundTokenSchema = z.object({
   inboundToken: evmAddress,
@@ -32,9 +46,24 @@ const updateBundleParams = z.object({
   expiryDate: liberalBigInt,
 });
 
+const updateBundleOfferParams = z.object({
+  bundleId: liberalBigInt,
+  inboundToken: evmAddress,
+  newTick: z.number().optional(),
+  newInboundLogic: z.instanceof(AbstractRoutingLogic).optional(),
+  outboundToken: evmAddress,
+});
+
 const retractBundleParams = z.object({
   bundleId: liberalBigInt,
   outboundToken: evmAddress,
+});
+
+const setRoutingLogicParams = z.object({
+  token: evmAddress,
+  logic: z.instanceof(AbstractRoutingLogic),
+  offerId: liberalBigInt,
+  olKeyHash: z.string(),
 });
 
 /**
@@ -186,6 +215,129 @@ class MangroveAmplifier {
       data: { receipt },
     });
     return;
+  }
+
+  /**
+   */
+  public async updateOfferInBundle(
+    data: z.input<typeof updateBundleOfferParams>,
+  ): Promise<void> {
+    const { bundleId, inboundToken, newTick, newInboundLogic, outboundToken } =
+      updateBundleOfferParams.parse(data);
+
+    const offers = await this.amplifier.offersOf(bundleId);
+
+    const offer = offers.filter((o) => o.inbound_tkn === inboundToken)[0];
+    const { offerId, tickSpacing } = offer;
+
+    const base = await this.mgv.tokenFromAddress(inboundToken);
+    const quote = await this.mgv.tokenFromAddress(outboundToken);
+    const market = await this.mgv.market({
+      base,
+      quote,
+      tickSpacing: tickSpacing.toNumber(),
+    });
+
+    const gives = await market.offerInfo("bids", offerId.toNumber());
+
+    const olKey: OLKeyStruct = {
+      tickSpacing,
+      outbound_tkn: outboundToken,
+      inbound_tkn: inboundToken,
+    };
+
+    const olKeyHash = this.mgv.getOlKeyHash(olKey);
+    const user = await this.mgv.signer.getAddress();
+    const router = await this.mgv.orderContract.router(user);
+    const userRouter = typechain.SmartRouter__factory.connect(
+      router,
+      this.mgv.signer,
+    );
+
+    const existingLogic = await userRouter.getLogic({
+      offerId,
+      fundOwner: ethers.constants.AddressZero,
+      olKeyHash,
+      token: outboundToken,
+    });
+
+    const existingLogicKey = Object.entries(this.mgv.logics).filter(
+      ([key, value]) => {
+        if (value.address === existingLogic) {
+          return true;
+        }
+      },
+    );
+
+    if (existingLogicKey.length === 0) {
+      throw new Error("No logic found for the given address");
+    }
+
+    const existingLogicInstance = (this.mgv.logics as any)[
+      existingLogicKey[0][0]
+    ];
+
+    const gasReq = (newInboundLogic ?? existingLogicInstance)?.gasOverhead;
+
+    if (newTick) {
+      const response = await createTxWithOptionalGasEstimation(
+        this.amplifier.updateOffer,
+        this.amplifier.estimateGas.updateOffer,
+        0,
+        {},
+        [olKey, newTick, gives.gives.toString(), gasReq, offerId],
+      );
+      const receipt = await response.wait();
+
+      logger.debug("Amplified order update tick receipt", {
+        contextInfo: "amplifiedOrder.updateOfferInBundle",
+        data: { receipt },
+      });
+    }
+
+    if (newInboundLogic) {
+      await this.setRoutingLogic(
+        {
+          token: inboundToken,
+          logic: newInboundLogic,
+          offerId: offerId.toNumber(),
+          olKeyHash,
+        },
+        {},
+      );
+    }
+    return;
+  }
+
+  private async setRoutingLogic(
+    params: z.input<typeof setRoutingLogicParams>,
+    overrides?: ethers.Overrides,
+  ): Promise<Transaction<boolean>> {
+    const { olKeyHash, token, offerId, logic } =
+      setRoutingLogicParams.parse(params);
+    const user = await this.mgv.signer.getAddress();
+    const router = await this.mgv.orderContract.router(user);
+    const userRouter = typechain.SmartRouter__factory.connect(
+      router,
+      this.mgv.signer,
+    );
+    const txPromise = userRouter.setLogic(
+      { olKeyHash, token, offerId, fundOwner: ethers.constants.AddressZero },
+      logic.address,
+      overrides,
+    );
+    const wasSet = new Promise<boolean>((res, rej) => {
+      txPromise
+        .then((tx) => tx.wait())
+        .then((receipt) => {
+          res(receipt.status === 1);
+        })
+        .catch(rej);
+    });
+    return {
+      response: txPromise,
+      result: wasSet,
+    };
   }
 
   /**

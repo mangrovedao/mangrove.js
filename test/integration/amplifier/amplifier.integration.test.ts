@@ -46,7 +46,7 @@ describe("Amplifier integration tests suite", () => {
   const addBundle = async (overrides = {}) => {
     const bundle = await amplifier.addBundle({
       outboundToken: mgv.getAddress("TokenC"),
-      outboundVolume: 10n ** 18n,
+      outboundVolume: 10n * 10n ** 18n,
       outboundLogic: mgv.logics.simple,
       expiryDate: 0,
       inboundTokens: [simpleToken("TokenA"), simpleToken("TokenB")],
@@ -195,6 +195,46 @@ describe("Amplifier integration tests suite", () => {
           outboundVolume: 0n,
           updateExpiry: true,
           expiryDate: 1n,
+        });
+
+        const bundleData = await amplifier.getBundle(
+          bundle,
+          mgv.getAddress("TokenC"),
+        );
+        console.log({ bundleData });
+      });
+    });
+  });
+  describe("updateOfferInBundle", () => {
+    describe("Fails", () => {});
+
+    describe("Succeeds", () => {
+      it("Updates an offer in a bundle (tick)", async function () {
+        const bundle = await addBundle();
+
+        await amplifier.updateOfferInBundle({
+          bundleId: bundle,
+          outboundToken: mgv.getAddress("TokenC"),
+          newTick: 2,
+          inboundToken: mgv.getAddress("TokenA"),
+        });
+
+        const bundleData = await amplifier.getBundle(
+          bundle,
+          mgv.getAddress("TokenC"),
+        );
+        console.log({ bundleData });
+      });
+
+      it("Updates an offer in a bundle (logic)", async function () {
+        const bundle = await addBundle();
+
+        await amplifier.updateOfferInBundle({
+          bundleId: bundle,
+          outboundToken: mgv.getAddress("TokenC"),
+          newTick: 1,
+          inboundToken: mgv.getAddress("TokenA"),
+          newInboundLogic: mgv.logics.simple,
         });
 
         const bundleData = await amplifier.getBundle(
