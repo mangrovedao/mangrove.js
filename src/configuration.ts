@@ -183,6 +183,13 @@ const addressWatchers: Map<
 
 export const addressesConfiguration = {
   /**
+   * Read all contract addresses for all networks.
+   */
+  getAllAddressesForAllNetworks: (): AddressesConfig => {
+    return clone(config.addressesByNetwork);
+  },
+
+  /**
    * Read all contract addresses on the given network.
    */
   getAllAddresses: (network: string): [string, string][] => {

@@ -1,5 +1,7 @@
 # Next version
 
+- feat: Add function to read all configured contract addresses for all networks `configuration.addresses.getAllAddressesForAllNetworks()`
+
 # 2.0.5-5
 
 - feat: Allow add chunk to contains offer without its dual
