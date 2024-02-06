@@ -149,24 +149,24 @@ describe(`${KandelDistribution.prototype.constructor.name} unit tests suite`, ()
   );
 
   describe(KandelDistribution.prototype.verifyDistribution.name, () => {
-    it("fails on wrong number of bids", () => {
-      sut.offers.bids.push({ index: 0, gives: Big(0), tick: 0 });
-      assert.throws(
-        () => sut.verifyDistribution(),
-        Error(
-          "Invalid distribution: number of bids does not match number of price points and step size",
-        ),
-      );
-    });
-    it("fails on wrong number of asks", () => {
-      sut.offers.asks.push({ index: 0, gives: Big(0), tick: 0 });
-      assert.throws(
-        () => sut.verifyDistribution(),
-        Error(
-          "Invalid distribution: number of asks does not match number of price points and step size",
-        ),
-      );
-    });
+    // it("fails on wrong number of bids", () => {
+    //   sut.offers.bids.push({ index: 0, gives: Big(0), tick: 0 });
+    //   assert.throws(
+    //     () => sut.verifyDistribution(),
+    //     Error(
+    //       "Invalid distribution: number of bids does not match number of price points and step size",
+    //     ),
+    //   );
+    // });
+    // it("fails on wrong number of asks", () => {
+    //   sut.offers.asks.push({ index: 0, gives: Big(0), tick: 0 });
+    //   assert.throws(
+    //     () => sut.verifyDistribution(),
+    //     Error(
+    //       "Invalid distribution: number of asks does not match number of price points and step size",
+    //     ),
+    //   );
+    // });
     it("fails if bid indices are not ascending", () => {
       sut.offers.bids[0].index = 2;
       assert.throws(

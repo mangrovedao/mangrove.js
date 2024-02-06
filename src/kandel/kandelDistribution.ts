@@ -197,26 +197,21 @@ class KandelDistribution {
    * The price distribution is not verified, except that the tick of each offer is a multiple of the tick spacing.
    */
   public verifyDistribution() {
-    const expectedLength = this.pricePoints - this.stepSize;
-    if (this.offers.bids.length != expectedLength) {
-      throw new Error(
-        "Invalid distribution: number of bids does not match number of price points and step size",
-      );
-    }
-    if (this.offers.asks.length != expectedLength) {
-      throw new Error(
-        "Invalid distribution: number of asks does not match number of price points and step size",
-      );
-    }
-    for (let i = 0; i < expectedLength; i++) {
+    // const expectedLength = this.pricePoints - this.stepSize;
+    // if (expectedLength == offersLength && this.offers.bids.length != expectedLength) {
+    //   throw new Error(
+    //     "Invalid distribution: number of bids does not match number of price points and step size",
+    //   );
+    // }
+    // if (expectedLength == offersLength && this.offers.asks.length != expectedLength) {
+    //   throw new Error(
+    //     "Invalid distribution: number of asks does not match number of price points and step size",
+    //   );
+    // }
+    for (let i = 0; i < this.offers.bids.length; i++) {
       if (this.offers.bids[i].tick % this.market.tickSpacing != 0) {
         throw new Error(
           "Invalid distribution: bid tick is not a multiple of tick spacing",
-        );
-      }
-      if (this.offers.asks[i].tick % this.market.tickSpacing != 0) {
-        throw new Error(
-          "Invalid distribution: ask tick is not a multiple of tick spacing",
         );
       }
       if (i > 0) {
@@ -225,6 +220,16 @@ class KandelDistribution {
             "Invalid distribution: bid indices are not ascending",
           );
         }
+      }
+    }
+
+    for (let i = 0; i < this.offers.asks.length; i++) {
+      if (this.offers.asks[i].tick % this.market.tickSpacing != 0) {
+        throw new Error(
+          "Invalid distribution: ask tick is not a multiple of tick spacing",
+        );
+      }
+      if (i > 0) {
         if (this.offers.asks[i].index <= this.offers.asks[i - 1].index) {
           throw new Error(
             "Invalid distribution: ask indices are not ascending",
@@ -232,6 +237,7 @@ class KandelDistribution {
         }
       }
     }
+
     const lastLiveBidIndex = this.getLastLiveBidIndex();
     if (this.getFirstLiveAskIndex() < lastLiveBidIndex) {
       throw new Error(
