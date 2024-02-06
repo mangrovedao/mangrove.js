@@ -1,6 +1,7 @@
 # Next version
 
 - feat: Add `MangroveAmplifier` to support working with amplified orders on mangrove
+- feat: Allow add chunk to contains offer without its dual
 
 # 2.0.5-4
 
