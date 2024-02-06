@@ -102,18 +102,18 @@ describe("DensityLib unit test suite", () => {
     }
   }
 
-  generateRandomBigNumberRange(128, 128).map((fixp) => {
-    it(`test_density_convert_auto(uint128 fixp = ${fixp.toString()})`, () => {
+  it(`test_density_convert_auto(uint128 fixp)`, () => {
+    generateRandomBigNumberRange(128, 128).map((fixp) => {
       // vm.assume(fixp != 0);
       if (fixp.eq(0)) return;
       const density: Density = DensityLib.from96X32(fixp);
-      assertLe(DensityLib.mantissa(density), 4, "mantissa too large");
-      assertLe(DensityLib.exponent(density), 127, "exponent too large");
-      assertLe(DensityLib.to96X32(density), fixp, "error too large (above)");
+      assertLe(DensityLib.mantissa(density), 4, "mantissa too large for fixp = " + fixp.toString());
+      assertLe(DensityLib.exponent(density), 127, "exponent too large for fixp = " + fixp.toString());
+      assertLe(DensityLib.to96X32(density), fixp, "error too large (above) for fixp = " + fixp.toString());
       // maximum error is 20%,
       // for instance the fixp 1001....1, which gets approximated to 100....0
       //                   or  01001...1, which gets approximated to 0100...0
-      assertGe(DensityLib.to96X32(density).mul(100).div(fixp), 80, "error too large (below)");
+      assertGe(DensityLib.to96X32(density).mul(100).div(fixp), 80, "error too large (below) for fixp = " + fixp.toString());
     });
   });
 
@@ -148,24 +148,26 @@ describe("DensityLib unit test suite", () => {
   }
 
   [_0, _1, _2, _3].map((mantissa) => {
-  generateRandomBigNumberRange(7, 32).map((exp) => {
-  generateRandomBigNumberRange(96, 32).map((m) => {
-    it(`test_density_multiply_auto(uint8 _mantissa = ${mantissa}, uint8 _exp = ${exp.toString()}, uint96 _m = ${m.toString()})`, () => {
-      // let mantissa: uint = bound(_mantissa, 0, 3);
-      // let exp: uint = bound(_exp, 0, 127);
-      // let m: uint = uint(_m);
-      const density: Density = DensityLib.make(mantissa, exp);
-      const res: uint = DensityLib.multiply(density, m);
-      if (exp.lt(2)) {
-        const num: uint = m.mul(mantissa);
-        assertEq(res, num.div(2 ** 32), "wrong multiply, small exp");
-      } else {
-        const converted: uint = shl((mantissa.or(4)), (exp.sub(2)));
-        const num: uint = m.mul(converted);
-        assertEq(res, num.div(2 ** 32), "wrong multiply, big exp");
-      }
-    });
-  })})});
+    it(`test_density_multiply_auto(uint8 _mantissa = ${mantissa}, uint8 _exp, uint96 _m)`, () => {
+      generateRandomBigNumberRange(7, 32).map((exp) => {
+        generateRandomBigNumberRange(96, 32).map((m) => {
+          // let mantissa: uint = bound(_mantissa, 0, 3);
+          // let exp: uint = bound(_exp, 0, 127);
+          // let m: uint = uint(_m);
+          const density: Density = DensityLib.make(mantissa, exp);
+          const res: uint = DensityLib.multiply(density, m);
+          if (exp.lt(2)) {
+            const num: uint = m.mul(mantissa);
+            assertEq(res, num.div(2 ** 32), "wrong multiply, small exp for _exp = " + exp.toString() + " and _m = " + m.toString());
+          } else {
+            const converted: uint = shl((mantissa.or(4)), (exp.sub(2)));
+            const num: uint = m.mul(converted);
+            assertEq(res, num.div(2 ** 32), "wrong multiply, big exp for _exp = " + exp.toString() + " and _m = " + m.toString());
+          }
+        });
+      })
+    })
+  });
 
   it("test_paramsTo96X32()", () => {
     let res: uint = DensityLib.paramsTo96X32_centiusd(
