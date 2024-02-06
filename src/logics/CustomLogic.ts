@@ -1,8 +1,8 @@
-import { ethers } from "ethers";
 import Token from "../token";
 import { typechain } from "../types";
 import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
+import { zeroAddress } from "../constants/blockchain";
 
 type OverlyingList = {
   [key: string]: string;
@@ -54,7 +54,7 @@ export class CustomLogic extends AbstractRoutingLogic<string> {
   private async defaultToken(): Promise<Token> {
     if (!this.defaultTokenCache) {
       this.defaultTokenCache = await Token.createTokenFromAddress(
-        ethers.constants.AddressZero,
+        zeroAddress,
         this.mgv,
       );
       return Promise.resolve(this.defaultTokenCache);

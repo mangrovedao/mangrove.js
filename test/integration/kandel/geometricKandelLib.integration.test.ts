@@ -6,6 +6,7 @@ import UnitCalculations from "../../../src/util/unitCalculations";
 import configuration from "../../../src/configuration";
 import { createGeneratorStub } from "../../unit/kandel/geometricKandel/geometricKandelDistributionGenerator.unit.test";
 import { TokenCalculations } from "../../../src/token";
+import { maxUint256 } from "../../../src/constants/blockchain";
 
 describe(`${GeometricKandelLib.prototype.constructor.name} integration test suite`, () => {
   let stub: GeometricKandelLib;
@@ -30,32 +31,32 @@ describe(`${GeometricKandelLib.prototype.constructor.name} integration test suit
 
   // prettier-ignore
   const cases = [
-    { test: 1, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 2, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 3, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 4, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 5, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 6, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 7, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 8, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 9, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 4, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 10, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 4, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 1 },
-    { test: 11, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 5, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 4 },
-    { test: 12, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 5, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 4 },
-    { test: 13, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 4 },
-    { test: 14, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 4 },
-    { test: 15, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 2 },
-    { test: 16, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 2 },
-    { test: 17, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 2 },
-    { test: 18, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: ethers.constants.MaxUint256, pricePoints: 5, stepSize: 2 },
-    { test: 19, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
-    { test: 20, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
-    { test: 21, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
-    { test: 22, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
-    { test: 23, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
-    { test: 24, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
-    { test: 25, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
-    { test: 26, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: ethers.constants.MaxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 1, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 2, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 3, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 4, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 5, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 6, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 7, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 8, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 9, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 4, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 10, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 4, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 1 },
+    { test: 11, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 5, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 4 },
+    { test: 12, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 5, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 4 },
+    { test: 13, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 4 },
+    { test: 14, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 4 },
+    { test: 15, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 2 },
+    { test: 16, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 2 },
+    { test: 17, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 2 },
+    { test: 18, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from("2000000000000000000"), bidGives: maxUint256, pricePoints: 5, stepSize: 2 },
+    { test: 19, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 20, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 0, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 21, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 22, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 23, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 24, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 25, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
+    { test: 26, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 3, askGives: maxUint256, bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
     { test: 27, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: BigNumber.from("4000000000000000000"), bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
     { test: 28, from: 2, to: 5, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 1, askGives: BigNumber.from("4000000000000000000"), bidGives: BigNumber.from("2000000000000000000"), pricePoints: 5, stepSize: 1 },
     { test: 29, from: 0, to: 2, baseQuoteTickIndex0: 500, baseQuoteTickOffset: 1000, firstAskIndex: 2, askGives: BigNumber.from(0), bidGives: BigNumber.from(0), pricePoints: 5, stepSize: 1 },
@@ -70,10 +71,10 @@ describe(`${GeometricKandelLib.prototype.constructor.name} integration test suit
     )}`, async function () {
       const argsBig = {
         ...args,
-        askGives: args.askGives.eq(ethers.constants.MaxUint256)
+        askGives: args.askGives.eq(maxUint256)
           ? undefined
           : UnitCalculations.fromUnits(args.askGives, 4),
-        bidGives: args.bidGives.eq(ethers.constants.MaxUint256)
+        bidGives: args.bidGives.eq(maxUint256)
           ? undefined
           : UnitCalculations.fromUnits(args.bidGives, 6),
       };

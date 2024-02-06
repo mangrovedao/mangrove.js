@@ -17,6 +17,7 @@ import GeneralKandelDistribution from "./generalKandelDistribution";
 import GeneralKandelDistributionGenerator from "./generalKandelDistributionGenerator";
 import GeneralKandelDistributionHelper from "./generalKandelDistributionHelper";
 import Mangrove from "../mangrove";
+import { maxUint256 } from "../constants/blockchain";
 
 // The market used by the Kandel instance or a factory function to create the market.
 export type MarketOrMarketFactory =
@@ -824,10 +825,10 @@ class CoreKandelInstance {
     return {
       baseAmount: baseAmount
         ? this.market.base.toUnits(baseAmount)
-        : ethers.constants.MaxUint256,
+        : maxUint256,
       quoteAmount: quoteAmount
         ? this.market.quote.toUnits(quoteAmount)
-        : ethers.constants.MaxUint256,
+        : maxUint256,
     };
   }
 
@@ -868,7 +869,7 @@ class CoreKandelInstance {
       params.recipientAddress ?? (await this.market.mgv.signer.getAddress());
     const freeWei = params.withdrawFunds
       ? this.market.mgv.nativeToken.toUnits(params.withdrawFunds)
-      : ethers.constants.MaxUint256;
+      : maxUint256;
 
     const { txs, lastChunk } = await this.retractOfferChunks(
       { retractParams: params, skipLast: true },

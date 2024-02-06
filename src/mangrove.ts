@@ -42,6 +42,7 @@ import {
   IDsDictFromLogics,
 } from "./logics/AbstractRoutingLogic";
 import { SimpleLogic } from "./logics/SimpleLogic";
+import { maxUint256 } from "./constants/blockchain";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -940,7 +941,7 @@ class Mangrove {
   ): Promise<Mangrove.OpenMarketInfo[]> {
     // set default params
     params.from ??= 0;
-    params.maxLen ??= ethers.constants.MaxUint256;
+    params.maxLen ??= maxUint256;
     params.configs ??= true;
     // read open markets and their configs off mgvReader
     const raw = await this.readerContract["openMarkets(uint256,uint256,bool)"](

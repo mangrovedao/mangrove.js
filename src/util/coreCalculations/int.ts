@@ -7,25 +7,23 @@
  *     translation of the Solidity code.
  */
 
-import { BigNumber, BigNumberish, ethers } from "ethers";
+import { BigNumber, BigNumberish } from "ethers";
 import * as yul from "./yul";
+import { maxInt256, minInt256 } from "../../constants/blockchain";
 
 export type int = BigNumber;
 
 const _0 = BigNumber.from(0);
 const _2 = BigNumber.from(2);
 
-const MAX_INT256 = ethers.constants.MaxInt256;;
-const MIN_INT256 = ethers.constants.MinInt256;;
-
 function checkOverflow(a: BigNumber, error: string): void {
-  if (a.gt(MAX_INT256)) {
+  if (a.gt(maxInt256)) {
     throw new Error(error);
   }
 }
 
 function checkUnderflow(a: BigNumber, error: string): void {
-  if (a.lt(MIN_INT256)) {
+  if (a.lt(minInt256)) {
     throw new Error(error);
   }
 }

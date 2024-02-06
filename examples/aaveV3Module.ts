@@ -2,8 +2,8 @@ import * as ethers from "ethers";
 import { typechain } from "../src/types";
 import { Mangrove } from "../";
 import Big from "big.js";
+import { maxUint256 } from "../src/constants/blockchain";
 
-//import { TransactionResponse } from "@ethersproject/abstract-provider";
 //import Big from "big.js";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
@@ -44,11 +44,7 @@ class AaveV3Module {
     overrides: ethers.Overrides = {},
   ): Promise<ethers.ContractTransaction> {
     const dTtkn = await this.#debtToken(tokenId);
-    return dTtkn.approveDelegation(
-      borrower,
-      ethers.constants.MaxUint256,
-      overrides,
-    );
+    return dTtkn.approveDelegation(borrower, maxUint256, overrides);
   }
 
   async status(

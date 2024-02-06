@@ -5,6 +5,7 @@ import { Bigish } from "./util";
 import { typechain } from "./types";
 import UnitCalculations from "./util/unitCalculations";
 import configuration from "./configuration";
+import { maxUint256 } from "./constants/blockchain";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Token {
@@ -331,13 +332,11 @@ class Token extends TokenCalculations {
   private getRawApproveAmount(amount?: Bigish): ethers.BigNumber {
     return amount != undefined
       ? this.capRawApproveAmount(this.toUnits(amount))
-      : ethers.constants.MaxUint256;
+      : maxUint256;
   }
 
   private capRawApproveAmount(rawAmount: ethers.BigNumber): ethers.BigNumber {
-    return rawAmount.gt(ethers.constants.MaxUint256)
-      ? ethers.constants.MaxUint256
-      : rawAmount;
+    return rawAmount.gt(maxUint256) ? maxUint256 : rawAmount;
   }
 
   /** Sets the allowance for the spender if it is not infinite. Cannot be used to reduce from infinite.

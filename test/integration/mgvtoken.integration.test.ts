@@ -8,6 +8,7 @@ import {
   waitForOptionalTransaction,
   waitForTransaction,
 } from "../../src/util/test/mgvIntegrationTestUtil";
+import { maxUint256 } from "../../src/constants/blockchain";
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
   return `<Big>${this.toString()}`; // previously just Big.prototype.toString;
@@ -101,7 +102,7 @@ describe("MGV Token integration tests suite", () => {
     const allowance = await usdc.allowance();
     assert.equal(
       usdc.toUnits(allowance).toString(),
-      ethers.constants.MaxUint256.toString(),
+      maxUint256.toString(),
       "allowance should be the final value",
     );
   });
@@ -137,7 +138,7 @@ describe("MGV Token integration tests suite", () => {
     const maxAllowance = await usdc.allowance();
     assert.equal(
       usdc.toUnits(maxAllowance).toString(),
-      ethers.constants.MaxUint256.toString(),
+      maxUint256.toString(),
       "allowance should updated to max",
     );
     assert.equal(
@@ -162,7 +163,7 @@ describe("MGV Token integration tests suite", () => {
     const allowance = await usdc.allowance();
     assert.equal(
       usdc.toUnits(allowance).toString(),
-      ethers.constants.MaxUint256.toString(),
+      maxUint256.toString(),
       "allowance should updated to the highest",
     );
   });
@@ -184,7 +185,7 @@ describe("MGV Token integration tests suite", () => {
     const maxAllowance = await usdc.allowance();
     assert.equal(
       usdc.toUnits(maxAllowance).toString(),
-      ethers.constants.MaxUint256.toString(),
+      maxUint256.toString(),
       "allowance should updated to max",
     );
 
@@ -249,7 +250,7 @@ describe("MGV Token integration tests suite", () => {
 
     assert.equal(
       usdc.toUnits(maxAllowance).toString(),
-      ethers.constants.MaxUint256.toString(),
+      maxUint256.toString(),
       "allowance should updated to max",
     );
   });
@@ -279,7 +280,7 @@ describe("MGV Token integration tests suite", () => {
     const maxAllowance = await usdc.allowance();
     assert.equal(
       usdc.toUnits(maxAllowance).toString(),
-      ethers.constants.MaxUint256.toString(),
+      maxUint256.toString(),
       "allowance should updated to max",
     );
     assert.equal(

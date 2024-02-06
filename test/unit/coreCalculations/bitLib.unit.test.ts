@@ -13,7 +13,7 @@
  */
 
 import { assertEq, generateRandomBigNumber, uint } from "./coreCalculationsTestUtils";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
 import { shl } from "../../../src/util/coreCalculations/uint";
 
 // Literal constants are precomputed for readability and efficiency.
@@ -24,6 +24,7 @@ const _0 = BigNumber.from(0);
 
 // import "@mgv/lib/Test2.sol";
 import * as BitLib from "../../../src/util/coreCalculations/BitLib";
+import { maxUint256 } from "../../../src/constants/blockchain";
 
 // contract BitLibTest is Test2 {
 describe("BitLib unit test suite", () => {
@@ -34,7 +35,7 @@ describe("BitLib unit test suite", () => {
     const brutalizer: uint = generateRandomBigNumber(256);
     for (let i = 0; i < 64; i++) {
       assertEq(BitLib.ctz64(shl(1, i)), i);
-      assertEq(BitLib.ctz64(shl(ethers.constants.MaxUint256, i)), i);
+      assertEq(BitLib.ctz64(shl(maxUint256, i)), i);
       assertEq(BitLib.ctz64(shl(brutalizer.or(1), i)), i);
     }
     assertEq(BitLib.ctz64(_0), 64);

@@ -5,6 +5,7 @@ import { Bigish } from "./util";
 import { Mangrove, Market } from ".";
 import { TransactionResponse } from "@ethersproject/abstract-provider";
 import Big from "big.js";
+import { maxUint256, zeroAddress } from "./constants/blockchain";
 
 type SignerOrProvider = ethers.ethers.Signer | ethers.ethers.providers.Provider;
 /**
@@ -33,7 +34,7 @@ class OfferLogic {
    */
   async router(owner: string): Promise<typechain.AbstractRouter | undefined> {
     const router_address = await this.contract.router(owner);
-    if (router_address != ethers.constants.AddressZero) {
+    if (router_address != zeroAddress) {
       return typechain.AbstractRouter__factory.connect(
         router_address,
         this.signerOrProvider,
@@ -46,7 +47,7 @@ class OfferLogic {
    * @returns True if the offer logic has a router, false otherwise.
    */
   public async hasRouter(owner: string) {
-    return (await this.contract.router(owner)) != ethers.constants.AddressZero;
+    return (await this.contract.router(owner)) != zeroAddress;
   }
 
   /**
@@ -66,7 +67,7 @@ class OfferLogic {
     const amount =
       args && args.optAmount != undefined
         ? token.toUnits(args.optAmount)
-        : ethers.constants.MaxUint256;
+        : maxUint256;
     const spender =
       args && args.optSpender != undefined
         ? args.optSpender

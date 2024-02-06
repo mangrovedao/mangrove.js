@@ -38,7 +38,7 @@ const _1000 = BigNumber.from(1000);
 const _2500 = BigNumber.from(2500);
 const _10000 = BigNumber.from(10000);
 
-const type_uint_max = ethers.constants.MaxUint256;
+const type_uint_max = maxUint256;
 
 
 // # Density.t.sol
@@ -53,6 +53,7 @@ const type_uint_max = ethers.constants.MaxUint256;
 // import "@mgv/lib/Test2.sol";
 // import "@mgv/src/core/MgvLib.sol";
 import * as DensityLib from "../../../src/util/coreCalculations/DensityLib";
+import { maxUint256 } from "../../../src/constants/blockchain";
 
 // In these tests, the testing contract is the market maker.
 // contract DensityTest is Test2 {
@@ -87,7 +88,7 @@ describe("DensityLib unit test suite", () => {
     assertD(_10, "10 * 2^-32");
     d = _11;
     assertD(_10, "11 * 2^-32");
-    d = ethers.constants.MaxUint256;
+    d = maxUint256;
     assertD(shl(7, 253), "2^256-1");
   });
 

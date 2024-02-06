@@ -6,6 +6,7 @@ import { typechain } from "../../types";
 
 import { Provider, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { Deferred } from "../../util";
+import { maxUint256 } from "../../constants/blockchain";
 
 export type Account = {
   name: string;
@@ -381,7 +382,7 @@ export const postNewOffer = async ({
   await waitForTransaction(
     maker.connectedContracts.testMaker.approveMgv(
       olKey.outbound_tkn,
-      ethers.constants.MaxUint256,
+      maxUint256,
       { gasLimit: 100_000 },
     ),
   );

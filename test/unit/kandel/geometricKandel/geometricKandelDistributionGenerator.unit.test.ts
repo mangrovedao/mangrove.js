@@ -21,6 +21,7 @@ import {
 } from "../generalKandelDistributionGenerator.unit.test";
 import GeneralKandelDistributionHelper from "../../../../src/kandel/generalKandelDistributionHelper";
 import { TokenCalculations } from "../../../../src/token";
+import { maxUint256 } from "../../../../src/constants/blockchain";
 
 interface DistributionOffer {
   index: number;
@@ -114,7 +115,7 @@ export class KandelLibStub {
         index,
         tick,
         gives:
-          bidGives === ethers.constants.MaxUint256
+          bidGives === maxUint256
             ? // Intentionally use raw TickLib as these are raw values
               TickLib.outboundFromInbound(BigNumber.from(tick), askGives)
             : bidGives,
@@ -146,7 +147,7 @@ export class KandelLibStub {
         index,
         tick,
         gives:
-          askGives === ethers.constants.MaxUint256
+          askGives === maxUint256
             ? // Intentionally use raw TickLib as these are raw values
               TickLib.outboundFromInbound(BigNumber.from(tick), bidGives)
             : askGives,

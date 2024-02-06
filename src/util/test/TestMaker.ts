@@ -10,6 +10,7 @@ import { typechain } from "../../types";
 import { waitForTransaction } from "./mgvIntegrationTestUtil";
 import { node } from "../../util/node";
 import { Log } from "@ethersproject/providers";
+import { maxUint256 } from "../../constants/blockchain";
 
 /** Usage example
   Terminal 1: 
@@ -108,7 +109,7 @@ class TestMaker {
 
   async approveMgv(address: string) {
     return waitForTransaction(
-      this.contract.approveMgv(address, ethers.constants.MaxUint256, {
+      this.contract.approveMgv(address, maxUint256, {
         gasLimit: 100_000,
       }),
     );

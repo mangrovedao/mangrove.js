@@ -1,8 +1,8 @@
-import { ethers } from "ethers";
 import Token from "../token";
 import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
 import configuration from "../configuration";
+import { zeroAddress } from "../constants/blockchain";
 
 /**
  * @title SimpleLogic
@@ -25,7 +25,7 @@ export class SimpleLogic extends AbstractRoutingLogic<"simple"> {
       title: "Simple Logic",
       description: "Simply pull and push tokens directly from your wallet.",
       mgv: params.mgv,
-      address: ethers.constants.AddressZero,
+      address: zeroAddress,
     });
   }
 

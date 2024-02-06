@@ -9,7 +9,8 @@
  * This is the audited version of Mangrove v2.0.0.
  */
 
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
+import { maxUint256 } from "../../constants/blockchain";
 
 
 // # Constants.sol
@@ -20,7 +21,7 @@ import { BigNumber, ethers } from "ethers";
 /* The constants below are written as literals to optimize gas. For all the relevant constants here, the non-literal expression that computes them is checked in `Constants.t.sol`. */
 
 export const ONE = BigNumber.from("1");
-export const ONES = ethers.constants.MaxUint256;
+export const ONES = maxUint256;
 export const TOPBIT = BigNumber.from("0x8000000000000000000000000000000000000000000000000000000000000000");
 export const NOT_TOPBIT = BigNumber.from("0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 

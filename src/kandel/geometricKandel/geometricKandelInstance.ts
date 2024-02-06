@@ -19,6 +19,7 @@ import GeometricKandelLib from "./geometricKandelLib";
 import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
 import GeneralKandelDistributionGenerator from "../generalKandelDistributionGenerator";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
+import { maxUint256 } from "../../constants/blockchain";
 
 /**
  * @notice Parameters specific to a geometric Kandel instance.
@@ -412,14 +413,14 @@ class GeometricKandelInstance extends CoreKandelInstance {
             this.distributionHelper.market.base,
             this.distributionHelper.market.quote,
           ).outbound_tkn.toUnits(bidGives)
-        : ethers.constants.MaxUint256,
+        : maxUint256,
       rawAskGives: askGives
         ? Market.getOutboundInbound(
             "asks",
             this.distributionHelper.market.base,
             this.distributionHelper.market.quote,
           ).outbound_tkn.toUnits(askGives)
-        : ethers.constants.MaxUint256,
+        : maxUint256,
     };
   }
 

@@ -21,6 +21,7 @@ import Big from "big.js";
 import { Density } from "./util/Density";
 import TickPriceHelper from "./util/tickPriceHelper";
 import { AbstractRoutingLogic } from "./logics/AbstractRoutingLogic";
+import { zeroAddress } from "./constants/blockchain";
 
 let canConstructMarket = false;
 
@@ -1533,7 +1534,7 @@ class Market {
         olKeyHash,
         token: params.token,
         offerId: params.offerId,
-        fundOwner: ethers.constants.AddressZero, // is not useful for this function
+        fundOwner: zeroAddress, // is not useful for this function
       },
       params.logic,
       overrides,

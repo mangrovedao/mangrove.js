@@ -5,6 +5,7 @@ import KandelDistribution, { OfferDistribution } from "../kandelDistribution";
 import GeometricKandelDistribution from "./geometricKandelDistribution";
 import Market from "../../market";
 import GeometricKandelDistributionHelper from "./geometricKandelDistributionHelper";
+import { maxUint256 } from "../../constants/blockchain";
 
 /** @title Management of a single Kandel instance. */
 class GeometricKandelLib {
@@ -64,12 +65,8 @@ class GeometricKandelLib {
       params.baseQuoteTickIndex0,
       params.baseQuoteTickOffset,
       params.firstAskIndex,
-      params.bidGives
-        ? bidsOutbound.toUnits(params.bidGives)
-        : ethers.constants.MaxUint256,
-      params.askGives
-        ? asksOutbound.toUnits(params.askGives)
-        : ethers.constants.MaxUint256,
+      params.bidGives ? bidsOutbound.toUnits(params.bidGives) : maxUint256,
+      params.askGives ? asksOutbound.toUnits(params.askGives) : maxUint256,
       params.pricePoints,
       params.stepSize,
     );

@@ -1,6 +1,6 @@
+import { zeroAddress } from "../constants/blockchain";
 import Mangrove from "..";
 import Token from "../token";
-import { ethers } from "ethers";
 
 /**
  * Creates a dictionary of routing logics from a list of routing logics.
@@ -97,6 +97,6 @@ export abstract class AbstractRoutingLogic<TId extends string = string> {
    */
   async canUseLogicFor(token: Token): Promise<boolean> {
     const _token = await this.overlying(token);
-    return _token.address !== ethers.constants.AddressZero;
+    return _token.address !== zeroAddress;
   }
 }

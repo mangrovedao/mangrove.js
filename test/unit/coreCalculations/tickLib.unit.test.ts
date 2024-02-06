@@ -17,7 +17,7 @@
  */
 
 import { assertEq, vm_expectRevert } from "./coreCalculationsTestUtils";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
 import { uint } from "../../../src/util/coreCalculations/uint";
 import * as UInt from "../../../src/util/coreCalculations/uint";
 import * as Int from "../../../src/util/coreCalculations/int";
@@ -51,7 +51,7 @@ const _1e18 = _10.pow(18);
 
 const type_uint96_max = _2.pow(96).sub(1);
 const type_uint72_max = _2.pow(72).sub(1);
-const type_uint_max = ethers.constants.MaxUint256;
+const type_uint_max = maxUint256;
 
 // # TickAndBin.t.sol
 
@@ -65,6 +65,7 @@ const type_uint_max = ethers.constants.MaxUint256;
 import * as TickLib from "../../../src/util/coreCalculations/TickLib";
 import { Tick } from "../../../src/util/coreCalculations/TickLib";
 import { MAX_RATIO_EXP, MAX_RATIO_MANTISSA, MAX_TICK, MIN_RATIO_EXP, MIN_RATIO_MANTISSA, MIN_TICK } from "../../../src/util/coreCalculations/Constants";
+import { maxUint256 } from "../../../src/constants/blockchain";
 
 // contract TickAndBinTest is MangroveTest {
 describe("TickLibNew unit test suite", () => {
