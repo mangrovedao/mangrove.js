@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-4
+
 - feat: Allow for non symmetrical Kandel distribution
 - feat: Rename `Market.close()` to `Market.disconnect()` to more clearly signal that it's dual to `Market.connect()` and does not close the market on Mangrove.
 - Upgrade or remove `examples/how-tos` so they match the new version of the Mangrove core protocol and SDK
