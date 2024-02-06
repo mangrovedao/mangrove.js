@@ -54,12 +54,13 @@ class GeneralKandelDistribution extends KandelDistribution {
           const dual = this.offers[dualOfferType].find(
             (x) => x.index == dualIndex,
           );
-          if (!dual) {
-            throw Error(
-              `Invalid distribution, missing ${dualOfferType} at ${dualIndex}`,
-            );
+          if (dual) {
+            chunks[chunks.length - 1][dualOfferType].push(dual);
+          } else {
+            // throw Error(
+            //   `Invalid distribution, missing ${dualOfferType} at ${dualIndex}`,
+            // );
           }
-          chunks[chunks.length - 1][dualOfferType].push(dual);
         }
       }
       offers.current++;
