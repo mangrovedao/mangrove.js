@@ -312,7 +312,10 @@ class MangroveAmplifier {
       token: outboundToken,
     });
 
-    const gasReq = (newInboundLogic ?? existingLogic)?.gasOverhead;
+    const gasReq = Math.max(
+      newInboundLogic?.gasOverhead ?? 0,
+      existingLogic?.gasOverhead ?? 0,
+    );
 
     if (newTick) {
       const response = await createTxWithOptionalGasEstimation(
