@@ -9,14 +9,7 @@ import { evmAddress, liberalBigInt, liberalPositiveBigInt } from "../schemas";
 import { OLKeyStruct } from "../types/typechain/MangroveAmplifier";
 
 export type Transaction<TResult> = {
-  /** The result of the market transaction.
-   *
-   * Resolves when the transaction has been included on-chain.
-   *
-   * Rejects if the transaction fails.
-   */
   result: Promise<TResult>;
-
   /** The low-level transaction that has been submitted to the chain. */
   response: Promise<ethers.ContractTransaction>;
 };
@@ -64,6 +57,17 @@ const setRoutingLogicParams = z.object({
   logic: z.instanceof(AbstractRoutingLogic),
   offerId: liberalBigInt,
   olKeyHash: z.string(),
+});
+
+const getRoutingLogicParams = z.object({
+  token: evmAddress,
+  offerId: liberalBigInt,
+  olKeyHash: z.string(),
+});
+
+const getBundleParams = z.object({
+  bundleId: liberalBigInt,
+  outboundToken: evmAddress,
 });
 
 /**
@@ -154,34 +158,88 @@ class MangroveAmplifier {
     return BigNumber.from(bundleId);
   }
 
-  public async getBundle(
-    bundleId: BigNumber | string,
-    outboundToken: string,
-  ): Promise<{
+  /**
+   * @param data.bundleId The bundle identifier
+   * @param data.outboundToken The outbound token of the bundle
+   * @returns The bundle data
+   */
+  public async getBundle(data: z.input<typeof getBundleParams>): Promise<{
     expiryDate: BigNumber;
     offers: Array<{
       inboundToken: string;
       tickSpacing: BigNumber;
       offerId: BigNumber;
+      routingLogic: AbstractRoutingLogic;
     }>;
   }> {
-    bundleId = BigNumber.from(bundleId);
-    const data = await this.amplifier.offersOf(bundleId);
+    const { bundleId, outboundToken } = getBundleParams.parse(data);
+    const offersOf = await this.amplifier.offersOf(bundleId);
     const otherData = await this.amplifier.reneging(
       ethers.constants.HashZero,
       bundleId,
     );
 
+    const olKeys = offersOf.map((offer) => {
+      return {
+        tickSpacing: offer.tickSpacing,
+        outbound_tkn: outboundToken,
+        inbound_tkn: offer.inbound_tkn,
+      };
+    });
+
+    const routingLogics = await Promise.all(
+      olKeys.map((olKey) => {
+        return this._getRoutingLogic({
+          olKeyHash: this.mgv.getOlKeyHash(olKey),
+          token: outboundToken,
+          offerId: ethers.constants.Zero,
+        });
+      }),
+    );
+
     return {
       expiryDate: otherData.date,
-      offers: data.map((offer) => {
+      offers: offersOf.map((offer, i) => {
         return {
           inboundToken: offer.inbound_tkn,
           tickSpacing: offer.tickSpacing,
           offerId: offer.offerId,
+          routingLogic: routingLogics[i],
         };
       }),
     };
+  }
+
+  private async _getRoutingLogic(
+    params: z.input<typeof getRoutingLogicParams>,
+  ): Promise<AbstractRoutingLogic> {
+    const { olKeyHash, token, offerId } = getRoutingLogicParams.parse(params);
+    const user = await this.mgv.signer.getAddress();
+    const router = await this.mgv.orderContract.router(user);
+    const userRouter = typechain.SmartRouter__factory.connect(
+      router,
+      this.mgv.signer,
+    );
+    const logicAddress = await userRouter.getLogic({
+      olKeyHash,
+      token,
+      offerId,
+      fundOwner: ethers.constants.AddressZero,
+    });
+
+    const logicKey = Object.entries(this.mgv.logics).filter(([key, value]) => {
+      if (value.address === logicAddress) {
+        return true;
+      }
+    });
+
+    if (logicKey.length === 0) {
+      throw new Error("No logic found for the given address");
+    }
+
+    const logicInstance = (this.mgv.logics as any)[logicKey[0][0]];
+
+    return logicInstance;
   }
 
   /**
@@ -247,37 +305,14 @@ class MangroveAmplifier {
     };
 
     const olKeyHash = this.mgv.getOlKeyHash(olKey);
-    const user = await this.mgv.signer.getAddress();
-    const router = await this.mgv.orderContract.router(user);
-    const userRouter = typechain.SmartRouter__factory.connect(
-      router,
-      this.mgv.signer,
-    );
 
-    const existingLogic = await userRouter.getLogic({
+    const existingLogic = await this._getRoutingLogic({
       offerId,
-      fundOwner: ethers.constants.AddressZero,
       olKeyHash,
       token: outboundToken,
     });
 
-    const existingLogicKey = Object.entries(this.mgv.logics).filter(
-      ([key, value]) => {
-        if (value.address === existingLogic) {
-          return true;
-        }
-      },
-    );
-
-    if (existingLogicKey.length === 0) {
-      throw new Error("No logic found for the given address");
-    }
-
-    const existingLogicInstance = (this.mgv.logics as any)[
-      existingLogicKey[0][0]
-    ];
-
-    const gasReq = (newInboundLogic ?? existingLogicInstance)?.gasOverhead;
+    const gasReq = (newInboundLogic ?? existingLogic)?.gasOverhead;
 
     if (newTick) {
       const response = await createTxWithOptionalGasEstimation(
@@ -295,16 +330,15 @@ class MangroveAmplifier {
       });
     }
 
+    const newRoutingLogicParams = {
+      token: inboundToken,
+      logic: newInboundLogic!,
+      offerId: offerId.toNumber(),
+      olKeyHash,
+    };
+
     if (newInboundLogic) {
-      await this.setRoutingLogic(
-        {
-          token: inboundToken,
-          logic: newInboundLogic,
-          offerId: offerId.toNumber(),
-          olKeyHash,
-        },
-        {},
-      );
+      await this.setRoutingLogic(newRoutingLogicParams, {});
     }
     return;
   }

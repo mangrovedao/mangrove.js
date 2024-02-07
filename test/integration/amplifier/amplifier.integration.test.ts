@@ -119,7 +119,7 @@ describe("Amplifier integration tests suite", () => {
       it("Creates a bundle across 2 markets", async function () {
         const inboundTokens = [simpleToken("TokenA"), simpleToken("TokenB")];
 
-        const bundle = await amplifier.addBundle({
+        const bundleId = await amplifier.addBundle({
           outboundToken: mgv.getAddress("TokenC"),
           outboundVolume: 10n ** 18n,
           outboundLogic: mgv.logics.simple,
@@ -127,16 +127,17 @@ describe("Amplifier integration tests suite", () => {
           inboundTokens: inboundTokens,
         });
 
-        const bundleData = await amplifier.getBundle(
-          bundle,
-          mgv.getAddress("TokenC"),
-        );
+        const bundleData = await amplifier.getBundle({
+          bundleId,
+          outboundToken: mgv.getAddress("TokenC"),
+        });
         expect(bundleData).to.deep.equal({
           expiryDate: BigNumber.from(0n),
           offers: inboundTokens.map((token, i) => ({
             offerId: bundleData.offers[i].offerId,
             tickSpacing: BigNumber.from(token.tickSpacing),
             inboundToken: token.inboundToken,
+            routingLogic: token.inboundLogic,
           })),
         });
       });
@@ -148,18 +149,18 @@ describe("Amplifier integration tests suite", () => {
 
     describe("Succeeds", () => {
       it("Retracts a bundle", async function () {
-        const bundle = await addBundle();
+        const bundleId = await addBundle();
 
         await amplifier.retractBundle({
-          bundleId: bundle,
+          bundleId,
           outboundToken: mgv.getAddress("TokenC"),
         });
 
-        const bundleData = await amplifier.getBundle(
-          bundle,
-          mgv.getAddress("TokenC"),
-        );
-        // console.log({ bundleData });
+        const bundleData = await amplifier.getBundle({
+          bundleId,
+          outboundToken: mgv.getAddress("TokenC"),
+        });
+        console.log({ bundleData });
       });
     });
   });
@@ -169,38 +170,38 @@ describe("Amplifier integration tests suite", () => {
 
     describe("Succeeds", () => {
       it("Updates a bundle (not date)", async function () {
-        const bundle = await addBundle();
+        const bundleId = await addBundle();
 
         await amplifier.updateBundle({
-          bundleId: bundle,
+          bundleId,
           outboundToken: mgv.getAddress("TokenC"),
           outboundVolume: 10n ** 18n / 2n,
           updateExpiry: false,
           expiryDate: 0n,
         });
 
-        const bundleData = await amplifier.getBundle(
-          bundle,
-          mgv.getAddress("TokenC"),
-        );
-        // console.log({ bundleData });
+        const bundleData = await amplifier.getBundle({
+          bundleId,
+          outboundToken: mgv.getAddress("TokenC"),
+        });
+        console.log({ bundleData });
       });
 
       it("Updates a bundle (date)", async function () {
-        const bundle = await addBundle();
+        const bundleId = await addBundle();
 
         await amplifier.updateBundle({
-          bundleId: bundle,
+          bundleId,
           outboundToken: mgv.getAddress("TokenC"),
           outboundVolume: 0n,
           updateExpiry: true,
           expiryDate: 1n,
         });
 
-        const bundleData = await amplifier.getBundle(
-          bundle,
-          mgv.getAddress("TokenC"),
-        );
+        const bundleData = await amplifier.getBundle({
+          bundleId,
+          outboundToken: mgv.getAddress("TokenC"),
+        });
         console.log({ bundleData });
       });
     });
@@ -210,37 +211,37 @@ describe("Amplifier integration tests suite", () => {
 
     describe("Succeeds", () => {
       it("Updates an offer in a bundle (tick)", async function () {
-        const bundle = await addBundle();
+        const bundleId = await addBundle();
 
         await amplifier.updateOfferInBundle({
-          bundleId: bundle,
+          bundleId,
           outboundToken: mgv.getAddress("TokenC"),
           newTick: 2,
           inboundToken: mgv.getAddress("TokenA"),
         });
 
-        const bundleData = await amplifier.getBundle(
-          bundle,
-          mgv.getAddress("TokenC"),
-        );
+        const bundleData = await amplifier.getBundle({
+          bundleId,
+          outboundToken: mgv.getAddress("TokenC"),
+        });
         console.log({ bundleData });
       });
 
       it("Updates an offer in a bundle (logic)", async function () {
-        const bundle = await addBundle();
+        const bundleId = await addBundle();
 
         await amplifier.updateOfferInBundle({
-          bundleId: bundle,
+          bundleId,
           outboundToken: mgv.getAddress("TokenC"),
           newTick: 1,
           inboundToken: mgv.getAddress("TokenA"),
           newInboundLogic: mgv.logics.simple,
         });
 
-        const bundleData = await amplifier.getBundle(
-          bundle,
-          mgv.getAddress("TokenC"),
-        );
+        const bundleData = await amplifier.getBundle({
+          bundleId,
+          outboundToken: mgv.getAddress("TokenC"),
+        });
         console.log({ bundleData });
       });
     });
