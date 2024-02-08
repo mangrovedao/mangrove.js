@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to context-addresses v1.1.0
+
 # 2.0.5-6
 
 - feat: Add function to read all configured contract addresses for all networks `configuration.addresses.getAllAddressesForAllNetworks()`
