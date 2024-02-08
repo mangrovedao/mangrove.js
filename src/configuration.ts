@@ -735,6 +735,11 @@ function readMangroveDeploymentAddresses() {
 }
 
 function readContextAddressesAndTokens() {
+  readContextAddresses();
+  readContextErc20Tokens();
+}
+
+function readContextAddresses() {
   const allMulticallAddresses = contextAddresses.getAllMulticallAddresses();
   const allAaveV3Addresses = contextAddresses.getAllAaveV3Addresses();
   const namedAddressesPerNamedNetwork =
@@ -749,7 +754,9 @@ function readContextAddressesAndTokens() {
       addressesConfiguration.setAddress(name, address, networkName);
     }
   }
+}
 
+function readContextErc20Tokens() {
   const allErc20s = contextAddresses.getAllErc20s();
   const allErc20InstancesPerNamedNetwork =
     contextAddresses.toErc20InstancesPerNamedNetwork(allErc20s);
