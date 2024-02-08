@@ -288,16 +288,6 @@ class MangroveAmplifier {
     const offer = offers.filter((o) => o.inbound_tkn === inboundToken)[0];
     const { offerId, tickSpacing } = offer;
 
-    const base = await this.mgv.tokenFromAddress(inboundToken);
-    const quote = await this.mgv.tokenFromAddress(outboundToken);
-    const market = await this.mgv.market({
-      base,
-      quote,
-      tickSpacing: tickSpacing.toNumber(),
-    });
-
-    const gives = await market.offerInfo("bids", offerId.toNumber());
-
     const olKey: OLKeyStruct = {
       tickSpacing,
       outbound_tkn: outboundToken,
@@ -306,18 +296,28 @@ class MangroveAmplifier {
 
     const olKeyHash = this.mgv.getOlKeyHash(olKey);
 
-    const existingLogic = await this._getRoutingLogic({
-      offerId,
-      olKeyHash,
-      token: outboundToken,
-    });
-
-    const gasReq = Math.max(
-      newInboundLogic?.gasOverhead ?? 0,
-      existingLogic?.gasOverhead ?? 0,
-    );
-
     if (newTick) {
+      const base = await this.mgv.tokenFromAddress(inboundToken);
+      const quote = await this.mgv.tokenFromAddress(outboundToken);
+      const market = await this.mgv.market({
+        base,
+        quote,
+        tickSpacing: tickSpacing.toNumber(),
+      });
+
+      const gives = await market.offerInfo("bids", offerId.toNumber());
+
+      const existingLogic = await this._getRoutingLogic({
+        offerId,
+        olKeyHash,
+        token: outboundToken,
+      });
+
+      const gasReq = Math.max(
+        newInboundLogic?.gasOverhead ?? 0,
+        existingLogic?.gasOverhead ?? 0,
+      );
+
       const response = await createTxWithOptionalGasEstimation(
         this.amplifier.updateOffer,
         this.amplifier.estimateGas.updateOffer,
