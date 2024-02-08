@@ -763,11 +763,11 @@ function readContextErc20Tokens() {
   for (const [networkName, erc20Instances] of Object.entries(
     allErc20InstancesPerNamedNetwork,
   )) {
-    for (const [tokenId, erc20Instance] of Object.entries(erc20Instances)) {
-      tokensConfiguration.setDecimals(tokenId, erc20Instance.decimals);
-      tokensConfiguration.setSymbol(tokenId, erc20Instance.symbol);
+    for (const erc20Instance of erc20Instances) {
+      tokensConfiguration.setDecimals(erc20Instance.id, erc20Instance.decimals);
+      tokensConfiguration.setSymbol(erc20Instance.id, erc20Instance.symbol);
       addressesConfiguration.setAddress(
-        tokenId,
+        erc20Instance.id,
         erc20Instance.address,
         networkName,
       );
@@ -775,7 +775,7 @@ function readContextErc20Tokens() {
         tokensConfiguration.setDefaultIdForSymbolOnNetwork(
           erc20Instance.symbol,
           networkName,
-          tokenId,
+          erc20Instance.id,
         );
       }
     }
