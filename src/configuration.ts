@@ -735,64 +735,49 @@ function readMangroveDeploymentAddresses() {
 }
 
 function readContextAddressesAndTokens() {
-  readContextMulticallAddresses();
+  readContextAddresses();
   readContextErc20Tokens();
-  readContextAaveAddresses();
 }
 
-function readContextMulticallAddresses() {
+function readContextAddresses() {
   const allMulticallAddresses = contextAddresses.getAllMulticallAddresses();
-  for (const [addressId, role] of Object.entries(allMulticallAddresses)) {
-    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
-      const networkName = eth.getNetworkName(+networkId);
-      addressesConfiguration.setAddress(addressId, address, networkName);
+  const allAaveV3Addresses = contextAddresses.getAllAaveV3Addresses();
+  const namedAddressesPerNamedNetwork =
+    contextAddresses.toNamedAddressesPerNamedNetwork(
+      allMulticallAddresses,
+      allAaveV3Addresses,
+    );
+  for (const [networkName, namedAddresses] of Object.entries(
+    namedAddressesPerNamedNetwork,
+  )) {
+    for (const { name, address } of namedAddresses) {
+      addressesConfiguration.setAddress(name, address, networkName);
     }
   }
 }
 
 function readContextErc20Tokens() {
-  for (const [, erc20] of Object.entries(contextAddresses.getAllErc20s())) {
-    for (const [networkId, networkInstances] of Object.entries(
-      erc20.networkInstances,
-    )) {
-      const networkName = eth.getNetworkName(+networkId);
-      for (const [erc20InstanceId, erc20Instance] of Object.entries(
-        networkInstances,
-      )) {
-        tokensConfiguration.setDecimals(erc20InstanceId, erc20.decimals);
-        tokensConfiguration.setSymbol(erc20InstanceId, erc20.symbol);
-
-        addressesConfiguration.setAddress(
-          erc20InstanceId,
-          erc20Instance.address,
+  const allErc20s = contextAddresses.getAllErc20s();
+  const allErc20InstancesPerNamedNetwork =
+    contextAddresses.toErc20InstancesPerNamedNetwork(allErc20s);
+  for (const [networkName, erc20Instances] of Object.entries(
+    allErc20InstancesPerNamedNetwork,
+  )) {
+    for (const erc20Instance of erc20Instances) {
+      tokensConfiguration.setDecimals(erc20Instance.id, erc20Instance.decimals);
+      tokensConfiguration.setSymbol(erc20Instance.id, erc20Instance.symbol);
+      addressesConfiguration.setAddress(
+        erc20Instance.id,
+        erc20Instance.address,
+        networkName,
+      );
+      if (erc20Instance.default) {
+        tokensConfiguration.setDefaultIdForSymbolOnNetwork(
+          erc20Instance.symbol,
           networkName,
+          erc20Instance.id,
         );
-
-        if (erc20Instance.default) {
-          tokensConfiguration.setDefaultIdForSymbolOnNetwork(
-            erc20.symbol,
-            networkName,
-            erc20InstanceId,
-          );
-
-          // Also register the default instance as the token symbol for convenience
-          addressesConfiguration.setAddress(
-            erc20.symbol,
-            erc20Instance.address,
-            networkName,
-          );
-        }
       }
-    }
-  }
-}
-
-function readContextAaveAddresses() {
-  const allAaveV3Addresses = contextAddresses.getAllAaveV3Addresses();
-  for (const [addressId, role] of Object.entries(allAaveV3Addresses)) {
-    for (const [networkId, address] of Object.entries(role.networkAddresses)) {
-      const networkName = eth.getNetworkName(+networkId);
-      addressesConfiguration.setAddress(addressId, address, networkName);
     }
   }
 }
