@@ -1,5 +1,9 @@
 # Next version
 
+- Upgrade to context-addresses v1.1.1
+- Upgrade to mangrove-deployments v2.0.2-0
+- Simplify loading of context addressing
+
 # 2.0.5-6
 
 - feat: Add function to read all configured contract addresses for all networks `configuration.addresses.getAllAddressesForAllNetworks()`
