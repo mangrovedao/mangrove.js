@@ -188,11 +188,11 @@ class MangroveAmplifier {
     });
 
     const routingLogics = await Promise.all(
-      olKeys.map((olKey) => {
+      olKeys.map((olKey, i) => {
         return this._getRoutingLogic({
           olKeyHash: this.mgv.getOlKeyHash(olKey),
           token: outboundToken,
-          offerId: ethers.constants.Zero,
+          offerId: offersOf[i].offerId,
         });
       }),
     );
