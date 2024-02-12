@@ -6,9 +6,11 @@ import {MangroveDeployer} from "@mgv/script/core/deployers/MangroveDeployer.s.so
 import {OLKey} from "@mgv/src/core/MgvLib.sol";
 import {TestToken} from "@mgv/test/lib/tokens/TestToken.sol";
 import {MangroveOrderDeployer} from "@mgv-strats/script/strategies/mangroveOrder/deployers/MangroveOrderDeployer.s.sol";
+import {MangroveAmplifierDeployer} from "@mgv-strats/script/strategies/amplifier/deployers/MangroveAmplifierDeployer.s.sol";
 import {ActivateMangroveOrder} from "@mgv-strats/script/strategies/mangroveOrder/ActivateMangroveOrder.s.sol";
 import {KandelSeederDeployer} from "@mgv-strats/script/strategies/kandel/deployers/KandelSeederDeployer.s.sol";
 import {MangroveOrder, RouterProxyFactory} from "@mgv-strats/src/strategies/MangroveOrder.sol";
+import {MangroveAmplifier} from "@mgv-strats/src/strategies/MangroveAmplifier.sol";
 import {MgvReader} from "@mgv/src/periphery/MgvReader.sol";
 import {SimpleTestMaker} from "@mgv/test/lib/agents/TestMaker.sol";
 import {Mangrove} from "@mgv/src/core/Mangrove.sol";
@@ -16,6 +18,7 @@ import {IMangrove} from "@mgv/src/IMangrove.sol";
 import {Deployer} from "@mgv/script/lib/Deployer.sol";
 import {ActivateMarket, Market} from "@mgv/script/core/ActivateMarket.s.sol";
 import {PoolAddressProviderMock} from "@mgv-strats/script/toy/AaveMock.sol";
+import {SmartRouter} from "@mgv-strats/src/strategies/routers/SmartRouter.sol";
 import {IERC20} from "@mgv/lib/IERC20.sol";
 import {IPoolAddressesProvider} from "@mgv-strats/src/strategies/vendor/aave/v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import {SimpleAaveLogic} from "@mgv-strats/src/strategies/routing_logic/SimpleAaveLogic.sol";
@@ -27,11 +30,13 @@ This script prepares a local chain for testing by mangrove.js.
 contract EmptyChainDeployer is Deployer {
   TestToken public tokenA;
   TestToken public tokenB;
+  TestToken public tokenC;
   address public dai;
   address public usdc;
   address public weth;
   SimpleTestMaker public simpleTestMaker;
   MangroveOrder public mgo;
+  MangroveAmplifier public mga;
   RouterProxyFactory public routerProxyFactory;
 
   function run() public {
@@ -80,6 +85,18 @@ contract EmptyChainDeployer is Deployer {
     fork.set("TokenB", address(tokenB));
 
     broadcast();
+    tokenC = new TestToken({
+      admin: broadcaster(),
+      name: "Token C",
+      symbol: "TokenC",
+      _decimals: 6
+    });
+
+    broadcast();
+    tokenC.setMintLimit(type(uint).max);
+    fork.set("TokenC", address(tokenC));
+
+    broadcast();
     dai = address(
       new TestToken({
         admin: broadcaster(),
@@ -123,6 +140,8 @@ contract EmptyChainDeployer is Deployer {
 
     activateMarket.innerRun(mgv, mgvReader, Market(address(tokenA), address(tokenB), 1), 2 * 1e12, 3 * 1e12, 250);
     activateMarket.innerRun(mgv, mgvReader, Market(address(tokenA), address(tokenB), 100), 2 * 1e12, 3 * 1e12, 250);
+    activateMarket.innerRun(mgv, mgvReader, Market(address(tokenA), address(tokenC), 1), 2 * 1e12, 3 * 1e12, 250);
+    activateMarket.innerRun(mgv, mgvReader, Market(address(tokenC), address(tokenB), 1), 2 * 1e12, 3 * 1e12, 250);
     activateMarket.innerRun(mgv, mgvReader, Market(dai, usdc, 1), 1e12 / 1000, 1e12 / 1000, 0);
     activateMarket.innerRun(mgv, mgvReader, Market(weth, dai, 1), 1e12, 1e12 / 1000, 0);
     activateMarket.innerRun(mgv, mgvReader, Market(weth, usdc, 1), 1e12, 1e12 / 1000, 0);
@@ -144,6 +163,16 @@ contract EmptyChainDeployer is Deployer {
       tokens: dynamic([IERC20(tokenA), IERC20(tokenB)])
     });
 
+    MangroveAmplifierDeployer mgaDeployer = new MangroveAmplifierDeployer();
+    mgaDeployer.innerRun({
+      mgv: IMangrove(payable(mgv)),
+      routerProxyFactory: routerProxyFactory,
+      routerImplementation: SmartRouter(
+        payable(fork.get("MangroveOrder-Router"))
+      )
+    });
+    mga = MangroveAmplifier(payable(fork.get("MangroveAmplifier")));
+
     address[] memory underlying = dynamic(
       [address(tokenA), address(tokenB), dai, usdc, weth]
     );
@@ -160,7 +189,7 @@ contract EmptyChainDeployer is Deployer {
     );
     fork.set("SimpleAaveLogic", address(simpleAaveLogic));
 
-
+    
     KandelSeederDeployer kandelSeederDeployer = new KandelSeederDeployer();
     kandelSeederDeployer.innerRun({
       mgv: IMangrove(payable(mgv)),

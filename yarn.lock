@@ -1278,12 +1278,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@npm:^2.0.0-b1.2":
-  version: 2.0.0-b1.2
-  resolution: "@mangrovedao/mangrove-strats@npm:2.0.0-b1.2"
+"@mangrovedao/mangrove-strats@npm:^2.0.0-b1.3":
+  version: 2.0.0-b1.3
+  resolution: "@mangrovedao/mangrove-strats@npm:2.0.0-b1.3"
   dependencies:
     "@mangrovedao/mangrove-core": ^2.0.3
-  checksum: fd8b6532b1478eabe3940435aff3a7f185f615d0750c6bacbce2016f745133edd0a085e93ea3da2c58b111fb00cbef0a4b5511825686c8440ddc09b6f7b4eda8
+  checksum: 1c691d5be71e448781304a138265ddaafbbc32c59be4d4c6f0755c59ae730b877964ab7cf312aaa9b7f638cdabcd9ee90cb50291dcaae76ca2d30b8b6f592a07
   languageName: node
   linkType: hard
 
@@ -1300,7 +1300,7 @@ __metadata:
     "@mangrovedao/context-addresses": ^1.1.1
     "@mangrovedao/mangrove-core": ^2.0.3
     "@mangrovedao/mangrove-deployments": ^2.0.2-0
-    "@mangrovedao/mangrove-strats": ^2.0.0-b1.2
+    "@mangrovedao/mangrove-strats": ^2.0.0-b1.3
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^11.1.2
     "@types/big.js": ^6.1.6
@@ -1355,6 +1355,7 @@ __metadata:
     typescript: ^5.2.2
     util: ^0.12.5
     yargs: ^17.3.0
+    zod: ^3.22.4
   bin:
     mgv: ./dist/nodejs/cli/mgv.js
   languageName: unknown
@@ -7512,5 +7513,12 @@ __metadata:
   version: 0.1.0
   resolution: "yocto-queue@npm:0.1.0"
   checksum: f77b3d8d00310def622123df93d4ee654fc6a0096182af8bd60679ddcdfb3474c56c6c7190817c84a2785648cdee9d721c0154eb45698c62176c322fb46fc700
+  languageName: node
+  linkType: hard
+
+"zod@npm:^3.22.4":
+  version: 3.22.4
+  resolution: "zod@npm:3.22.4"
+  checksum: 80bfd7f8039b24fddeb0718a2ec7c02aa9856e4838d6aa4864335a047b6b37a3273b191ef335bf0b2002e5c514ef261ffcda5a589fb084a48c336ffc4cdbab7f
   languageName: node
   linkType: hard

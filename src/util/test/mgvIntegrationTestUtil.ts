@@ -17,6 +17,7 @@ export type Account = {
     testMaker: typechain.SimpleTestMaker;
     tokenA: typechain.TestToken;
     tokenB: typechain.TestToken;
+    tokenC: typechain.TestToken;
   };
 };
 
@@ -36,6 +37,7 @@ export type Addresses = {
   testMaker: AddressAndSigner;
   tokenA: AddressAndSigner;
   tokenB: AddressAndSigner;
+  tokenC: AddressAndSigner;
 };
 
 let addresses: Addresses;
@@ -70,11 +72,13 @@ export const getAddresses = async (): Promise<Addresses> => {
 
     const ta = (await mgv.token("TokenA")).contract;
     const tb = (await mgv.token("TokenB")).contract;
+    const tc = (await mgv.token("TokenC")).contract;
     addresses = {
       mangrove: { address: mg.address, signer: await mg.signer.getAddress() },
       testMaker: { address: tm.address, signer: await tm.signer.getAddress() },
       tokenA: { address: ta.address, signer: await ta.signer.getAddress() },
       tokenB: { address: tb.address, signer: await tb.signer.getAddress() },
+      tokenC: { address: tc.address, signer: await tc.signer.getAddress() },
     };
   }
   return addresses;
@@ -92,6 +96,7 @@ export type Contracts = {
   testMaker: typechain.SimpleTestMaker;
   tokenA: typechain.TestToken;
   tokenB: typechain.TestToken;
+  tokenC: typechain.TestToken;
 };
 
 export const getContracts = async (
@@ -113,6 +118,10 @@ export const getContracts = async (
     ),
     tokenB: typechain.TestToken__factory.connect(
       addresses.tokenB.address,
+      signer,
+    ),
+    tokenC: typechain.TestToken__factory.connect(
+      addresses.tokenC.address,
       signer,
     ),
   };

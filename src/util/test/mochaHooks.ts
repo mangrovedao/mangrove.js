@@ -87,6 +87,7 @@ export const mochaHooks = {
 
     const tokenA = await mgv.token("TokenA");
     const tokenB = await mgv.token("TokenB");
+    const tokenC = await mgv.token("TokenC");
     //shorten polling for faster tests
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -98,6 +99,10 @@ export const mochaHooks = {
       mgv.nativeToken.toUnits(10),
     );
     await tokenB.contract.mintTo(
+      hook.accounts.tester.address,
+      mgv.nativeToken.toUnits(10),
+    );
+    await tokenC.contract.mintTo(
       hook.accounts.tester.address,
       mgv.nativeToken.toUnits(10),
     );

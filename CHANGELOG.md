@@ -1,5 +1,6 @@
 # Next version
 
+- feat: Add `MangroveAmplifier` to support working with amplified orders on mangrove
 - Upgrade to context-addresses v1.1.1
 - Upgrade to mangrove-deployments v2.0.2-0
 - Simplify loading of context addressing
