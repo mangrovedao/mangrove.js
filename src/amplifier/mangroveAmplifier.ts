@@ -173,7 +173,7 @@ class MangroveAmplifier {
     }>;
   }> {
     const { bundleId, outboundToken } = getBundleParams.parse(data);
-    const offersOf = await this.amplifier.offersOf(bundleId);
+    const offersOf = await this.amplifier.offersOf(bundleId, outboundToken);
     const otherData = await this.amplifier.reneging(
       ethers.constants.HashZero,
       bundleId,
@@ -283,7 +283,7 @@ class MangroveAmplifier {
     const { bundleId, inboundToken, newTick, newInboundLogic, outboundToken } =
       updateBundleOfferParams.parse(data);
 
-    const offers = await this.amplifier.offersOf(bundleId);
+    const offers = await this.amplifier.offersOf(bundleId, outboundToken);
 
     const offer = offers.filter((o) => o.inbound_tkn === inboundToken)[0];
     const { offerId, tickSpacing } = offer;
