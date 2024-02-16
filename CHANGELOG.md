@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to mangrove-strats v2.0.1-0
+
 # 2.0.5-7
 
 - feat: Add `MangroveAmplifier` to support working with amplified orders on mangrove
