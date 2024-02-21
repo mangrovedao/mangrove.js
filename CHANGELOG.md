@@ -1,6 +1,7 @@
 # Next version
 
 - Upgrade to mangrove-strats v2.0.1
+- Consider deployments of mangrove-core >=2.0.0 <2.2.0 and mangrove-strats >2.0.0 <2.2.0 contracts compatible
 
 # 2.0.5-8
 

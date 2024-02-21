@@ -4,7 +4,7 @@ import loadedReliableHttpProviderOptionsByNetwork from "./constants/reliableHttp
 import loadedReliableWebSocketOptionsByNetwork from "./constants/reliableWebSocketOptionsByNetwork.json";
 import loadedKandelConfiguration from "./constants/kandelConfiguration.json";
 import loadedMangroveOrderConfiguration from "./constants/mangroveOrder.json";
-import contractPackageVersions from "./constants/contractPackageVersions.json";
+import contractVersionRanges from "./constants/contractVersionRanges.json";
 
 import { ethers } from "ethers";
 import Big from "big.js";
@@ -694,9 +694,7 @@ export function resetConfiguration(): void {
 
 function readMangroveDeploymentAddresses() {
   // Note: Consider how to expose other deployments than the primary
-  const mgvCoreVersionPattern = mgvDeployments.createContractVersionPattern(
-    contractPackageVersions["mangrove-core"],
-  );
+  const mgvCoreVersionPattern = contractVersionRanges["mangrove-core"];
   // Note: Make this configurable?
   const mgvCoreReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvCoreDeploymentsFilter = {
@@ -707,9 +705,7 @@ function readMangroveDeploymentAddresses() {
     mgvCoreDeploymentsFilter,
   );
 
-  const mgvStratsVersionPattern = mgvDeployments.createContractVersionPattern(
-    contractPackageVersions["mangrove-strats"],
-  );
+  const mgvStratsVersionPattern = contractVersionRanges["mangrove-strats"];
   // Note: Make this configurable?
   const mgvStratsReleasedFilter = undefined; // undefined => released & unreleased, true => released only, false => unreleased only
   const mgvStratsDeploymentsFilter = {
