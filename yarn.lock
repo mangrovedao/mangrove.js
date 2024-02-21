@@ -1278,12 +1278,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-strats@npm:^2.0.1-0":
-  version: 2.0.1-0
-  resolution: "@mangrovedao/mangrove-strats@npm:2.0.1-0"
+"@mangrovedao/mangrove-strats@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@mangrovedao/mangrove-strats@npm:2.0.1"
   dependencies:
     "@mangrovedao/mangrove-core": ^2.0.3
-  checksum: a2f5774c31b45f0a402bda5c3c7c975aa70ff10e00c3124f82f20eeed61b303b4b028e098c6924f221abefd770a54f57c3b7bbe1f2afe3414f4a5551f3ef4708
+  checksum: dad0262ad8c629a1760ccb7eb6433c000cbc33bd64c58fb9a3944f35619eef6a887c7e72f6e1fc59af0b91fdcea73f4a8f5d2d9e090c3de23664420e1e5546eb
   languageName: node
   linkType: hard
 
@@ -1300,7 +1300,7 @@ __metadata:
     "@mangrovedao/context-addresses": ^1.1.1
     "@mangrovedao/mangrove-core": ^2.0.3
     "@mangrovedao/mangrove-deployments": ^2.0.2-0
-    "@mangrovedao/mangrove-strats": ^2.0.1-0
+    "@mangrovedao/mangrove-strats": ^2.0.1
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^11.1.2
     "@types/big.js": ^6.1.6
