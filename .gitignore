@@ -24,7 +24,7 @@ coverage/
 cache/
 src/types/typechain/*
 !src/types/typechain/README
-src/constants/contractPackageVersions.json
+src/constants/contractVersionRanges.json
 
 # Yarn
 .yarn/*
