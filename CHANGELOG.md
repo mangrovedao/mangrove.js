@@ -1,7 +1,10 @@
 # Next version
 
-- Upgrade to mangrove-strats v2.0.1
-- Consider deployments of mangrove-core >=2.0.0 <2.2.0 and mangrove-strats >2.0.0 <2.2.0 contracts compatible
+- Upgrade to mangrove-core v2.1.0-0 (includes Blast support)
+- Upgrade to mangrove-strats v2.1.0-0 (includes Blast support)
+- Upgrade to mangrove-deployments v2.0.3-4 (includes latest Mumbai and Blast deployments)
+- Upgrade to context-addresses v1.1.3 (includes Blast tokens WBTC, WETH, and USDB)
+- Consider deployments of mangrove-core >=2.0.0 <2.2.0 and mangrove-strats >2.0.0 <2.2.0 contracts compatible (including pre-releases)
 
 # 2.0.5-8
 
