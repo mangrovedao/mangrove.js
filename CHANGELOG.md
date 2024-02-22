@@ -1,5 +1,7 @@
 # Next version
 
+- fix: Blast sepolia network name resolving to unknown
+
 # 2.0.5-9
 
 - Upgrade to mangrove-core v2.1.0-0 (includes Blast support)

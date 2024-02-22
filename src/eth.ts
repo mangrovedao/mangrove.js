@@ -114,6 +114,8 @@ export async function getProviderNetwork(
 export function getNetworkName(networkId: number): string {
   if (networkId === 31337) {
     return "local";
+  } else if (networkId === 168587773) {
+    return "blast-sepolia";
   } else {
     const networkName = ethers.providers.getNetwork(networkId).name;
     return networkName === "homestead" ? "mainnet" : networkName;
