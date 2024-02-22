@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to context-addresses v1.1.4 (includes Blast Sepolia Multicall2 address)
+
 # 2.0.5-10
 
 - fix: Blast sepolia network name resolving to unknown
