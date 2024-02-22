@@ -4,9 +4,16 @@ import { ethers } from "ethers";
 
 /**
  * Creates a dictionary of routing logics from a list of routing logics.
+ *
+ * Some routing logics may not be available on some networks, so they are optional.
  */
-export type IDsDictFromLogics<T extends AbstractRoutingLogic<any>> = {
-  [P in T as P["id"]]: P;
+export type IDsDictFromLogics<
+  TRequired extends AbstractRoutingLogic<any>,
+  TOptional extends AbstractRoutingLogic<any>,
+> = {
+  [P in TRequired as P["id"]]: P;
+} & {
+  [P in TOptional as P["id"]]: P | undefined;
 };
 
 /**

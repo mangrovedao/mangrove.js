@@ -552,15 +552,23 @@ class Market {
 
   #minVolumeAskInternal(key: RouterLogic): Big.Big {
     const config = this.config();
+    const logic = this.mgv.logics[key];
+    if (logic === undefined) {
+      throw new Error(`RouterLogic ${key} not found`);
+    }
     return config.asks.density.getRequiredOutboundForGasreq(
-      config.asks.offer_gasbase + this.mgv.logics[key].gasOverhead,
+      config.asks.offer_gasbase + logic.gasOverhead,
     );
   }
 
   #minVolumeBidInternal(key: RouterLogic): Big.Big {
     const config = this.config();
+    const logic = this.mgv.logics[key];
+    if (logic === undefined) {
+      throw new Error(`RouterLogic ${key} not found`);
+    }
     return config.bids.density.getRequiredOutboundForGasreq(
-      config.bids.offer_gasbase + this.mgv.logics[key].gasOverhead,
+      config.bids.offer_gasbase + logic.gasOverhead,
     );
   }
 

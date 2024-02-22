@@ -1,5 +1,7 @@
 # Next version
 
+- fix: Make SimpleAaveLogic optional: If the address is not available on a network, the logic will not be available.
+
 # 2.0.5-11
 
 - Upgrade to context-addresses v1.1.4 (includes Blast Sepolia Multicall2 address)
