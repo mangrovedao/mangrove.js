@@ -144,7 +144,7 @@ class Mangrove {
 
   eventEmitter: EventEmitter;
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
-  logics: IDsDictFromLogics<SimpleAaveLogic | SimpleLogic>;
+  logics: IDsDictFromLogics<SimpleLogic, SimpleAaveLogic>;
 
   static devNode: DevNode;
   static typechain = typechain;
@@ -247,15 +247,23 @@ class Mangrove {
       signer,
     );
 
-    const simpleAaveLogicAddress = Mangrove.getAddress(
-      "SimpleAaveLogic",
-      network.name,
-    );
+    let simpleAaveLogicAddress: string | undefined;
+    let simpleAaveLogic: typechain.SimpleAaveLogic | undefined;
+    try {
+      simpleAaveLogicAddress = Mangrove.getAddress(
+        "SimpleAaveLogic",
+        network.name,
+      );
 
-    const simpleAaveLogic = typechain.SimpleAaveLogic__factory.connect(
-      simpleAaveLogicAddress,
-      signer,
-    );
+      simpleAaveLogic = typechain.SimpleAaveLogic__factory.connect(
+        simpleAaveLogicAddress,
+        signer,
+      );
+    } catch {
+      logger.warn("No SimpleAaveLogic address found, AAVE disabled", {
+        contextInfo: "mangrove.base",
+      });
+    }
 
     const config = Mangrove.rawConfigToConfig(
       await readerContract.globalUnpacked(),
@@ -343,23 +351,25 @@ class Mangrove {
     orderContract: typechain.MangroveOrder;
     config: Mangrove.GlobalConfig;
     logics: {
-      aave: typechain.SimpleAaveLogic;
+      aave?: typechain.SimpleAaveLogic;
     };
   }) {
-    this.logics = {
-      aave: new SimpleAaveLogic({
-        mgv: this,
-        aaveLogic: params.logics.aave,
-      }),
-      simple: new SimpleLogic({
-        mgv: this,
-      }),
-    };
     if (!canConstructMangrove) {
       throw Error(
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)",
       );
     }
+    this.logics = {
+      aave: params.logics.aave
+        ? new SimpleAaveLogic({
+            mgv: this,
+            aaveLogic: params.logics.aave,
+          })
+        : undefined,
+      simple: new SimpleLogic({
+        mgv: this,
+      }),
+    };
     this.nativeToken = new TokenCalculations(18, 18);
     this.eventEmitter = params.eventEmitter;
     const provider = params.signer.provider;
@@ -1025,7 +1035,9 @@ class Mangrove {
   }
 
   getLogicsList(): AbstractRoutingLogic[] {
-    return Object.values(this.logics);
+    return Object.values(this.logics).filter(
+      (logic) => logic !== undefined,
+    ) as AbstractRoutingLogic[];
   }
 
   getLogicByAddress(address: string): AbstractRoutingLogic | undefined {

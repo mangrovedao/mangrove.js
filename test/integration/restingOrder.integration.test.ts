@@ -146,7 +146,7 @@ describe("RestingOrder", () => {
 
     it("should post a resting order using aave", async () => {
       // create a buy order (buy a with b)
-      const simpleAaveLogic = mgv.logics.aave.logic;
+      const simpleAaveLogic = mgv.logics.aave!.logic;
       const fundOwner = await mgv.signer.getAddress();
       const aTokenB = await Token.createTokenFromAddress(
         await simpleAaveLogic.overlying(tokenB.address),

@@ -227,17 +227,11 @@ class MangroveAmplifier {
       fundOwner: ethers.constants.AddressZero,
     });
 
-    const logicKey = Object.entries(this.mgv.logics).filter(([key, value]) => {
-      if (value.address === logicAddress) {
-        return true;
-      }
-    });
+    const logicInstance = this.mgv.getLogicByAddress(logicAddress);
 
-    if (logicKey.length === 0) {
+    if (logicInstance === undefined) {
       throw new Error("No logic found for the given address");
     }
-
-    const logicInstance = (this.mgv.logics as any)[logicKey[0][0]];
 
     return logicInstance;
   }

@@ -1801,7 +1801,7 @@ describe("Market integration tests suite", () => {
       tickSpacing: 1,
     });
     const gasreqSimple = mgv.logics.simple.gasOverhead;
-    const gasreqAave = mgv.logics.aave.gasOverhead;
+    const gasreqAave = mgv.logics.aave!.gasOverhead;
 
     const baseAsOutbound = await mgv.readerContract.minVolume(
       market.olKeyBaseQuote,
