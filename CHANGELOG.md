@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-10
+
 - fix: Blast sepolia network name resolving to unknown
 
 # 2.0.5-9
