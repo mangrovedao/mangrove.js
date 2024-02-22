@@ -25,7 +25,11 @@ async function main() {
   let mgvCoreVersionRange = ">=2.0.0 <2.2.0";
   // Once the package version moves out the range, we'll log a warning and revert to the
   // default behavior of using mangrove-deployments to generate the pattern.
-  if (!semver.satisfies(mgvCorePackageVersion, mgvCoreVersionRange)) {
+  if (
+    !semver.satisfies(mgvCorePackageVersion, mgvCoreVersionRange, {
+      includePrerelease: true,
+    })
+  ) {
     console.warn(
       `NB: The mangrove-core version ${mgvCorePackageVersion} is outside the hardcoded version range for compatible deployments: ${mgvCoreVersionRange}.`,
     );
@@ -55,7 +59,11 @@ async function main() {
   let mgvStratsVersionRange = ">2.0.0 <2.2.0";
   // Once the package version moves out the range, we'll log a warning and revert to the
   // default behavior of using mangrove-deployments to generate the pattern.
-  if (!semver.satisfies(mgvStratsPackageVersion, mgvStratsVersionRange)) {
+  if (
+    !semver.satisfies(mgvStratsPackageVersion, mgvStratsVersionRange, {
+      includePrerelease: true,
+    })
+  ) {
     console.warn(
       `NB: The mangrove-strats version ${mgvStratsPackageVersion} is outside the hardcoded version range for compatible deployments: ${mgvStratsVersionRange}.`,
     );
