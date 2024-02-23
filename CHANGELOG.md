@@ -2,6 +2,7 @@
 
 - Upgrade to mangrove-deployments v2.1.1
 - Upgrade to context-addresses v1.2.0
+- Use network names from context-addresses instead of ethers.js
 
 # 2.0.5-12
 

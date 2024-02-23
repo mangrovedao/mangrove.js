@@ -7,6 +7,7 @@ import { ethers, providers } from "ethers";
 import { Provider, Signer } from "./types";
 import { logger, logdataLimiter } from "./util/logger";
 import { readJsonWallet } from "./util/readJsonWallet";
+import * as contextAddresses from "@mangrovedao/context-addresses";
 
 export interface JsonWalletOptions {
   // local path to json wallet file
@@ -111,15 +112,24 @@ export async function getProviderNetwork(
   };
 }
 
+/**
+ * This method gets the Mangrove name for a network from its network ID.
+ *
+ * These names originated from ethers.js, but have been extended to include newer networks.
+ * See [@mangrovedao/context-addresses](https://github.com/mangrovedao/context-addresses) for the full list.
+ *
+ * @param {number} networkId The network ID.
+ * @returns {string} Returns the Mangrove name for the network.
+ * @throws {Error} Throws if the network ID is unknown.
+ */
 export function getNetworkName(networkId: number): string {
-  if (networkId === 31337) {
-    return "local";
-  } else if (networkId === 168587773) {
-    return "blast-sepolia";
-  } else {
-    const networkName = ethers.providers.getNetwork(networkId).name;
-    return networkName === "homestead" ? "mainnet" : networkName;
+  // Use the Mangrove name for the network if it exists
+  const networkName = contextAddresses.chainIdToNetworkName(networkId);
+  if (networkName !== undefined) {
+    return networkName;
   }
+
+  throw new Error(`Unknown network ID: ${networkId}`);
 }
 
 /** Debug class */
