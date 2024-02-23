@@ -112,17 +112,17 @@ export async function getProviderNetwork(
 }
 
 export function getNetworkName(networkId: number): string {
-  switch (networkId) {
-    case 238:
-      return "blast-mainnet";
-    case 31337:
-      return "local";
-    case 168587773:
-      return "blast-sepolia";
-    default:
-      const networkName = ethers.providers.getNetwork(networkId).name;
-      return networkName === "homestead" ? "mainnet" : networkName;
+  if (networkId === 238) {
+    return "blast";
   }
+  if (networkId === 31337) {
+    return "local";
+  }
+  if (networkId === 168587773) {
+    return "blast-sepolia";
+  }
+  const networkName = ethers.providers.getNetwork(networkId).name;
+  return networkName === "homestead" ? "mainnet" : networkName;
 }
 
 /** Debug class */
