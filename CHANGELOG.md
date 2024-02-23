@@ -1,5 +1,8 @@
 # Next version
 
+- Upgrade to mangrove-deployments v2.1.1
+- Upgrade to context-addresses v1.2.0
+
 # 2.0.5-12
 
 - fix: Make SimpleAaveLogic optional: If the address is not available on a network, the logic will not be available.
