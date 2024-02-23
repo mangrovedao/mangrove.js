@@ -1,5 +1,7 @@
 # Next version
 
+- Add blast mainnet to network names
+
 # 2.0.5-12
 
 - fix: Make SimpleAaveLogic optional: If the address is not available on a network, the logic will not be available.
