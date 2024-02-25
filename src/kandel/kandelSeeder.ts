@@ -28,7 +28,7 @@ class KandelSeeder {
   configuration: KandelConfiguration = new KandelConfiguration();
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
-  aaveKandelSeeder: typechain.AaveKandelSeeder;
+  aaveKandelSeeder?: typechain.AaveKandelSeeder;
   kandelSeeder: typechain.KandelSeeder;
 
   /** Constructor
@@ -45,15 +45,16 @@ class KandelSeeder {
       kandelSeederAddress,
       this.mgv.signer,
     );
-
-    const aaveKandelSeederAddress = Mangrove.getAddress(
-      "AaveKandelSeeder",
-      this.mgv.network.name,
-    );
-    this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
-      aaveKandelSeederAddress,
-      this.mgv.signer,
-    );
+    try {
+      const aaveKandelSeederAddress = Mangrove.getAddress(
+        "AaveKandelSeeder",
+        this.mgv.network.name,
+      );
+      this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
+        aaveKandelSeederAddress,
+        this.mgv.signer,
+      );
+    } catch (e) {}
   }
 
   /** Create a new Kandel instance.
@@ -69,8 +70,12 @@ class KandelSeeder {
       );
     }
 
+    if (seed.onAave && !this.aaveKandelSeeder) {
+      throw Error("AaveKandelSeeder is not available on this network.");
+    }
+
     const response = seed.onAave
-      ? this.aaveKandelSeeder.sow(
+      ? this.aaveKandelSeeder!.sow(
           seed.market.olKeyBaseQuote,
           seed.liquiditySharing,
           overrides,
@@ -107,9 +112,12 @@ class KandelSeeder {
     onAave: boolean;
     market: Market;
   }) {
+    if (params.onAave && !this.aaveKandelSeeder) {
+      throw Error("AaveKandelSeeder is not available on this network.");
+    }
     const events = this.tradeEventManagement.getContractEventsFromReceipt(
       params.receipt,
-      params.onAave ? this.aaveKandelSeeder : this.kandelSeeder,
+      params.onAave ? this.aaveKandelSeeder! : this.kandelSeeder,
     );
     for (const evt of events) {
       const name = "event" in evt ? evt.event : "name" in evt ? evt.name : null;
@@ -143,9 +151,12 @@ class KandelSeeder {
    * @returns The gasreq for the Kandel type.
    */
   public async getDefaultGasreq(onAave: boolean) {
+    if (onAave && !this.aaveKandelSeeder) {
+      throw Error("AaveKandelSeeder is not available on this network.");
+    }
     return (
       onAave
-        ? await this.aaveKandelSeeder.KANDEL_GASREQ()
+        ? await this.aaveKandelSeeder!.KANDEL_GASREQ()
         : await this.kandelSeeder.KANDEL_GASREQ()
     ).toNumber();
   }
