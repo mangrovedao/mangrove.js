@@ -36,8 +36,17 @@ describe(`${KandelConfiguration.prototype.constructor.name} unit tests suite`, (
                   baseQuoteTickOffset: undefined,
                 },
               },
-              FailingConfig1: { "1": {} },
-              FailingConfig2: { "2": { minimumBasePerOfferFactor: 1 } },
+              FailingConfig1: {
+                "1": {
+                  minimumBasePerOfferFactor: undefined,
+                },
+              },
+              FailingConfig2: {
+                "2": {
+                  minimumQuotePerOfferFactor: undefined,
+                  minimumBasePerOfferFactor: 1,
+                },
+              },
               FailingConfig3: {
                 "3": {
                   minimumBasePerOfferFactor: 1,

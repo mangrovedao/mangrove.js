@@ -1,6 +1,8 @@
 # Next version
 
 - Add mangrove amplifier as export on `index.ts`
+- Add defaults for `minimum{Base,Quote}PerOfferFactor` in the Kandel configuration
+- Add initial configuration for Blast and Blast Sepolia. For now, they use the defaults, so have only be added to make it easy to find and modify later if needed.
 
 # 2.0.5-14
 
