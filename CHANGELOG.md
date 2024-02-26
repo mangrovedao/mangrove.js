@@ -1,5 +1,7 @@
 # Next version
 
+- Add mangrove amplifier as export on `index.ts`
+
 # 2.0.5-14
 
 - fix: Handle missing case where AaveKandel was assumed available

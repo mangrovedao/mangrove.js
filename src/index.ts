@@ -184,3 +184,5 @@ export type {
   KandelNetworkConfiguration,
   Configuration,
 };
+
+export * from "./amplifier/mangroveAmplifier";
