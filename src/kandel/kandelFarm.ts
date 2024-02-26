@@ -3,6 +3,7 @@ import { typechain } from "../types";
 
 import TradeEventManagement from "../util/tradeEventManagement";
 import { OLKeyStruct } from "../types/typechain/Mangrove";
+import { logger } from "../util/logger";
 
 /**
  * @title Repository for Kandel instances.
@@ -11,7 +12,7 @@ class KandelFarm {
   mgv: Mangrove;
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
-  aaveKandelSeeder: typechain.AaveKandelSeeder;
+  aaveKandelSeeder?: typechain.AaveKandelSeeder;
   kandelSeeder: typechain.KandelSeeder;
 
   /** Constructor
@@ -29,14 +30,20 @@ class KandelFarm {
       this.mgv.signer,
     );
 
-    const aaveKandelSeederAddress = Mangrove.getAddress(
-      "AaveKandelSeeder",
-      this.mgv.network.name,
-    );
-    this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
-      aaveKandelSeederAddress,
-      this.mgv.signer,
-    );
+    try {
+      const aaveKandelSeederAddress = Mangrove.getAddress(
+        "AaveKandelSeeder",
+        this.mgv.network.name,
+      );
+      this.aaveKandelSeeder = typechain.AaveKandelSeeder__factory.connect(
+        aaveKandelSeederAddress,
+        this.mgv.signer,
+      );
+    } catch (e) {
+      logger.warn("No AaveKandelSeeder address found, AAVE Kandel disabled", {
+        contextInfo: "kandelFarm.constructor",
+      });
+    }
   }
 
   /**
@@ -58,6 +65,10 @@ class KandelFarm {
     } | null;
     onAave?: boolean;
   }) {
+    if (filter?.onAave && !this.aaveKandelSeeder) {
+      throw Error("AaveKandelSeeder is not available on this network.");
+    }
+
     let olKey = filter?.baseQuoteOlKey;
     if (!olKey) {
       const offerList = filter?.baseQuoteOfferList;
@@ -102,8 +113,9 @@ class KandelFarm {
             };
           })
         : [];
+
     const aaveKandels =
-      filter?.onAave == null || filter.onAave == true
+      this.aaveKandelSeeder && (filter?.onAave == null || filter.onAave == true)
         ? (
             await this.aaveKandelSeeder.queryFilter(
               this.aaveKandelSeeder.filters.NewAaveKandel(

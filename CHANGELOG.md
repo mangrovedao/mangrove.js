@@ -1,11 +1,13 @@
 # Next version
 
+- fix: Handle missing case where AaveKandel was assumed available
+
 # 2.0.5-13
 
 - Upgrade to mangrove-deployments v2.1.1
 - Upgrade to context-addresses v1.2.0
 - Use network names from context-addresses instead of ethers.js
-- Make Kandel Aave optionnal
+- Make AaveKandel optional: If the `AaveKandelSeeder` address is not available on a network, Aave Kandel will not be available.
 
 # 2.0.5-12
 
