@@ -90,6 +90,7 @@ import { JsonWalletOptions } from "./eth";
 import MangroveEventSubscriber from "./mangroveEventSubscriber";
 import { prettyPrintFilter } from "./util/prettyPrint";
 import { Density } from "./util/Density";
+import MangroveAmplifier from "./amplifier/mangroveAmplifier";
 
 // Turn off Ethers.js warnings
 // ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
@@ -185,4 +186,6 @@ export type {
   Configuration,
 };
 
-export * from "./amplifier/mangroveAmplifier";
+// Mangrove Amplifier
+
+export { MangroveAmplifier };
