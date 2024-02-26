@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-17
+
 - Remove amplifier as param to class `MangroveAmplifier`
 
 # 2.0.5-16
