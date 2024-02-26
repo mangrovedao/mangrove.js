@@ -77,6 +77,29 @@
         }
       }
     },
+    "blast-sepolia": {
+      "minimumBasePerOfferFactor": 10,
+      "minimumQuotePerOfferFactor": 10,
+      "aaveEnabled": false,
+      "markets": {
+        "WETH.e": {
+          "USDB.e": {
+            "1": {}
+          }
+        },
+        "WBTC.T/MGV": {
+          "USDB.e": {
+            "1": {}
+          }
+        }
+      }
+    },
+    "blast": {
+      "minimumBasePerOfferFactor": 10,
+      "minimumQuotePerOfferFactor": 10,
+      "aaveEnabled": false,
+      "markets": {}
+    },
     "local": {
       "markets": {
         "TokenA": {
