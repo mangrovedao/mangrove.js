@@ -1,5 +1,7 @@
 {
   "gaspriceFactor": 10,
+  "minimumBasePerOfferFactor": 10,
+  "minimumQuotePerOfferFactor": 10,
   "maxOffersInPopulateChunk": 198,
   "maxOffersInRetractChunk": 198,
   "aaveEnabled": false,
