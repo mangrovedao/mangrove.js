@@ -1,6 +1,7 @@
 # Next version
 
 - Remove amplifier as param to class `MangroveAmplifier`
+- fix: `Density.getMaximumGasForRawOutbound` can now handle density = 0
 
 # 2.0.5-16
 
