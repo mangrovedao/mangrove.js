@@ -4,7 +4,8 @@
     "node_modules/ethers/**/*",
     "src/types/Mangrove.ts",
     "src/types/**/*",
-    "src/types/typechain/Mangrove.ts"
+    "src/types/typechain/Mangrove.ts",
+    "src/types/typechain/MangroveAmplifier.ts"
   ],
   "intentionallyNotExported": [
     "PrettyPrint",
@@ -50,7 +51,8 @@
     "AbstractRoutingLogic",
     "SimpleAaveLogic",
     "SimpleLogic",
-    "IDsDictFromLogics"
+    "IDsDictFromLogics",
+    "MangroveAmplifier"
   ],
   "out": "docs",
   "excludePrivate": true,
