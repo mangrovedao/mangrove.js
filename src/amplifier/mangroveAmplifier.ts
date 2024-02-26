@@ -78,12 +78,14 @@ class MangroveAmplifier {
   mgv: Mangrove;
   amplifier: typechain.MangroveAmplifier;
 
-  constructor(params: {
-    mgv: Mangrove;
-    amplifier: typechain.MangroveAmplifier;
-  }) {
+  constructor(params: { mgv: Mangrove }) {
     this.mgv = params.mgv;
-    this.amplifier = params.amplifier;
+
+    const amplifierContract = typechain.MangroveAmplifier__factory.connect(
+      this.mgv.getAddress("MangroveAmplifier"),
+      this.mgv.signer,
+    );
+    this.amplifier = amplifierContract;
   }
 
   /**

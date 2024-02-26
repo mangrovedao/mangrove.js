@@ -66,12 +66,7 @@ describe("Amplifier integration tests suite", () => {
       provider: mgv.provider,
     });
 
-    const amplifierContract = typechain.MangroveAmplifier__factory.connect(
-      mgv.getAddress("MangroveAmplifier"),
-      mgv.signer,
-    );
-
-    amplifier = new MangroveAmplifier({ mgv, amplifier: amplifierContract });
+    amplifier = new MangroveAmplifier({ mgv });
 
     mgvTestUtil.setConfig(mgv, this.accounts);
 

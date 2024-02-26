@@ -1,5 +1,7 @@
 # Next version
 
+- Remove amplifier as param to class `MangroveAmplifier`
+
 # 2.0.5-16
 
 - Add mangrove amplifier as export on `index.ts`
