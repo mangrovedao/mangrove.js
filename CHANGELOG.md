@@ -1,5 +1,7 @@
 # Next version
 
+- Add mangrove amplifier as export on `index.ts`
+
 # 2.0.5-15
 
 - Add defaults for `minimum{Base,Quote}PerOfferFactor` in the Kandel configuration

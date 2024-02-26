@@ -237,11 +237,11 @@ class MangroveAmplifier {
   }
 
   /**
-   * @param bundleId the bundle identifier
-   * @param outboundToken the outbound token of the bundle
-   * @param outboundVolume the new volume that each offer of the bundle should now offer. Use 0 to skip volume update.
-   * @param updateExpiry whether the update also changes expiry date of the bundle
-   * @param expiryDate the new date (if `updateExpiry` is true) for the expiry of the offers of the bundle. 0 for no expiry
+   * @param data.bundleId the bundle identifier
+   * @param data.outboundToken the outbound token of the bundle
+   * @param data.outboundVolume the new volume that each offer of the bundle should now offer. Use 0 to skip volume update.
+   * @param data.updateExpiry whether the update also changes expiry date of the bundle
+   * @param data.expiryDate the new date (if `updateExpiry` is true) for the expiry of the offers of the bundle. 0 for no expiry
    */
   public async updateBundle(
     data: z.input<typeof updateBundleParams>,
@@ -373,8 +373,8 @@ class MangroveAmplifier {
 
   /**
    * Retracts a bundle, removing all offers
-   * @param bundleId the bundle identifier
-   * @param token the token that the bundle was for
+   * @param data.bundleId the bundle identifier
+   * @param data.outboundToken the token that the bundle was for
    */
   public async retractBundle(
     data: z.input<typeof retractBundleParams>,
