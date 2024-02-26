@@ -1,5 +1,5 @@
 import Big from "big.js";
-import { BigNumber, BigNumberish } from "ethers";
+import { BigNumber, BigNumberish, constants } from "ethers";
 import * as DensityLib from "./coreCalculations/DensityLib";
 
 const _2pow32 = Big(2).pow(32);
@@ -131,6 +131,9 @@ export class Density {
    * @returns the maximum amount of gas an offer may require for the given raw amount of outbound tokens
    */
   getMaximumGasForRawOutbound(rawOutboundAmt: BigNumberish): BigNumber {
+    if (this.isZero()) {
+      return constants.MaxUint256;
+    }
     const density96X32 = DensityLib.to96X32(this.#rawDensity);
     const densityDecimal = Big(density96X32.toString()).div(_2pow32);
     return BigNumber.from(

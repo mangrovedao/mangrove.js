@@ -2,7 +2,9 @@
 
 # 2.0.5-17
 
+- fix: bump mangrove-deployments to fix KandelLib
 - Remove amplifier as param to class `MangroveAmplifier`
+- fix: `Density.getMaximumGasForRawOutbound` can now handle density = 0
 
 # 2.0.5-16
 
