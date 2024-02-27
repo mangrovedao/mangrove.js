@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-18
+
 - fix: bump mangrove-deployments to fix KandelLib
 
 # 2.0.5-17
