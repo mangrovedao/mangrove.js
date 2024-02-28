@@ -3,6 +3,7 @@ import Token from "../token";
 import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
 import configuration from "../configuration";
+import { Big } from "big.js";
 
 /**
  * @title SimpleLogic
@@ -31,5 +32,9 @@ export class SimpleLogic extends AbstractRoutingLogic<"simple"> {
 
   protected async overlyingFromNetwork(token: Token): Promise<Token> {
     return token;
+  }
+
+  async balanceOfFromLogic(token: Token, fundOwner: string): Promise<Big> {
+    return token.balanceOf(fundOwner);
   }
 }

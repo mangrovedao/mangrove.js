@@ -9,11 +9,19 @@
     "restingOrderGasreq": 600000,
     "takeGasOverhead": 500000
   },
+  "orbit": {
+    "restingOrderGasreq": 600000,
+    "takeGasOverhead": 500000
+  },
   "networks": {
     "maticmum": {
       "simple": {
         "restingOrderGasreq": 500000,
         "takeGasOverhead": 300000
+      },
+      "orbit": {
+        "restingOrderGasreq": 600000,
+        "takeGasOverhead": 500000
       },
       "aave": {
         "restingOrderGasreq": 600000,

@@ -1,3 +1,4 @@
+import { Big } from "big.js";
 import configuration from "../configuration";
 import Token from "../token";
 import { typechain } from "../types";
@@ -39,5 +40,10 @@ export class OrbitLogic extends AbstractRoutingLogic<"orbit"> {
     return this.logic.overlying(token.address).then((res) => {
       return Token.createTokenFromAddress(res, this.mgv);
     });
+  }
+
+  async balanceOfFromLogic(token: Token, fundOwner: string): Promise<Big> {
+    const amount = await this.logic.balanceLogic(token.address, fundOwner);
+    return new Big(amount.toString()).div(new Big(10).pow(token.decimals));
   }
 }

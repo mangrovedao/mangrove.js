@@ -29,13 +29,18 @@
           "$ref": "#/definitions/RouterLogicOverhead",
           "description": "Properties related to Aave routing logic"
         },
+        "orbit": {
+          "type": "object",
+          "$ref": "#/definitions/RouterLogicOverhead",
+          "description": "Properties related to Orbit routing logic"
+        },
         "simple": {
           "type": "object",
           "$ref": "#/definitions/RouterLogicOverhead",
           "description": "Properties related to Simple routing logic"
         }
       },
-      "required": ["restingOrderGaspriceFactor", "aave"]
+      "required": ["restingOrderGaspriceFactor", "aave", "orbit"]
     }
   },
   "type": "object",

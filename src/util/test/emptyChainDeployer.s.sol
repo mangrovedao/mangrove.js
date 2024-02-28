@@ -22,12 +22,14 @@ import {SmartRouter} from "@mgv-strats/src/strategies/routers/SmartRouter.sol";
 import {IERC20} from "@mgv/lib/IERC20.sol";
 import {IPoolAddressesProvider} from "@mgv-strats/src/strategies/vendor/aave/v3/contracts/interfaces/IPoolAddressesProvider.sol";
 import {SimpleAaveLogic} from "@mgv-strats/src/strategies/routing_logic/SimpleAaveLogic.sol";
+import {OrbitDeployer} from "@mgv-strats/src/toy_strategies/utils/OrbitDeployer.sol";
+import {OrbitLogic} from "@mgv-strats/src/strategies/routing_logic/orbit/OrbitLogic.sol";
 
 /* 
 This script prepares a local chain for testing by mangrove.js.
 */
 
-contract EmptyChainDeployer is Deployer {
+contract EmptyChainDeployer is Deployer, OrbitDeployer {
   TestToken public tokenA;
   TestToken public tokenB;
   TestToken public tokenC;
@@ -56,6 +58,10 @@ contract EmptyChainDeployer is Deployer {
 
     IMangrove mgv = mgvDeployer.mgv();
     MgvReader mgvReader = mgvDeployer.reader();
+
+    vm.startBroadcast();
+    deployOrbit();
+    vm.stopBroadcast();
 
     broadcast();
     mgv.setUseOracle(false);
@@ -129,6 +135,15 @@ contract EmptyChainDeployer is Deployer {
     );
     fork.set("WETH", weth);
 
+    // vm.startBroadcast();
+    // addMarket(tokenA);
+    // addMarket(tokenB);
+    // addMarket(tokenC);
+    // addMarket(IERC20(dai));
+    // addMarket(IERC20(usdc));
+    // addMarket(IERC20(weth));
+    // vm.stopBroadcast();
+
     broadcast();
     simpleTestMaker = new SimpleTestMaker({
       _mgv: IMangrove(payable(mgv)),
@@ -188,6 +203,10 @@ contract EmptyChainDeployer is Deployer {
       2 // variable interest rate mode
     );
     fork.set("SimpleAaveLogic", address(simpleAaveLogic));
+
+    broadcast();
+    OrbitLogic orbitLogic = new OrbitLogic(spaceStation);
+    fork.set("OrbitLogic", address(orbitLogic));
 
     
     KandelSeederDeployer kandelSeederDeployer = new KandelSeederDeployer();
