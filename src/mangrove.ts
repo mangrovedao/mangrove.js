@@ -42,6 +42,7 @@ import {
   IDsDictFromLogics,
 } from "./logics/AbstractRoutingLogic";
 import { SimpleLogic } from "./logics/SimpleLogic";
+import { OrbitLogic } from "./logics/OrbitLogic";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -144,7 +145,7 @@ class Mangrove {
 
   eventEmitter: EventEmitter;
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
-  logics: IDsDictFromLogics<SimpleLogic, SimpleAaveLogic>;
+  logics: IDsDictFromLogics<SimpleLogic, SimpleAaveLogic | OrbitLogic>;
 
   static devNode: DevNode;
   static typechain = typechain;
@@ -265,6 +266,21 @@ class Mangrove {
       });
     }
 
+    let orbitLogicAddress: string | undefined;
+    let orbitLogic: typechain.OrbitLogic | undefined;
+    try {
+      orbitLogicAddress = Mangrove.getAddress("OrbitLogic", network.name);
+
+      orbitLogic = typechain.OrbitLogic__factory.connect(
+        orbitLogicAddress,
+        signer,
+      );
+    } catch {
+      logger.warn("No OrbitLogic address found, Orbit disabled", {
+        contextInfo: "mangrove.base",
+      });
+    }
+
     const config = Mangrove.rawConfigToConfig(
       await readerContract.globalUnpacked(),
     );
@@ -296,6 +312,7 @@ class Mangrove {
       config,
       logics: {
         aave: simpleAaveLogic,
+        orbit: orbitLogic,
       },
     });
 
@@ -352,6 +369,7 @@ class Mangrove {
     config: Mangrove.GlobalConfig;
     logics: {
       aave?: typechain.SimpleAaveLogic;
+      orbit?: typechain.OrbitLogic;
     };
   }) {
     if (!canConstructMangrove) {
@@ -369,6 +387,12 @@ class Mangrove {
       simple: new SimpleLogic({
         mgv: this,
       }),
+      orbit: params.logics.orbit
+        ? new OrbitLogic({
+            mgv: this,
+            orbitLogic: params.logics.orbit,
+          })
+        : undefined,
     };
     this.nativeToken = new TokenCalculations(18, 18);
     this.eventEmitter = params.eventEmitter;

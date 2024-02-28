@@ -6,11 +6,11 @@ import type { Prettify } from "../util/types";
 import { AbstractRoutingLogic } from "./AbstractRoutingLogic";
 
 /**
- * @title SimpleAaveLogic
- * @desc Defines the interaction for Aave routing logic.
+ * @title OrbitLogic
+ * @desc Defines the interaction for Orbit routing logic.
  */
-export class SimpleAaveLogic extends AbstractRoutingLogic<"aave"> {
-  logic: typechain.SimpleAaveLogic;
+export class OrbitLogic extends AbstractRoutingLogic<"orbit"> {
+  logic: typechain.OrbitLogic;
 
   public get gasOverhead(): number {
     return configuration.mangroveOrder.getRestingOrderGasreq(
@@ -22,18 +22,18 @@ export class SimpleAaveLogic extends AbstractRoutingLogic<"aave"> {
   constructor(
     params: Prettify<
       Pick<ConstructorParameters<typeof AbstractRoutingLogic>[0], "mgv"> & {
-        aaveLogic: typechain.SimpleAaveLogic;
+        orbitLogic: typechain.OrbitLogic;
       }
     >,
   ) {
     super({
-      id: "aave",
-      title: "Simple Aave Logic",
-      description: "Pull and push tokens directly from your Aave positions.",
+      id: "orbit",
+      title: "Orbit Logic",
+      description: "Pull and push tokens directly from your Orbit positions.",
       mgv: params.mgv,
-      address: params.aaveLogic.address,
+      address: params.orbitLogic.address,
     });
-    this.logic = params.aaveLogic;
+    this.logic = params.orbitLogic;
   }
 
   protected async overlyingFromNetwork(token: Token): Promise<Token> {

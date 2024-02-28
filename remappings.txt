@@ -9,3 +9,7 @@ ds-test/=node_modules/@mangrovedao/mangrove-core/lib/forge-std/lib/ds-test/src
 @mgv-strats/lib/=node_modules/@mangrovedao/mangrove-strats/lib/
 @mgv-strats/test/=node_modules/@mangrovedao/mangrove-strats/test/
 @mgv-strats/script/=node_modules/@mangrovedao/mangrove-strats/script/
+
+
+@openzeppelin/contracts/=node_modules/@mangrovedao/mangrove-strats/lib/openzeppelin/contracts/
+@orbit-protocol/contracts/=node_modules/@mangrovedao/mangrove-strats/lib/orbit-protocol/contracts/

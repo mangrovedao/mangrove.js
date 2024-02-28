@@ -1,5 +1,7 @@
 # Next version
 
+- Add orbit logic to mangrove js
+
 # 2.0.5-19
 
 - Bump `mangrove-deployments` version

@@ -52,7 +52,8 @@
     "SimpleAaveLogic",
     "SimpleLogic",
     "IDsDictFromLogics",
-    "MangroveAmplifier"
+    "MangroveAmplifier",
+    "OrbitLogic"
   ],
   "out": "docs",
   "excludePrivate": true,

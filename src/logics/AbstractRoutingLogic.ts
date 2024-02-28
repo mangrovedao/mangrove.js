@@ -106,4 +106,9 @@ export abstract class AbstractRoutingLogic<TId extends string = string> {
     const _token = await this.overlying(token);
     return _token.address !== ethers.constants.AddressZero;
   }
+
+  abstract balanceOfFromLogic(
+    token: Token,
+    fundOwner: string,
+  ): Promise<Big.Big>;
 }
