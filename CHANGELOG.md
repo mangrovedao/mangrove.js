@@ -1,5 +1,7 @@
 # Next version
 
+- Fix cashness for blast tokens
+
 # 2.0.5-20
 
 - Add orbit logic to mangrove js
