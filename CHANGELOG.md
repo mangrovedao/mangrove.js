@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-19
+
 - Bump `mangrove-deployments` version
 
 # 2.0.5-18
