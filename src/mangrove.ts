@@ -1048,6 +1048,7 @@ class Mangrove {
   ): { base: Token; quote: Token } {
     let cash0 = configuration.tokens.getCashness(token0.id);
     let cash1 = configuration.tokens.getCashness(token1.id);
+
     if (cash0 === undefined || cash1 === undefined) {
       cash0 = cash1 = 0;
     }
