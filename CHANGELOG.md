@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-26
+
 # 2.0.5-25
 
 - Upgrade to mangrove-deployments v2.2.1-0 (Fixes issue with Kandel on Blast)
