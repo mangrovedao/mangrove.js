@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-24
+
 - Upgrade to mangrove-deployments v2.2.1-0 (includes Blast Kandel on mainnet)
 
 # 2.0.5-23
