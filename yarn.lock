@@ -1243,47 +1243,38 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/context-addresses@npm:^1.1.4":
-  version: 1.1.4
-  resolution: "@mangrovedao/context-addresses@npm:1.1.4"
+"@mangrovedao/context-addresses@npm:^1.3.2":
+  version: 1.3.2
+  resolution: "@mangrovedao/context-addresses@npm:1.3.2"
   dependencies:
     semver: ^7.5.4
-  checksum: 358c1dda7d3453a748e91aa1b9bfbe3f8db9364495dc1a98e0d0f4e172db229fb9c17b12a102976935c5ef2886da3f943a86a0136498b69cd07ead34712d2930
+  checksum: 2d347a3673a85a1b3eba8bfc4413f6ae588910b0f787bd06c36a62255f77b45ac1106022ed6241f032d59333e0560a81b1f08f2526406e69133a848e2e45d170
   languageName: node
   linkType: hard
 
-"@mangrovedao/context-addresses@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "@mangrovedao/context-addresses@npm:1.2.0"
+"@mangrovedao/mangrove-core@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "@mangrovedao/mangrove-core@npm:2.1.1"
+  checksum: b09c0bc7c5f89f607af59fcce77e0b182e42ce326b8023ceafedcb27a0d70476055a771aceb0337ba328623e2e1106bcc12a2cbf4423e93dd869f18744208be6
+  languageName: node
+  linkType: hard
+
+"@mangrovedao/mangrove-deployments@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@mangrovedao/mangrove-deployments@npm:2.2.0"
   dependencies:
+    "@mangrovedao/context-addresses": ^1.3.2
     semver: ^7.5.4
-  checksum: d6ab9384c2100163f86cae53d96f7ecdfa5ac51569ab4491622895345f339128560032d56462e958eeb09916463129d250b32198e3276e11f92aec91a9f96e20
+  checksum: d9b5cfb25855a0352fa11adf7b3db4a6dd8957530d675ba3713f1cf46b478c393498aa01b5d1ce408e27591de76b4a1b6a5ac2d79ff0f66615a905e988d789fd
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-core@npm:^2.1.0-0":
-  version: 2.1.0-0
-  resolution: "@mangrovedao/mangrove-core@npm:2.1.0-0"
-  checksum: 5a5e3e00bb72111309408c4fcd401ed9e2ddfdf85b8401291a09d9d110df9ffb71a25660719a536a1e4b25bbc37fdddcece02212217c373c41c219b2a613e1d6
-  languageName: node
-  linkType: hard
-
-"@mangrovedao/mangrove-deployments@npm:^2.1.4":
-  version: 2.1.4
-  resolution: "@mangrovedao/mangrove-deployments@npm:2.1.4"
+"@mangrovedao/mangrove-strats@npm:^2.1.0-3":
+  version: 2.1.0-3
+  resolution: "@mangrovedao/mangrove-strats@npm:2.1.0-3"
   dependencies:
-    "@mangrovedao/context-addresses": ^1.1.4
-    semver: ^7.5.4
-  checksum: 0fd817caec5140a24f000e307fbb49ea54a15e901184d8327b046011af002924fe72b9a8b8907f923d0741e986b15ba813a89bcdef948c6cf3575d6379603348
-  languageName: node
-  linkType: hard
-
-"@mangrovedao/mangrove-strats@npm:^2.1.0-2":
-  version: 2.1.0-2
-  resolution: "@mangrovedao/mangrove-strats@npm:2.1.0-2"
-  dependencies:
-    "@mangrovedao/mangrove-core": ^2.1.0-0
-  checksum: bd126799944233efc1ed28bc1ab207997f8648be0fadba3ad484cbfeeb64d0eba29fd3b7f9c01752aaa18afc4f4c3c3bdb37de67505e4b9e959c45567bfddd12
+    "@mangrovedao/mangrove-core": ^2.1.1
+  checksum: 4115c799d1d3ce879182accb4a7d9a998e35ec433c2086b913391148ead92774f3d1c781d6e868667331416168bf55011b4a84aa7b401e1ce3677cefb2ba8435
   languageName: node
   linkType: hard
 
@@ -1297,10 +1288,10 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/context-addresses": ^1.2.0
-    "@mangrovedao/mangrove-core": ^2.1.0-0
-    "@mangrovedao/mangrove-deployments": ^2.1.4
-    "@mangrovedao/mangrove-strats": ^2.1.0-2
+    "@mangrovedao/context-addresses": ^1.3.2
+    "@mangrovedao/mangrove-core": ^2.1.1
+    "@mangrovedao/mangrove-deployments": ^2.2.0
+    "@mangrovedao/mangrove-strats": ^2.1.0-3
     "@mangrovedao/reliable-event-subscriber": 1.1.29
     "@typechain/ethers-v5": ^11.1.2
     "@types/big.js": ^6.1.6
