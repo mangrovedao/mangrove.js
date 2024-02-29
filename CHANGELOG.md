@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to context-addresses v1.3.3 (includes Blast mainnet Multicall2 address)
+
 # 2.0.5-22
 
 - Upgrade to context-addresses v1.3.2 (includes Blast mainnet addresses)
