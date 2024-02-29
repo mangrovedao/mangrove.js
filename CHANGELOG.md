@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-22
+
 - Upgrade to context-addresses v1.3.2 (includes Blast mainnet addresses)
 - Upgrade to mangrove-core v2.1.1 (includes Blast support)
 - Upgrade to mangrove-strats v2.1.0-3 (includes Blast support)
