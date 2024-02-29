@@ -1,5 +1,10 @@
 # Next version
 
+- Upgrade to context-addresses v1.3.2 (includes Blast mainnet addresses)
+- Upgrade to mangrove-core v2.1.1 (includes Blast support)
+- Upgrade to mangrove-strats v2.1.0-3 (includes Blast support)
+- Upgrade to mangrove-deployments v2.2.0 (includes Blast deployments and OrbitLogic support)
+
 # 2.0.5-21
 
 - Fix cashness for blast tokens
