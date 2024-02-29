@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to mangrove-deployments v2.2.1-0 (includes Blast Kandel on mainnet)
+
 # 2.0.5-23
 
 - Upgrade to context-addresses v1.3.3 (includes Blast mainnet Multicall2 address)
