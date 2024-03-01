@@ -1252,12 +1252,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/context-addresses@npm:^1.3.3":
-  version: 1.3.3
-  resolution: "@mangrovedao/context-addresses@npm:1.3.3"
+"@mangrovedao/context-addresses@npm:^1.3.4":
+  version: 1.3.4
+  resolution: "@mangrovedao/context-addresses@npm:1.3.4"
   dependencies:
     semver: ^7.5.4
-  checksum: b51a50970b7eec8a54c5ccbdf4ca6da7fe8c52b3121a598572b9b1eb5af39567fc2c473c1349361c86abe4439ff0582c0f7dfb7141734dd6a00df2683dab931b
+  checksum: bbe6cd76dfdb4aa75f8502f58ef3edd841ccc3650f26be7fde887060070ef0968a457221e5640c8dbad9af6b9205d708a47e10a2e88b1372b1baa8708eb74435
   languageName: node
   linkType: hard
 
@@ -1297,7 +1297,7 @@ __metadata:
     "@ethersproject/experimental": ^5.7.0
     "@ethersproject/hardware-wallets": ^5.7.0
     "@ethersproject/providers": ^5.7.2
-    "@mangrovedao/context-addresses": ^1.3.3
+    "@mangrovedao/context-addresses": ^1.3.4
     "@mangrovedao/mangrove-core": ^2.1.1
     "@mangrovedao/mangrove-deployments": ^2.2.1-5
     "@mangrovedao/mangrove-strats": ^2.1.0-3
