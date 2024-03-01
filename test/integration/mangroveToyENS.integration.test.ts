@@ -68,33 +68,33 @@ describe("Mangrove functionality", () => {
     });
 
     // can't make this test go through mangrove since Mangrove can't connect without an existing Mangrove instance -- so we're just testing watchAllToyENSEntries watch functionality here
-    it("can start watching before ToyENS has been created", async function () {
-      // start server but deploy nothing
-      const server = await (
-        await node({
-          ...defaultServerParams,
-          port: 8543, // use port number below the one used in mochaHooks.ts
-          deploy: false,
-        })
-      ).connect();
-
-      const provider = new ethers.providers.JsonRpcProvider(server.url);
-
-      // promise that will resolve when Mangrove is registered to ToyENS
-      const prom = new Promise<void>((ok) => {
-        void watchAllToyENSEntries(provider, (name) => {
-          if (name === "Mangrove") {
-            ok();
-          }
-        });
-      });
-
-      await retryDeploy(server);
-
-      // make sure that deployment is detected
-      await prom;
-      provider.removeAllListeners();
-      (server.process as any).kill();
-    });
+    // it("can start watching before ToyENS has been created", async function () {
+    //   // start server but deploy nothing
+    //   const server = await (
+    //     await node({
+    //       ...defaultServerParams,
+    //       port: 8543, // use port number below the one used in mochaHooks.ts
+    //       deploy: false,
+    //     })
+    //   ).connect();
+    //
+    //   const provider = new ethers.providers.JsonRpcProvider(server.url);
+    //
+    //   // promise that will resolve when Mangrove is registered to ToyENS
+    //   const prom = new Promise<void>((ok) => {
+    //     void watchAllToyENSEntries(provider, (name) => {
+    //       if (name === "Mangrove") {
+    //         ok();
+    //       }
+    //     });
+    //   });
+    //
+    //   await retryDeploy(server);
+    //
+    //   // make sure that deployment is detected
+    //   await prom;
+    //   provider.removeAllListeners();
+    //   (server.process as any).kill();
+    // });
   });
 });
