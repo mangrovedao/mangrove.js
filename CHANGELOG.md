@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to context-addresses v1.3.4 (includes Blast mainnet Meta stree wrapper addresses address)
+
 # 2.0.5-30
 
 - Upgrade to mangrove-deployments v2.2.1-5 (Added orbit mainnet)
