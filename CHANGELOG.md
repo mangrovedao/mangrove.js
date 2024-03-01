@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to mangrove-deployments v2.2.1-5 (Added orbit mainnet)
+
 # 2.0.5-29
 
 - Bump: reliable-event-subscriber v1.1.30
