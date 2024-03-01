@@ -1,5 +1,7 @@
 # Next version
 
+- Upgrade to mangrove-deployments v2.2.1-2 (Fixes issue with blast points)
+
 # 2.0.5-26
 
 # 2.0.5-25
