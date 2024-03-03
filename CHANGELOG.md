@@ -1,5 +1,7 @@
 # Next version
 
+- Add WPUNKS to tokens.json
+
 # 2.0.5-31
 
 - Upgrade to context-addresses v1.3.4 (includes Blast mainnet Meta stree wrapper addresses address)
