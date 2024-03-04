@@ -2,7 +2,7 @@
   "$schema": "./schema/mangroveOrder.json",
   "restingOrderGaspriceFactor": 5,
   "simple": {
-    "restingOrderGasreq": 500000,
+    "restingOrderGasreq": 200000,
     "takeGasOverhead": 300000
   },
   "aave": {
