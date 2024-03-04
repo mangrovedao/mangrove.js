@@ -74,7 +74,7 @@ describe("Configuration unit tests suite", () => {
   it("can read mangroveOrder config", () => {
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("local"),
-      500000,
+      200000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("local", "aave"),
