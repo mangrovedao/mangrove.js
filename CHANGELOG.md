@@ -1,5 +1,7 @@
 # Next version
 
+- fix: add nonce manager
+
 # 2.0.5-33
 
 # 2.0.5-32
