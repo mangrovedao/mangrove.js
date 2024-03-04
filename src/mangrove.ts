@@ -43,6 +43,7 @@ import {
 } from "./logics/AbstractRoutingLogic";
 import { SimpleLogic } from "./logics/SimpleLogic";
 import { OrbitLogic } from "./logics/OrbitLogic";
+import { NonceManager } from "@ethersproject/experimental";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -185,7 +186,9 @@ class Mangrove {
       };
     }
 
-    const { readOnly, signer } = await eth._createSigner(options); // returns a provider equipped signer
+    const { readOnly, signer: realSigner } = await eth._createSigner(options); // returns a provider equipped signer
+
+    const signer = new NonceManager(realSigner);
     if (typeof signer.provider === "undefined") {
       throw new Error("returned signer has no provider");
     }
