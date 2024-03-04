@@ -43,6 +43,7 @@ import {
 } from "./logics/AbstractRoutingLogic";
 import { SimpleLogic } from "./logics/SimpleLogic";
 import { OrbitLogic } from "./logics/OrbitLogic";
+import { ZeroLendLogic } from "./logics/ZeroLendLogic";
 import { NonceManager } from "@ethersproject/experimental";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -146,7 +147,10 @@ class Mangrove {
 
   eventEmitter: EventEmitter;
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
-  logics: IDsDictFromLogics<SimpleLogic, SimpleAaveLogic | OrbitLogic>;
+  logics: IDsDictFromLogics<
+    SimpleLogic,
+    SimpleAaveLogic | OrbitLogic | ZeroLendLogic
+  >;
 
   static devNode: DevNode;
   static typechain = typechain;
@@ -284,6 +288,21 @@ class Mangrove {
       });
     }
 
+    let zeroLendLogicAddress: string | undefined;
+    let zeroLendLogic: typechain.SimpleAaveLogic | undefined;
+    try {
+      zeroLendLogicAddress = Mangrove.getAddress("ZeroLendLogic", network.name);
+
+      zeroLendLogic = typechain.SimpleAaveLogic__factory.connect(
+        zeroLendLogicAddress,
+        signer,
+      );
+    } catch {
+      logger.warn("No ZeroLendLogic address found, ZeroLend disabled", {
+        contextInfo: "mangrove.base",
+      });
+    }
+
     const config = Mangrove.rawConfigToConfig(
       await readerContract.globalUnpacked(),
     );
@@ -316,6 +335,7 @@ class Mangrove {
       logics: {
         aave: simpleAaveLogic,
         orbit: orbitLogic,
+        zeroLend: zeroLendLogic,
       },
     });
 
@@ -373,6 +393,7 @@ class Mangrove {
     logics: {
       aave?: typechain.SimpleAaveLogic;
       orbit?: typechain.OrbitLogic;
+      zeroLend?: typechain.SimpleAaveLogic;
     };
   }) {
     if (!canConstructMangrove) {
@@ -394,6 +415,12 @@ class Mangrove {
         ? new OrbitLogic({
             mgv: this,
             orbitLogic: params.logics.orbit,
+          })
+        : undefined,
+      zeroLend: params.logics.zeroLend
+        ? new ZeroLendLogic({
+            mgv: this,
+            aaveLogic: params.logics.zeroLend,
           })
         : undefined,
     };

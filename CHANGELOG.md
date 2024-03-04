@@ -1,5 +1,6 @@
 # Next version
 
+- Add Zero lend logic
 - fix: add nonce manager
 
 # 2.0.5-34

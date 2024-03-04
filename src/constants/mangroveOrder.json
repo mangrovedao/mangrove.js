@@ -13,6 +13,10 @@
     "restingOrderGasreq": 600000,
     "takeGasOverhead": 500000
   },
+  "zeroLend": {
+    "restingOrderGasreq": 400000,
+    "takeGasOverhead": 500000
+  },
   "networks": {
     "maticmum": {
       "simple": {
@@ -25,6 +29,10 @@
       },
       "aave": {
         "restingOrderGasreq": 600000,
+        "takeGasOverhead": 500000
+      },
+      "zeroLend": {
+        "restingOrderGasreq": 400000,
         "takeGasOverhead": 500000
       },
       "restingOrderGaspriceFactor": 6
