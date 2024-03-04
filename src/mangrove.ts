@@ -332,6 +332,7 @@ class Mangrove {
       logics: {
         aave: simpleAaveLogic,
         orbit: orbitLogic,
+        zeroLend: zeroLendLogic,
       },
     });
 
