@@ -203,6 +203,7 @@ contract EmptyChainDeployer is Deployer, OrbitDeployer {
       2 // variable interest rate mode
     );
     fork.set("SimpleAaveLogic", address(simpleAaveLogic));
+    fork.set("ZeroLendLogic", address(simpleAaveLogic));
 
     broadcast();
     OrbitLogic orbitLogic = new OrbitLogic(spaceStation);
