@@ -53,7 +53,9 @@
     "SimpleLogic",
     "IDsDictFromLogics",
     "MangroveAmplifier",
-    "OrbitLogic"
+    "OrbitLogic",
+    "ZeroLendLogic",
+    "TAaveId"
   ],
   "out": "docs",
   "excludePrivate": true,
