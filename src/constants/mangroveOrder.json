@@ -10,11 +10,11 @@
     "takeGasOverhead": 500000
   },
   "orbit": {
-    "restingOrderGasreq": 700000,
+    "restingOrderGasreq": 600000,
     "takeGasOverhead": 500000
   },
   "zeroLend": {
-    "restingOrderGasreq": 400000,
+    "restingOrderGasreq": 700000,
     "takeGasOverhead": 500000
   },
   "networks": {
@@ -24,7 +24,7 @@
         "takeGasOverhead": 300000
       },
       "orbit": {
-        "restingOrderGasreq": 700000,
+        "restingOrderGasreq": 600000,
         "takeGasOverhead": 500000
       },
       "aave": {
@@ -32,7 +32,7 @@
         "takeGasOverhead": 500000
       },
       "zeroLend": {
-        "restingOrderGasreq": 400000,
+        "restingOrderGasreq": 700000,
         "takeGasOverhead": 500000
       },
       "restingOrderGaspriceFactor": 6
