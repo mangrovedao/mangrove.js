@@ -1,5 +1,7 @@
 # Next version
 
+- Fix zerolend gasreq
+
 # 2.0.5-35
 
 - Add Zero lend logic
