@@ -1,5 +1,7 @@
 # Next version
 
+- increase gasreq for aave and zero lend
+
 # 2.0.5-36
 
 - Fix zerolend gasreq
