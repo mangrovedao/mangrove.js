@@ -78,7 +78,7 @@ describe("Configuration unit tests suite", () => {
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("local", "aave"),
-      700000,
+      1000000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("maticmum"),
@@ -86,7 +86,7 @@ describe("Configuration unit tests suite", () => {
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGasreq("maticmum", "aave"),
-      700000,
+      1000000,
     );
     assert.equal(
       configuration.mangroveOrder.getRestingOrderGaspriceFactor("local"),
