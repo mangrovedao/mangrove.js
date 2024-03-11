@@ -1,5 +1,9 @@
 # Next version
 
+# 2.0.5-39
+
+- add tx receipt in amplified orders methods
+
 # 2.0.5-38
 
 - fix gasreq for zerolend again
