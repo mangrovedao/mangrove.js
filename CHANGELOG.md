@@ -2,6 +2,8 @@
 
 # 2.0.5-39
 
+# 2.0.5-39
+
 - add tx receipt in amplified orders methods
 
 # 2.0.5-38
