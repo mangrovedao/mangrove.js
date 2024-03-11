@@ -99,7 +99,7 @@ class MangroveAmplifier {
    */
   public async addBundle(
     data: z.input<typeof addBundleParams>,
-  ): Promise<BigNumber> {
+  ): Promise<ethers.ContractReceipt> {
     const {
       outboundToken,
       outboundVolume,
@@ -155,9 +155,7 @@ class MangroveAmplifier {
       data: { receipt },
     });
 
-    const bundleId = receipt.events?.filter((e) => e.event === "InitBundle")[0]
-      .args?.bundleId;
-    return BigNumber.from(bundleId);
+    return receipt;
   }
 
   /**
