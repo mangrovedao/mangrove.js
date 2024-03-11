@@ -247,7 +247,7 @@ class MangroveAmplifier {
    */
   public async updateBundle(
     data: z.input<typeof updateBundleParams>,
-  ): Promise<void> {
+  ): Promise<ethers.ContractReceipt> {
     const {
       bundleId,
       outboundToken,
@@ -268,14 +268,14 @@ class MangroveAmplifier {
       contextInfo: "amplifiedOrder.updateBundle",
       data: { receipt },
     });
-    return;
+    return receipt;
   }
 
   /**
    */
   public async updateOfferInBundle(
     data: z.input<typeof updateBundleOfferParams>,
-  ): Promise<void> {
+  ): Promise<ethers.ContractReceipt | undefined> {
     const { bundleId, inboundToken, newTick, newInboundLogic, outboundToken } =
       updateBundleOfferParams.parse(data);
 
@@ -291,6 +291,8 @@ class MangroveAmplifier {
     };
 
     const olKeyHash = this.mgv.getOlKeyHash(olKey);
+
+    let receipt: ethers.ContractReceipt | undefined;
 
     if (newTick) {
       const base = await this.mgv.tokenFromAddress(inboundToken);
@@ -321,7 +323,8 @@ class MangroveAmplifier {
         {},
         [olKey, newTick, gives.gives.toString(), gasReq, offerId],
       );
-      const receipt = await response.wait();
+
+      receipt = await response.wait();
 
       logger.debug("Amplified order update tick receipt", {
         contextInfo: "amplifiedOrder.updateOfferInBundle",
@@ -339,7 +342,7 @@ class MangroveAmplifier {
     if (newInboundLogic) {
       await this.setRoutingLogic(newRoutingLogicParams, {});
     }
-    return;
+    return receipt;
   }
 
   private async setRoutingLogic(
@@ -380,7 +383,7 @@ class MangroveAmplifier {
    */
   public async retractBundle(
     data: z.input<typeof retractBundleParams>,
-  ): Promise<void> {
+  ): Promise<ethers.ContractReceipt> {
     const { bundleId, outboundToken } = retractBundleParams.parse(data);
     const response = await createTxWithOptionalGasEstimation(
       this.amplifier.retractBundle,
@@ -395,7 +398,7 @@ class MangroveAmplifier {
       contextInfo: "amplifiedOrder.retractBundle",
       data: { receipt },
     });
-    return;
+    return receipt;
   }
 }
 
