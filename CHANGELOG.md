@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-40
+
 - add tx receipt in addbunddle
 
 # 2.0.5-39
