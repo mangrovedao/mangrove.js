@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-41
+
 - Return both transaction (`ethers.ContractTransaction`) and result promises from `MangroveAmplifier` methods.
 
 # 2.0.5-40
