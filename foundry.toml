@@ -10,6 +10,7 @@ cache_path='cache'
 fs_permissions = [{ access = "read-write", path = "./addresses/"}, { access = "read", path = "./out/" }, {access = "read", path = "./node_modules/@mangrovedao/mangrove-core/"}, {access = "read", path = "./node_modules/@mangrovedao/mangrove-strats/"}, { access = "read", path = "./mgvConfig.json" }]
 solc_version="0.8.20"
 ffi=true
+# memory_limit=67108864
 # optimizer=true
 # optimizer_runs=20000
 
