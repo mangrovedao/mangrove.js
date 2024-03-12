@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, it } from "mocha";
 import { toWei } from "../../util/helpers";
 import * as mgvTestUtil from "../../../src/util/test/mgvIntegrationTestUtil";
 import MangroveAmplifier from "../../../src/amplifier/mangroveAmplifier";
-import { typechain } from "../../../src/types";
 
 import { Mangrove } from "../../../src";
 
@@ -114,13 +113,15 @@ describe("Amplifier integration tests suite", () => {
       it("Creates a bundle across 2 markets", async function () {
         const inboundTokens = [simpleToken("TokenA"), simpleToken("TokenB")];
 
-        const bundleId = await amplifier.addBundle({
+        const { result } = await amplifier.addBundle({
           outboundToken: mgv.getAddress("TokenC"),
           outboundVolume: 10n ** 18n,
           outboundLogic: mgv.logics.simple,
           expiryDate: 0n,
           inboundTokens: inboundTokens,
         });
+
+        const bundleId = await result;
 
         const bundleData = await amplifier.getBundle({
           bundleId,
@@ -144,7 +145,7 @@ describe("Amplifier integration tests suite", () => {
 
     describe("Succeeds", () => {
       it("Retracts a bundle", async function () {
-        const bundleId = await addBundle();
+        const bundleId = await (await addBundle()).result;
 
         await amplifier.retractBundle({
           bundleId,
@@ -165,7 +166,7 @@ describe("Amplifier integration tests suite", () => {
 
     describe("Succeeds", () => {
       it("Updates a bundle (not date)", async function () {
-        const bundleId = await addBundle();
+        const bundleId = await (await addBundle()).result;
 
         await amplifier.updateBundle({
           bundleId,
@@ -183,7 +184,7 @@ describe("Amplifier integration tests suite", () => {
       });
 
       it("Updates a bundle (date)", async function () {
-        const bundleId = await addBundle();
+        const bundleId = await (await addBundle()).result;
 
         await amplifier.updateBundle({
           bundleId,
@@ -206,7 +207,7 @@ describe("Amplifier integration tests suite", () => {
 
     describe("Succeeds", () => {
       it("Updates an offer in a bundle (tick)", async function () {
-        const bundleId = await addBundle();
+        const bundleId = await (await addBundle()).result;
 
         await amplifier.updateOfferInBundle({
           bundleId,
@@ -223,7 +224,7 @@ describe("Amplifier integration tests suite", () => {
       });
 
       it("Updates an offer in a bundle (logic)", async function () {
-        const bundleId = await addBundle();
+        const bundleId = await (await addBundle()).result;
 
         await amplifier.updateOfferInBundle({
           bundleId,

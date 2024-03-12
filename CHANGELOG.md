@@ -1,8 +1,10 @@
 # Next version
 
+- Return both transaction (`ethers.ContractTransaction`) and result promises from `MangroveAmplifier` methods.
+
 # 2.0.5-40
 
-- add tx receipt in addbunddle
+- add tx receipt in `MangroveAmplifier.addbunddle`
 
 # 2.0.5-39
 

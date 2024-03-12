@@ -99,7 +99,7 @@ class MangroveAmplifier {
    */
   public async addBundle(
     data: z.input<typeof addBundleParams>,
-  ): Promise<ethers.ContractReceipt> {
+  ): Promise<Transaction<BigNumber>> {
     const {
       outboundToken,
       outboundVolume,
@@ -140,7 +140,7 @@ class MangroveAmplifier {
       total = total.add(provision).add(BigNumber.from(64_000));
     }
 
-    const response = await createTxWithOptionalGasEstimation(
+    const responsePromise = createTxWithOptionalGasEstimation(
       this.amplifier.newBundle,
       this.amplifier.estimateGas.newBundle,
       1,
@@ -148,14 +148,23 @@ class MangroveAmplifier {
       [fx, vr, { value: total }],
     );
 
-    const receipt = await response.wait();
+    return {
+      response: responsePromise,
+      result: responsePromise.then(async (response) => {
+        const receipt = await response.wait();
 
-    logger.debug("Amplified order raw receipt", {
-      contextInfo: "amplifiedOrder.addBundle",
-      data: { receipt },
-    });
+        logger.debug("Amplified order raw receipt", {
+          contextInfo: "amplifiedOrder.addBundle",
+          data: { receipt },
+        });
 
-    return receipt;
+        const bundleId = receipt.events?.filter(
+          (e) => e.event === "InitBundle",
+        )[0].args?.bundleId;
+
+        return BigNumber.from(bundleId);
+      }),
+    };
   }
 
   /**
@@ -245,7 +254,7 @@ class MangroveAmplifier {
    */
   public async updateBundle(
     data: z.input<typeof updateBundleParams>,
-  ): Promise<ethers.ContractReceipt> {
+  ): Promise<Transaction<void>> {
     const {
       bundleId,
       outboundToken,
@@ -253,27 +262,32 @@ class MangroveAmplifier {
       updateExpiry,
       expiryDate,
     } = updateBundleParams.parse(data);
-    const response = await createTxWithOptionalGasEstimation(
+    const responsePromise = createTxWithOptionalGasEstimation(
       this.amplifier.updateBundle,
       this.amplifier.estimateGas.updateBundle,
       0,
       {},
       [bundleId, outboundToken, outboundVolume, updateExpiry, expiryDate],
     );
-    const receipt = await response.wait();
 
-    logger.debug("Amplified order update raw receipt", {
-      contextInfo: "amplifiedOrder.updateBundle",
-      data: { receipt },
-    });
-    return receipt;
+    return {
+      response: responsePromise,
+      result: responsePromise.then(async (response) => {
+        const receipt = await response.wait();
+
+        logger.debug("Amplified order update raw receipt", {
+          contextInfo: "amplifiedOrder.updateBundle",
+          data: { receipt },
+        });
+      }),
+    };
   }
 
   /**
    */
   public async updateOfferInBundle(
     data: z.input<typeof updateBundleOfferParams>,
-  ): Promise<ethers.ContractReceipt | undefined> {
+  ): Promise<Transaction<any>[]> {
     const { bundleId, inboundToken, newTick, newInboundLogic, outboundToken } =
       updateBundleOfferParams.parse(data);
 
@@ -290,7 +304,7 @@ class MangroveAmplifier {
 
     const olKeyHash = this.mgv.getOlKeyHash(olKey);
 
-    let receipt: ethers.ContractReceipt | undefined;
+    const transactions: Transaction<any>[] = [];
 
     if (newTick) {
       const base = await this.mgv.tokenFromAddress(inboundToken);
@@ -314,7 +328,7 @@ class MangroveAmplifier {
         existingLogic?.gasOverhead ?? 0,
       );
 
-      const response = await createTxWithOptionalGasEstimation(
+      const responsePromise = createTxWithOptionalGasEstimation(
         this.amplifier.updateOffer,
         this.amplifier.estimateGas.updateOffer,
         0,
@@ -322,25 +336,53 @@ class MangroveAmplifier {
         [olKey, newTick, gives.gives.toString(), gasReq, offerId],
       );
 
-      receipt = await response.wait();
+      transactions.push({
+        response: responsePromise,
+        result: responsePromise.then(async (response) => {
+          const receipt = await response.wait();
 
-      logger.debug("Amplified order update tick receipt", {
-        contextInfo: "amplifiedOrder.updateOfferInBundle",
-        data: { receipt },
+          logger.debug("Amplified order update tick receipt", {
+            contextInfo: "amplifiedOrder.updateOfferInBundle",
+            data: { receipt },
+          });
+        }),
       });
     }
 
-    const newRoutingLogicParams = {
-      token: inboundToken,
-      logic: newInboundLogic!,
-      offerId: offerId.toNumber(),
-      olKeyHash,
-    };
-
     if (newInboundLogic) {
-      await this.setRoutingLogic(newRoutingLogicParams, {});
+      const newRoutingLogicParams = {
+        token: inboundToken,
+        logic: newInboundLogic,
+        offerId: offerId.toNumber(),
+        olKeyHash,
+      };
+
+      if (transactions.length === 0) {
+        transactions.push(
+          await this.setRoutingLogic(newRoutingLogicParams, {}),
+        );
+        return transactions;
+      }
+
+      const { result: prevTxResult } = transactions[0];
+
+      const responsePromise = prevTxResult.then(async () => {
+        const { response } = await this.setRoutingLogic(
+          newRoutingLogicParams,
+          {},
+        );
+        return response;
+      });
+
+      transactions.push({
+        response: responsePromise,
+        result: responsePromise.then(async (response) => {
+          await response.wait();
+        }),
+      });
     }
-    return receipt;
+
+    return transactions;
   }
 
   private async setRoutingLogic(
@@ -381,22 +423,27 @@ class MangroveAmplifier {
    */
   public async retractBundle(
     data: z.input<typeof retractBundleParams>,
-  ): Promise<ethers.ContractReceipt> {
+  ): Promise<Transaction<void>> {
     const { bundleId, outboundToken } = retractBundleParams.parse(data);
-    const response = await createTxWithOptionalGasEstimation(
+    const responsePromise = createTxWithOptionalGasEstimation(
       this.amplifier.retractBundle,
       this.amplifier.estimateGas.retractBundle,
       0,
       {},
       [bundleId, outboundToken],
     );
-    const receipt = await response.wait();
 
-    logger.debug("Amplified order update raw receipt", {
-      contextInfo: "amplifiedOrder.retractBundle",
-      data: { receipt },
-    });
-    return receipt;
+    return {
+      response: responsePromise,
+      result: responsePromise.then(async (response) => {
+        const receipt = await response.wait();
+
+        logger.debug("Amplified order update raw receipt", {
+          contextInfo: "amplifiedOrder.retractBundle",
+          data: { receipt },
+        });
+      }),
+    };
   }
 }
 
