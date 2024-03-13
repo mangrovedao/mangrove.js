@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-42
+
 - Upgrade to mangrove-strats v2.1.0-4 (includes deployed Blast contract versions)
 - Upgrade to mangrove-deployments v2.2.3
   - fixes to Blast deployment information
