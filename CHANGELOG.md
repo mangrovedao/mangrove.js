@@ -1,5 +1,10 @@
 # Next version
 
+- Upgrade to mangrove-strats v2.1.0-4 (includes deployed Blast contract versions)
+- Upgrade to mangrove-deployments v2.2.3
+  - fixes to Blast deployment information
+  - fixes `KandelSeeder` v2.0.1-0 address on Polygon Mumbai
+
 # 2.0.5-41
 
 - Return both transaction (`ethers.ContractTransaction`) and result promises from `MangroveAmplifier` methods.
