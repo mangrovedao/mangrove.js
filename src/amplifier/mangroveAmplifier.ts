@@ -2,17 +2,14 @@ import Mangrove from "../mangrove";
 import { typechain } from "../types";
 import { BigNumber, ethers } from "ethers";
 import logger from "../util/logger";
-import { createTxWithOptionalGasEstimation } from "../util/transactions";
+import {
+  createTxWithOptionalGasEstimation,
+  Transaction,
+} from "../util/transactions";
 import { AbstractRoutingLogic } from "../logics/AbstractRoutingLogic";
 import { z } from "zod";
 import { evmAddress, liberalBigInt, liberalPositiveBigInt } from "../schemas";
 import { OLKeyStruct } from "../types/typechain/MangroveAmplifier";
-
-export type Transaction<TResult> = {
-  result: Promise<TResult>;
-  /** The low-level transaction that has been submitted to the chain. */
-  response: Promise<ethers.ContractTransaction>;
-};
 
 const inboundTokenSchema = z.object({
   inboundToken: evmAddress,

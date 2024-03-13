@@ -1,5 +1,7 @@
 # Next version
 
+- Move `Transaction` type from `Market` to `util/transactions`. Also, use this type in `MangroveAmplifier` instead of the duplicated type in that file.
+
 # 2.0.5-42
 
 - Upgrade to mangrove-strats v2.1.0-4 (includes deployed Blast contract versions)
