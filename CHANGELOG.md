@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-43
+
 - Move `Transaction` type from `Market` to `util/transactions`. Also, use this type in `MangroveAmplifier` instead of the duplicated type in that file.
 - Fix amplifier gas requirements and provision calculations
 
