@@ -9,6 +9,7 @@ import TradeEventManagement, {
 import configuration from "../configuration";
 import TickPriceHelper from "./tickPriceHelper";
 import { AbstractRoutingLogic } from "../logics/AbstractRoutingLogic";
+import { Transaction } from "./transactions";
 
 export type CleanUnitParams = {
   ba: Market.BA;
@@ -224,7 +225,7 @@ class Trade {
     params: Market.TradeParams,
     market: Market,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.OrderResult>> {
+  ): Promise<Transaction<Market.OrderResult>> {
     const { maxTick, fillVolume, fillWants, restingOrderParams, orderType } =
       this.getRawParams(bs, params, market);
     switch (orderType) {
@@ -275,7 +276,7 @@ class Trade {
     ba: Market.BA,
     params: Market.UpdateRestingOrderParams,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.UpdateRestingOrderResult>> {
+  ): Promise<Transaction<Market.UpdateRestingOrderResult>> {
     const olKey = market.getOLKey(ba);
 
     const restingOrderParams = await this.getRestingOrderParams(
@@ -401,7 +402,7 @@ class Trade {
     id: number,
     deprovision = false,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
+  ): Promise<Transaction<Market.RetractRestingOrderResult>> {
     const olKey = market.getOLKey(ba);
 
     let txPromise: Promise<ethers.ContractTransaction> | undefined = undefined;
@@ -590,7 +591,7 @@ class Trade {
       gasLowerBound: ethers.BigNumberish;
     },
     overrides: ethers.Overrides,
-  ): Promise<Market.Transaction<Market.OrderResult>> {
+  ): Promise<Transaction<Market.OrderResult>> {
     const olKey = market.getOLKey(this.bsToBa(orderType));
     orderType === "buy"
       ? [market.base, market.quote]
@@ -724,7 +725,7 @@ class Trade {
       takerWantsLogic: AbstractRoutingLogic;
     },
     overrides: ethers.Overrides,
-  ): Promise<Market.Transaction<Market.OrderResult>> {
+  ): Promise<Transaction<Market.OrderResult>> {
     const ba = this.bsToBa(orderType);
     const restingOrderParams = restingParams
       ? await this.getRestingOrderParams(restingParams, market, ba)

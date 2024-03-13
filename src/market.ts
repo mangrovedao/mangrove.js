@@ -5,6 +5,7 @@ import Token, { TokenCalculations } from "./token";
 import Semibook from "./semibook";
 import { typechain } from "./types";
 import { Bigish } from "./util";
+import { Transaction } from "./util/transactions";
 import Trade from "./util/trade";
 import * as TCM from "./types/typechain/Mangrove";
 import TradeEventManagement from "./util/tradeEventManagement";
@@ -192,25 +193,6 @@ namespace Market {
    * No data is returned, but the transaction may fail.
    */
   export type RetractRestingOrderResult = void;
-
-  /**
-   * A transaction that has been submitted to a market.
-   *
-   * Market operations return this type so that the caller can track the state of the
-   * low-level transaction that has been submitted as well as the result of the market operation.
-   */
-  export type Transaction<TResult> = {
-    /** The result of the market transaction.
-     *
-     * Resolves when the transaction has been included on-chain.
-     *
-     * Rejects if the transaction fails.
-     */
-    result: Promise<TResult>;
-
-    /** The low-level transaction that has been submitted to the chain. */
-    response: Promise<ethers.ContractTransaction>;
-  };
 
   export type OrderRoute = "Mangrove" | "MangroveOrder";
 
@@ -1033,7 +1015,7 @@ class Market {
   buy(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.OrderResult>> {
+  ): Promise<Transaction<Market.OrderResult>> {
     return this.trade.order("buy", params, this, overrides);
   }
 
@@ -1060,7 +1042,7 @@ class Market {
   sell(
     params: Market.TradeParams,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.OrderResult>> {
+  ): Promise<Transaction<Market.OrderResult>> {
     return this.trade.order("sell", params, this, overrides);
   }
 
@@ -1097,7 +1079,7 @@ class Market {
     ba: Market.BA,
     params: Market.UpdateRestingOrderParams,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.UpdateRestingOrderResult>> {
+  ): Promise<Transaction<Market.UpdateRestingOrderResult>> {
     return this.trade.updateRestingOrder(this, ba, params, overrides);
   }
 
@@ -1113,7 +1095,7 @@ class Market {
     id: number,
     deprovision = false,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<Market.RetractRestingOrderResult>> {
+  ): Promise<Transaction<Market.RetractRestingOrderResult>> {
     return this.trade.retractRestingOrder(this, ba, id, deprovision, overrides);
   }
 
@@ -1528,7 +1510,7 @@ class Market {
       offerId: number;
     },
     overrides?: ethers.Overrides,
-  ): Promise<Market.Transaction<boolean>> {
+  ): Promise<Transaction<boolean>> {
     const user = await this.mgv.signer.getAddress();
     const router = await this.mgv.orderContract.router(user);
     const olKeyHash = this.mgv.getOlKeyHash(this.getOLKey(params.ba));

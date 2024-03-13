@@ -21,6 +21,7 @@ import KandelStrategies from "./kandelStrategies";
 import * as mgvTestUtil from "./util/test/mgvIntegrationTestUtil";
 import { typechain } from "./types";
 import { Bigish } from "./util";
+import { Transaction } from "./util/transactions";
 import KandelDistribution, {
   OfferDistribution,
   OfferList,
@@ -103,6 +104,7 @@ export { Mangrove, Market, Semibook, OfferLogic, LiquidityProvider };
 // Utils
 export type { prettyPrintFilter };
 export type { Bigish };
+export type { Transaction };
 export type { Optional };
 export type { JsonWalletOptions };
 export type { MangroveEventSubscriber };

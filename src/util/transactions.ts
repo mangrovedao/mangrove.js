@@ -20,3 +20,22 @@ export const createTxWithOptionalGasEstimation = async <T extends any[]>(
 
   return await createTx(...args);
 };
+
+/**
+ * A transaction that has been submitted and which (once included in a block) returns a result.
+ *
+ * Operations return this type so that the caller can track the state of the
+ * low-level transaction that has been submitted as well as the result of the operation.
+ */
+export type Transaction<TResult> = {
+  /** The result of the transaction.
+   *
+   * Resolves when the transaction has been included on-chain.
+   *
+   * Rejects if the transaction fails.
+   */
+  result: Promise<TResult>;
+
+  /** The low-level transaction that has been submitted to the chain. */
+  response: Promise<ethers.ContractTransaction>;
+};

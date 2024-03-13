@@ -3,6 +3,7 @@ import Mangrove from "../mangrove";
 import { typechain } from "../types";
 
 import TradeEventManagement from "../util/tradeEventManagement";
+import { Transaction } from "../util/transactions";
 
 import Market from "../market";
 import KandelDistribution from "./kandelDistribution";
@@ -63,7 +64,7 @@ class KandelSeeder {
   public async sow(
     seed: KandelSeed,
     overrides: ethers.Overrides = {},
-  ): Promise<Market.Transaction<GeometricKandelInstance>> {
+  ): Promise<Transaction<GeometricKandelInstance>> {
     if (seed.liquiditySharing && !seed.onAave) {
       throw Error(
         "Liquidity sharing is only supported for AaveKandel instances.",
