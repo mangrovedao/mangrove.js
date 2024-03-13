@@ -111,17 +111,26 @@ class MangroveAmplifier {
       expiryDate,
     };
 
-    const gasPrice = BigNumber.from(10 ** 9).mul(this.mgv.config().gasprice);
+    const gasPrice = BigNumber.from(10 ** 6).mul(this.mgv.config().gasprice);
 
     // Check for inbound token being duplicated
     const vr = [];
 
     const inboundSet = new Set<string>();
 
-    let total = BigNumber.from(160_000);
+    // cost of doing a bundle is at list 60k + 60k per inbound token
+    const variableCost = BigNumber.from(60_000)
+      .mul(inboundTokens.length)
+      .add(60_000);
+
+    let value = BigNumber.from(0);
+
     for (const token of inboundTokens) {
-      const gasreq = BigNumber.from(token.inboundLogic.gasOverhead);
-      const provision = gasPrice.mul(gasreq);
+      const gasreq = BigNumber.from(
+        Math.max(token.inboundLogic.gasOverhead, outboundLogic.gasOverhead),
+      ).add(variableCost);
+      // adding the gasbase
+      const provision = gasreq.add(250000).mul(gasPrice);
       if (inboundSet.has(token.inboundToken)) {
         throw new Error("Inbound token duplicated in bundle");
       }
@@ -134,7 +143,7 @@ class MangroveAmplifier {
         tickSpacing: token.tickSpacing,
         tick: token.tick,
       });
-      total = total.add(provision).add(BigNumber.from(64_000));
+      value = value.add(provision);
     }
 
     const responsePromise = createTxWithOptionalGasEstimation(
@@ -142,7 +151,7 @@ class MangroveAmplifier {
       this.amplifier.estimateGas.newBundle,
       1,
       {},
-      [fx, vr, { value: total }],
+      [fx, vr, { value }],
     );
 
     return {
