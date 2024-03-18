@@ -73,14 +73,14 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
     mgvAdmin.disconnect();
   });
 
-  [true, false].forEach((onAave) =>
+  (["aave", "simple"] as const).forEach((type) =>
     [true, false].forEach((liquiditySharing) => {
-      it(`sow deploys kandel and returns instance onAave:${onAave} liquiditySharing:${liquiditySharing}`, async function () {
+      it(`sow deploys kandel and returns instance kandelType:${type} liquiditySharing:${liquiditySharing}`, async function () {
         // Arrange
         const seed = {
           market: market,
           liquiditySharing: liquiditySharing,
-          onAave: onAave,
+          type,
         };
         // Act
         const preSowRequiredProvision = await seeder.getRequiredProvision(
@@ -89,7 +89,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
           2,
           undefined,
         );
-        if (!onAave && liquiditySharing) {
+        if (type !== "aave" && liquiditySharing) {
           await assert.rejects(
             seeder.sow(seed),
             new Error(
@@ -164,11 +164,11 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
     );
   });
 
-  [true, false].forEach((onAave) => {
+  (["simple", "aave"] as const).forEach((type) => {
     bidsAsks.forEach((offerType) => {
-      it(`minimumVolume uses config and calculates correct value offerType=${offerType} onAave=${onAave}`, async () => {
+      it(`minimumVolume uses config and calculates correct value offerType=${offerType} kandelType=${type}`, async () => {
         // Arrange
-        const offerGasreq = await seeder.getDefaultGasreq(onAave);
+        const offerGasreq = await seeder.getDefaultGasreq(type);
         const { outbound_tkn } = market.getOutboundInbound(offerType);
         const readerMinVolume = await mgv.readerContract.minVolume(
           market.getOLKey(offerType),
@@ -186,7 +186,7 @@ describe(`${KandelSeeder.prototype.constructor.name} integration tests suite`, f
         const minVolume = await seeder.getMinimumVolume({
           market,
           offerType,
-          onAave,
+          type,
         });
 
         // Assert

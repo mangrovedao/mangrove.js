@@ -24,6 +24,7 @@ import {IPoolAddressesProvider} from "@mgv-strats/src/strategies/vendor/aave/v3/
 import {SimpleAaveLogic} from "@mgv-strats/src/strategies/routing_logic/SimpleAaveLogic.sol";
 import {OrbitDeployer} from "@mgv-strats/src/toy_strategies/utils/OrbitDeployer.sol";
 import {OrbitLogic} from "@mgv-strats/src/strategies/routing_logic/orbit/OrbitLogic.sol";
+import {SmartKandelSeederDeployer} from "@mgv-strats/script/strategies/kandel/deployers/smart-kandel/SmartKandelSeederDeployer.s.sol";
 
 /* 
 This script prepares a local chain for testing by mangrove.js.
@@ -218,6 +219,16 @@ contract EmptyChainDeployer is Deployer, OrbitDeployer {
       kandelGasreq: 126000, // see CoreKandelGasreqBaseTest
       deployKandel: true,
       deployAaveKandel: true,
+      testBase: IERC20(fork.get("WETH")),
+      testQuote: IERC20(fork.get("DAI"))
+    });
+
+    SmartKandelSeederDeployer smartKandelSeederDeployer = new SmartKandelSeederDeployer();
+    smartKandelSeederDeployer.innerRun({
+      mgv: IMangrove(payable(mgv)),
+      kandelGasreq: 126000, // see CoreKandelGasreqBaseTest
+      factory: routerProxyFactory,
+      routerImplementation: SmartRouter(payable(fork.get("MangroveOrder-Router"))),
       testBase: IERC20(fork.get("WETH")),
       testQuote: IERC20(fork.get("DAI"))
     });

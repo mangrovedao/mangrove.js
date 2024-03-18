@@ -66,7 +66,6 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
       await seeder.sow({
         market: abMarket,
         liquiditySharing: false,
-        onAave: false,
       })
     ).result;
 
@@ -74,7 +73,6 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
       await seeder.sow({
         market: wethDaiMarket,
         liquiditySharing: false,
-        onAave: false,
       })
     ).result;
 
@@ -82,7 +80,6 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
       await seeder.sow({
         market: wethUsdcMarket,
         liquiditySharing: false,
-        onAave: false,
       })
     ).result;
 
@@ -90,7 +87,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
       await seeder.sow({
         market: wethUsdcMarket,
         liquiditySharing: false,
-        onAave: true,
+        type: "aave",
       })
     ).result;
 
@@ -100,7 +97,7 @@ describe(`${KandelFarm.prototype.constructor.name} integration tests suite`, fun
       await otherSeeder.sow({
         market: wethUsdcMarket,
         liquiditySharing: false,
-        onAave: true,
+        type: "aave",
       })
     ).result;
   });

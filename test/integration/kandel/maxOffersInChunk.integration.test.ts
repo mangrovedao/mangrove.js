@@ -9,6 +9,7 @@ import {
 import KandelConfiguration from "../../../src/kandel/kandelConfiguration";
 import assert from "assert";
 import { JsonRpcProvider } from "@ethersproject/providers";
+import { KandelType } from "../../../src/kandel/kandelSeeder";
 
 describe("Kandel MaxOffersInChunk verification", () => {
   let originalGasLimit: number;
@@ -76,7 +77,7 @@ describe("Kandel MaxOffersInChunk verification", () => {
     });
 
     async function deployAndPopulate(
-      onAave: boolean,
+      type: KandelType,
       saveGasPopulateMode: boolean,
       maxOffersInChunk: number,
     ) {
@@ -86,7 +87,7 @@ describe("Kandel MaxOffersInChunk verification", () => {
         await seeder.sow({
           market: market,
           liquiditySharing: false,
-          onAave: onAave,
+          type,
         })
       ).result;
 
@@ -122,41 +123,41 @@ describe("Kandel MaxOffersInChunk verification", () => {
     }
 
     [true, false].forEach((saveGasPopulateMode) => {
-      [true, false].forEach((onAave) => {
-        it(`can create chunks the size of configured for ${context} which has gasLimit=${gasLimit} onAave=${onAave} saveGas=${saveGasPopulateMode}`, async function () {
+      (["simple", "aave"] as const).forEach((type) => {
+        it(`can create chunks the size of configured for ${context} which has gasLimit=${gasLimit} kandelType=${type} saveGas=${saveGasPopulateMode}`, async function () {
           await deployAndPopulate(
-            onAave,
+            type,
             saveGasPopulateMode,
             configuredMaxOffersInChunk,
           );
           // Populate another instance with same offers to ensure that the slightly different cost when offers exists does not cause a revert.
           await deployAndPopulate(
-            onAave,
+            type,
             saveGasPopulateMode,
             configuredMaxOffersInChunk,
           );
         });
 
-        it(`can create chunks the size of configured +4 in buffer for ${context} which has gasLimit=${gasLimit} onAave=${onAave} saveGas=${saveGasPopulateMode}`, async function () {
+        it(`can create chunks the size of configured +4 in buffer for ${context} which has gasLimit=${gasLimit} kandelType=${type} saveGas=${saveGasPopulateMode}`, async function () {
           // This test verifies that there is a buffer on top of the configured maxOffersInChunk (at least 4 additional offers)
           await deployAndPopulate(
-            onAave,
+            type,
             saveGasPopulateMode,
             configuredMaxOffersInChunk + 4,
           );
           // Populate another instance with same offers to ensure that the slightly different cost when offers exists does not cause a revert.
           await deployAndPopulate(
-            onAave,
+            type,
             saveGasPopulateMode,
             configuredMaxOffersInChunk + 4,
           );
         });
 
-        it(`cannot create chunks the size of configured +10 in buffer for ${context} which has gasLimit=${gasLimit} onAave=${onAave} saveGas=${saveGasPopulateMode}`, async function () {
+        it(`cannot create chunks the size of configured +10 in buffer for ${context} which has gasLimit=${gasLimit} kandelType=${type} saveGas=${saveGasPopulateMode}`, async function () {
           await assert.rejects(
             () =>
               deployAndPopulate(
-                onAave,
+                type,
                 saveGasPopulateMode,
                 configuredMaxOffersInChunk + 10,
               ),
