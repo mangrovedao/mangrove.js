@@ -55,7 +55,10 @@
     "MangroveAmplifier",
     "OrbitLogic",
     "ZeroLendLogic",
-    "TAaveId"
+    "TAaveId",
+    "SmartKandelSeeder",
+    "KandelType",
+    "SmartKandelInstance"
   ],
   "out": "docs",
   "excludePrivate": true,

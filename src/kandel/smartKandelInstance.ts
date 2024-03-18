@@ -16,7 +16,7 @@ import GeneralKandelDistributionGenerator from "./generalKandelDistributionGener
 import GeometricKandelInstance from "./geometricKandel/geometricKandelInstance";
 import { AbstractRoutingLogic } from "../logics/AbstractRoutingLogic";
 
-export default class SmartKandelInstance extends GeometricKandelInstance {
+class SmartKandelInstance extends GeometricKandelInstance {
   smartKandel: typechain.SmartKandel;
 
   /** Creates a GeometricKandelInstance object to interact with a Kandel strategy on Mangrove.
@@ -126,3 +126,5 @@ export default class SmartKandelInstance extends GeometricKandelInstance {
     );
   }
 }
+
+export default SmartKandelInstance;
