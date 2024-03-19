@@ -20,6 +20,7 @@ import {
   getUniquePrices,
 } from "../../unit/kandel/generalKandelDistributionGenerator.unit.test";
 import { randomInt } from "crypto";
+import { KandelType } from "../../../src/kandel/kandelSeeder";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -59,7 +60,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
   let kandel: GeometricKandelInstance;
   let kandelStrategies: KandelStrategies;
 
-  async function createKandel(onAave: boolean, tickSpacing: number = 1) {
+  async function createKandel(type?: KandelType, tickSpacing: number = 1) {
     kandelStrategies = new KandelStrategies(mgv);
     const seeder = new KandelStrategies(mgv).seeder;
     const market = await mgv.market({
@@ -72,7 +73,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
         await seeder.sow({
           market: market,
           liquiditySharing: false,
-          onAave: onAave,
+          type,
         })
       ).result
     ).address;
@@ -141,7 +142,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
 
   describe("router-agnostic", function () {
     beforeEach(async function () {
-      kandel = await createKandel(false);
+      kandel = await createKandel();
     });
 
     [true, false].forEach((inChunks) => {
@@ -359,11 +360,11 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
     it("populate through geometric gasSave, reducedCallData, and general with same result", async () => {
       // Arrange
 
-      const kandel1 = await createKandel(false);
+      const kandel1 = await createKandel();
       await waitForTransactions(await kandel1.approveIfHigher());
-      const kandel2 = await createKandel(false);
+      const kandel2 = await createKandel();
       await waitForTransactions(await kandel2.approveIfHigher());
-      const kandel3 = await createKandel(false);
+      const kandel3 = await createKandel();
       await waitForTransactions(await kandel3.approveIfHigher());
 
       const distribution =
@@ -730,7 +731,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
 
   describe("tickSpacing=100", function () {
     beforeEach(async function () {
-      kandel = await createKandel(false, 100);
+      kandel = await createKandel("simple", 100);
     });
     it(`populate for tickSpacing=100 populates a market`, async function () {
       // Arrange
@@ -861,10 +862,10 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
     });
   });
 
-  [true, false].forEach((onAave) =>
-    describe(`onAave=${onAave}`, function () {
+  (["simple", "aave"] as const).forEach((type) =>
+    describe(`kandelType=${type}`, function () {
       beforeEach(async function () {
-        kandel = await createKandel(onAave);
+        kandel = await createKandel(type);
       });
 
       it("calculateMinimumDistribution can be deployed with a factor of 1", async () => {
@@ -883,7 +884,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
               {
                 market: kandel.market,
                 offerType: "asks",
-                onAave,
+                type,
                 factor: 1,
               },
             ),
@@ -891,7 +892,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
               await kandelStrategies.seeder.getMinimumVolume({
                 market: kandel.market,
                 offerType: "bids",
-                onAave,
+                type,
                 factor: 1,
               }),
           });
@@ -912,7 +913,7 @@ describe(`${GeometricKandelInstance.prototype.constructor.name} integration test
             market: kandel.market,
             factor,
             gasreq,
-            onAave,
+            type,
           };
           const distribution =
             await kandel.geometricGenerator.calculateMinimumDistribution({

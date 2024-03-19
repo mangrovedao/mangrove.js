@@ -13,6 +13,7 @@ class KandelFarm {
   tradeEventManagement: TradeEventManagement = new TradeEventManagement();
 
   aaveKandelSeeder?: typechain.AaveKandelSeeder;
+  smartKandelSeeder?: typechain.SmartKandelSeeder;
   kandelSeeder: typechain.KandelSeeder;
 
   /** Constructor
@@ -44,6 +45,21 @@ class KandelFarm {
         contextInfo: "kandelFarm.constructor",
       });
     }
+
+    try {
+      const smartKandelSeederAddress = Mangrove.getAddress(
+        "SmartKandelSeeder",
+        this.mgv.network.name,
+      );
+      this.smartKandelSeeder = typechain.SmartKandelSeeder__factory.connect(
+        smartKandelSeederAddress,
+        this.mgv.signer,
+      );
+    } catch (e) {
+      logger.warn("No SmartKandelSeeder address found, Smart Kandel disabled", {
+        contextInfo: "kandelFarm.constructor",
+      });
+    }
   }
 
   /**
@@ -64,6 +80,7 @@ class KandelFarm {
       tickSpacing: number;
     } | null;
     onAave?: boolean;
+    smartKandel?: boolean;
   }) {
     if (filter?.onAave && !this.aaveKandelSeeder) {
       throw Error("AaveKandelSeeder is not available on this network.");
@@ -85,6 +102,38 @@ class KandelFarm {
     }
 
     const olKeyHash = olKey ? this.mgv.calculateOLKeyHash(olKey) : undefined;
+
+    const smartKandels =
+      this.smartKandelSeeder && filter?.smartKandel
+        ? (
+            await this.smartKandelSeeder.queryFilter(
+              this.smartKandelSeeder.filters.NewSmartKandel(
+                filter?.owner,
+                olKeyHash,
+              ),
+            )
+          ).map(async (x) => {
+            const olKeyStruct = await this.mgv.getOlKeyStruct(
+              x.args.baseQuoteOlKeyHash,
+            );
+            const baseToken = await this.mgv.tokenFromAddress(
+              olKeyStruct!.outbound_tkn,
+            );
+            const quoteToken = await this.mgv.tokenFromAddress(
+              olKeyStruct!.inbound_tkn,
+            );
+            return {
+              kandelAddress: x.args.kandel,
+              ownerAddress: x.args.owner,
+              onAave: false,
+              baseAddress: baseToken.address,
+              base: baseToken,
+              quoteAddress: quoteToken.address,
+              quote: quoteToken,
+              smart: true,
+            };
+          })
+        : [];
 
     const kandels =
       filter?.onAave == null || filter.onAave == false
@@ -110,6 +159,7 @@ class KandelFarm {
               base: baseToken,
               quoteAddress: quoteToken.address,
               quote: quoteToken,
+              smart: false,
             };
           })
         : [];
@@ -141,10 +191,12 @@ class KandelFarm {
               base: baseToken,
               quoteAddress: quoteToken.address,
               quote: quoteToken,
+              smart: false,
             };
           })
         : [];
-    return Promise.all(kandels.concat(aaveKandels));
+
+    return Promise.all(kandels.concat(aaveKandels).concat(smartKandels));
   }
 }
 

@@ -19,6 +19,7 @@ import {
   getUniquePrices,
 } from "../../unit/kandel/generalKandelDistributionGenerator.unit.test";
 import CoreKandelInstance from "../../../src/kandel/coreKandelInstance";
+import { KandelType } from "../../../src/kandel/kandelSeeder";
 
 //pretty-print when using console.log
 Big.prototype[Symbol.for("nodejs.util.inspect.custom")] = function () {
@@ -58,7 +59,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
   let kandel: CoreKandelInstance;
   let kandelStrategies: KandelStrategies;
 
-  async function createKandel(onAave: boolean) {
+  async function createKandel(type?: KandelType) {
     kandelStrategies = new KandelStrategies(mgv);
     const seeder = new KandelStrategies(mgv).seeder;
     const market = await mgv.market({
@@ -71,7 +72,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
         await seeder.sow({
           market: market,
           liquiditySharing: false,
-          onAave: onAave,
+          type,
         })
       ).result
     ).address;
@@ -147,7 +148,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
 
   describe("router-agnostic", function () {
     beforeEach(async function () {
-      kandel = await createKandel(false);
+      kandel = await createKandel();
     });
 
     it("populate throws if pricePoints parameters do not match", async () => {
@@ -453,7 +454,6 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
             {
               market: kandel.market,
               liquiditySharing: false,
-              onAave: false,
             },
             distribution,
             gaspriceFactor,
@@ -712,10 +712,10 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
     });
   });
 
-  [true, false].forEach((onAave) =>
-    describe(`onAave=${onAave}`, function () {
+  (["aave", "simple"] as const).forEach((type) =>
+    describe(`kandelType=${type}`, function () {
       beforeEach(async function () {
-        kandel = await createKandel(onAave);
+        kandel = await createKandel(type);
       });
 
       it("has expected immutable data from chain", async function () {
@@ -730,7 +730,7 @@ describe(`${CoreKandelInstance.prototype.constructor.name} integration tests sui
             await kandelStrategies.seeder.getMinimumVolume({
               market: kandel.market,
               offerType,
-              onAave,
+              type,
             });
           // Act
           const minBids = await kandel.getMinimumVolume(offerType);
