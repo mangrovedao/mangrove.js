@@ -10,6 +10,12 @@ ds-test/=node_modules/@mangrovedao/mangrove-core/lib/forge-std/lib/ds-test/src
 @mgv-strats/test/=node_modules/@mangrovedao/mangrove-strats/test/
 @mgv-strats/script/=node_modules/@mangrovedao/mangrove-strats/script/
 
+@uniswap/v3-core/=node_modules/@uniswap/v3-core/
+@uniswap/v2-core/=node_modules/@uniswap/v2-core/
+@uniswap/v3-periphery/=node_modules/@uniswap/v3-periphery/
+@uniswap/lib/=node_modules/@uniswap/lib/
+
+base64-sol/=node_modules/base64-sol/
 
 @openzeppelin/contracts/=node_modules/@mangrovedao/mangrove-strats/lib/openzeppelin/contracts/
 @orbit-protocol/contracts/=node_modules/@mangrovedao/mangrove-strats/lib/orbit-protocol/contracts/

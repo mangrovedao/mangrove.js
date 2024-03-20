@@ -315,7 +315,7 @@ class Mangrove {
     let monoswapV3Manager: typechain.UniswapV3Manager | undefined;
     try {
       monoswapV3LogicAddress = Mangrove.getAddress(
-        "MonoswapV3Logic",
+        "UniswapV3RoutingLogic-Monoswap",
         network.name,
       );
 
@@ -325,7 +325,7 @@ class Mangrove {
       );
 
       monoswapV3ManagerAddress = Mangrove.getAddress(
-        "MonoswapV3Manager",
+        "UniswapV3Manager-Monoswap",
         network.name,
       );
 
@@ -345,7 +345,7 @@ class Mangrove {
     let thrusterV3Manager: typechain.UniswapV3Manager | undefined;
     try {
       thrusterV3LogicAddress = Mangrove.getAddress(
-        "ThrusterV3Logic",
+        "UniswapV3RoutingLogic-Thruster",
         network.name,
       );
 
@@ -355,7 +355,7 @@ class Mangrove {
       );
 
       thrusterV3ManagerAddress = Mangrove.getAddress(
-        "ThrusterV3Manager",
+        "UniswapV3Manager-Thruster",
         network.name,
       );
 
