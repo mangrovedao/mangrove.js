@@ -2,6 +2,7 @@
 
 - Add Smart kandels to SDK
 - Changed `onAave` params to `type` params
+- Added monoswap and thruster routing logics
 
 # 2.0.5-43
 

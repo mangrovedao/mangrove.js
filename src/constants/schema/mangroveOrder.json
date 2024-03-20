@@ -38,6 +38,16 @@
           "type": "object",
           "$ref": "#/definitions/RouterLogicOverhead",
           "description": "Properties related to Simple routing logic"
+        },
+        "monoswap": {
+          "type": "object",
+          "$ref": "#/definitions/RouterLogicOverhead",
+          "description": "Properties related to Monoswap routing logic"
+        },
+        "thruster": {
+          "type": "object",
+          "$ref": "#/definitions/RouterLogicOverhead",
+          "description": "Properties related to Thruster routing logic"
         }
       },
       "required": ["restingOrderGaspriceFactor", "aave", "orbit"]

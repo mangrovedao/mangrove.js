@@ -27,7 +27,7 @@ export class BaseAaveLogic<
     params: Prettify<
       Omit<
         ConstructorParameters<typeof AbstractRoutingLogic<TId>>[0],
-        "address"
+        "address" | "approvalType"
       > & {
         aaveLogic: typechain.SimpleAaveLogic;
       }
@@ -39,6 +39,7 @@ export class BaseAaveLogic<
       description: params.description,
       mgv: params.mgv,
       address: params.aaveLogic.address,
+      approvalType: "ERC20",
     });
     this.logic = params.aaveLogic;
   }

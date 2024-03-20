@@ -58,7 +58,12 @@
     "TAaveId",
     "SmartKandelSeeder",
     "KandelType",
-    "SmartKandelInstance"
+    "SmartKandelInstance",
+    "MonoswapV3Logic",
+    "ThrusterV3Logic",
+    "ApprovalType",
+    "UniswapV3RoutingLogic",
+    "UniswapV3Manager"
   ],
   "out": "docs",
   "excludePrivate": true,
