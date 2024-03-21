@@ -8,19 +8,24 @@ import { ethers } from "ethers";
  * Some routing logics may not be available on some networks, so they are optional.
  */
 export type IDsDictFromLogics<
-  TRequired extends AbstractRoutingLogic<any>,
-  TOptional extends AbstractRoutingLogic<any>,
+  TRequired extends AbstractRoutingLogic<any, ApprovalType>,
+  TOptional extends AbstractRoutingLogic<any, ApprovalType>,
 > = {
   [P in TRequired as P["id"]]: P;
 } & {
   [P in TOptional as P["id"]]: P | undefined;
 };
 
+export type ApprovalType = "ERC20" | "ERC721";
+
 /**
  * @title AbstractRoutingLogic
  * @desc Defines the base interaction for a routing logic.
  */
-export abstract class AbstractRoutingLogic<TId extends string = string> {
+export abstract class AbstractRoutingLogic<
+  TId extends string = string,
+  TApprovalType extends ApprovalType = "ERC20",
+> {
   /**
    * @desc The id of the routing logic.
    */
@@ -44,7 +49,10 @@ export abstract class AbstractRoutingLogic<TId extends string = string> {
   /**
    * @desc A cache of overlying addresses.
    */
-  private overlyingCache: Map<string, Token> = new Map();
+  private overlyingCache: Map<
+    string,
+    TApprovalType extends "ERC20" ? Token : string
+  > = new Map();
 
   /**
    * @desc The address of the routing logic.
@@ -57,6 +65,11 @@ export abstract class AbstractRoutingLogic<TId extends string = string> {
   public abstract get gasOverhead(): number;
 
   /**
+   * @desc The approval type of the routing logic.
+   */
+  public approvalType: TApprovalType;
+
+  /**
    * @desc Creates a new routing logic.
    * @param params The parameters for the routing logic.
    */
@@ -66,12 +79,14 @@ export abstract class AbstractRoutingLogic<TId extends string = string> {
     description: string;
     mgv: Mangrove;
     address: string;
+    approvalType: TApprovalType;
   }) {
     this.id = params.id;
     this.title = params.title;
     this.description = params.description;
     this.mgv = params.mgv;
     this.address = params.address;
+    this.approvalType = params.approvalType;
   }
 
   /**
@@ -79,15 +94,19 @@ export abstract class AbstractRoutingLogic<TId extends string = string> {
    * @param token The token.
    * @returns The overlying address.
    */
-  protected abstract overlyingFromNetwork(token: Token): Promise<Token>;
+  protected abstract overlyingFromNetwork(
+    token: Token,
+  ): Promise<TApprovalType extends "ERC20" ? Token : string>;
 
   /**
    * @desc Returns the overlying token.
    * * It will first check the cache, and if it is not there, it will query the network.
-   * @param token The token.
+   * @param token The token or a string that represents the address the token (ERC721, ERC20)
    * @returns The overlying address.
    */
-  async overlying(token: Token): Promise<Token> {
+  async overlying(
+    token: Token,
+  ): Promise<TApprovalType extends "ERC20" ? Token : string> {
     const fromCache = this.overlyingCache.get(token.address.toLowerCase());
     if (fromCache) {
       return Promise.resolve(fromCache);
@@ -104,6 +123,9 @@ export abstract class AbstractRoutingLogic<TId extends string = string> {
    */
   async canUseLogicFor(token: Token): Promise<boolean> {
     const _token = await this.overlying(token);
+    if (typeof _token === "string") {
+      return _token !== ethers.constants.AddressZero;
+    }
     return _token.address !== ethers.constants.AddressZero;
   }
 

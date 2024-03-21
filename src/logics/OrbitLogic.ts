@@ -32,6 +32,7 @@ export class OrbitLogic extends AbstractRoutingLogic<"orbit"> {
       description: "Pull and push tokens directly from your Orbit positions.",
       mgv: params.mgv,
       address: params.orbitLogic.address,
+      approvalType: "ERC20",
     });
     this.logic = params.orbitLogic;
   }

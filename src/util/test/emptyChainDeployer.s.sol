@@ -25,12 +25,14 @@ import {SimpleAaveLogic} from "@mgv-strats/src/strategies/routing_logic/SimpleAa
 import {OrbitDeployer} from "@mgv-strats/src/toy_strategies/utils/OrbitDeployer.sol";
 import {OrbitLogic} from "@mgv-strats/src/strategies/routing_logic/orbit/OrbitLogic.sol";
 import {SmartKandelSeederDeployer} from "@mgv-strats/script/strategies/kandel/deployers/smart-kandel/SmartKandelSeederDeployer.s.sol";
+import {UniV3RoutingLogicDeployer, UniswapV3Manager, UniswapV3RoutingLogic} from "@mgv-strats/script/strategies/routing_logic/deployers/uni-v3/UniV3RoutingLogicDeployer.s.sol";
+import {Univ3Deployer} from "@mgv-strats/src/toy_strategies/utils/Univ3Deployer.sol";
 
 /* 
 This script prepares a local chain for testing by mangrove.js.
 */
 
-contract EmptyChainDeployer is Deployer, OrbitDeployer {
+contract EmptyChainDeployer is Deployer, OrbitDeployer, Univ3Deployer {
   TestToken public tokenA;
   TestToken public tokenB;
   TestToken public tokenC;
@@ -62,6 +64,7 @@ contract EmptyChainDeployer is Deployer, OrbitDeployer {
 
     vm.startBroadcast();
     deployOrbit();
+    deployUniv3();
     vm.stopBroadcast();
 
     broadcast();
@@ -232,5 +235,14 @@ contract EmptyChainDeployer is Deployer, OrbitDeployer {
       testBase: IERC20(fork.get("WETH")),
       testQuote: IERC20(fork.get("DAI"))
     });
-  }
+
+    UniswapV3Manager uniswapV3Manager = new UniswapV3Manager(positionManager, routerProxyFactory, SmartRouter(payable(fork.get("MangroveOrder-Router"))));
+    UniswapV3RoutingLogic uniswapV3RoutingLogic = new UniswapV3RoutingLogic(uniswapV3Manager);
+
+    fork.set("UniswapV3RoutingLogic-Monoswap", address(uniswapV3RoutingLogic));
+    fork.set("UniswapV3RoutingLogic-Thruster", address(uniswapV3RoutingLogic));
+
+    fork.set("UniswapV3Manager-Monoswap", address(uniswapV3Manager));
+    fork.set("UniswapV3Manager-Thruster", address(uniswapV3Manager));
+  } 
 }

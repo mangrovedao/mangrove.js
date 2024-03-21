@@ -45,6 +45,8 @@ import { SimpleLogic } from "./logics/SimpleLogic";
 import { OrbitLogic } from "./logics/OrbitLogic";
 import { ZeroLendLogic } from "./logics/ZeroLendLogic";
 import { NonceManager } from "@ethersproject/experimental";
+import { MonoswapV3Logic } from "./logics/UniV3/MonoswapV3Logic";
+import { ThrusterV3Logic } from "./logics/UniV3/ThrusterV3Logic";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -149,7 +151,11 @@ class Mangrove {
   _config: Mangrove.GlobalConfig; // TODO: This should be made reorg resistant
   logics: IDsDictFromLogics<
     SimpleLogic,
-    SimpleAaveLogic | OrbitLogic | ZeroLendLogic
+    | SimpleAaveLogic
+    | OrbitLogic
+    | ZeroLendLogic
+    | MonoswapV3Logic
+    | ThrusterV3Logic
   >;
 
   static devNode: DevNode;
@@ -303,6 +309,66 @@ class Mangrove {
       });
     }
 
+    let monoswapV3LogicAddress: string | undefined;
+    let monoswapV3Logic: typechain.UniswapV3RoutingLogic | undefined;
+    let monoswapV3ManagerAddress: string | undefined;
+    let monoswapV3Manager: typechain.UniswapV3Manager | undefined;
+    try {
+      monoswapV3LogicAddress = Mangrove.getAddress(
+        "UniswapV3RoutingLogic-Monoswap",
+        network.name,
+      );
+
+      monoswapV3Logic = typechain.UniswapV3RoutingLogic__factory.connect(
+        monoswapV3LogicAddress,
+        signer,
+      );
+
+      monoswapV3ManagerAddress = Mangrove.getAddress(
+        "UniswapV3Manager-Monoswap",
+        network.name,
+      );
+
+      monoswapV3Manager = typechain.UniswapV3Manager__factory.connect(
+        monoswapV3ManagerAddress,
+        signer,
+      );
+    } catch {
+      logger.warn("No MonoswapV3Logic or MonoswapV3Manager address found", {
+        contextInfo: "mangrove.base",
+      });
+    }
+
+    let thrusterV3LogicAddress: string | undefined;
+    let thrusterV3Logic: typechain.UniswapV3RoutingLogic | undefined;
+    let thrusterV3ManagerAddress: string | undefined;
+    let thrusterV3Manager: typechain.UniswapV3Manager | undefined;
+    try {
+      thrusterV3LogicAddress = Mangrove.getAddress(
+        "UniswapV3RoutingLogic-Thruster",
+        network.name,
+      );
+
+      thrusterV3Logic = typechain.UniswapV3RoutingLogic__factory.connect(
+        thrusterV3LogicAddress,
+        signer,
+      );
+
+      thrusterV3ManagerAddress = Mangrove.getAddress(
+        "UniswapV3Manager-Thruster",
+        network.name,
+      );
+
+      thrusterV3Manager = typechain.UniswapV3Manager__factory.connect(
+        thrusterV3ManagerAddress,
+        signer,
+      );
+    } catch {
+      logger.warn("No ThrusterV3Logic or ThrusterV3Manager address found", {
+        contextInfo: "mangrove.base",
+      });
+    }
+
     const config = Mangrove.rawConfigToConfig(
       await readerContract.globalUnpacked(),
     );
@@ -336,6 +402,12 @@ class Mangrove {
         aave: simpleAaveLogic,
         orbit: orbitLogic,
         zeroLend: zeroLendLogic,
+        monoswapV3Logic: monoswapV3Logic,
+        thrusterV3Logic: thrusterV3Logic,
+      },
+      uniswapV3Managers: {
+        monoswapV3Manager,
+        thrusterV3Manager,
       },
     });
 
@@ -394,6 +466,12 @@ class Mangrove {
       aave?: typechain.SimpleAaveLogic;
       orbit?: typechain.OrbitLogic;
       zeroLend?: typechain.SimpleAaveLogic;
+      monoswapV3Logic?: typechain.UniswapV3RoutingLogic;
+      thrusterV3Logic?: typechain.UniswapV3RoutingLogic;
+    };
+    uniswapV3Managers: {
+      monoswapV3Manager?: typechain.UniswapV3Manager;
+      thrusterV3Manager?: typechain.UniswapV3Manager;
     };
   }) {
     if (!canConstructMangrove) {
@@ -401,6 +479,19 @@ class Mangrove {
         "Mangrove.js must be initialized async with Mangrove.connect (constructors cannot be async)",
       );
     }
+    if (
+      params.logics.monoswapV3Logic &&
+      !params.uniswapV3Managers.monoswapV3Manager
+    ) {
+      throw Error("MonoswapV3Manager is required for MonoswapV3Logic");
+    }
+    if (
+      params.logics.thrusterV3Logic &&
+      !params.uniswapV3Managers.thrusterV3Manager
+    ) {
+      throw Error("ThrusterV3Manager is required for ThrusterV3Logic");
+    }
+
     this.logics = {
       aave: params.logics.aave
         ? new SimpleAaveLogic({
@@ -423,6 +514,24 @@ class Mangrove {
             aaveLogic: params.logics.zeroLend,
           })
         : undefined,
+      monoswap:
+        params.logics.monoswapV3Logic &&
+        params.uniswapV3Managers.monoswapV3Manager
+          ? new MonoswapV3Logic({
+              mgv: this,
+              uniV3Logic: params.logics.monoswapV3Logic,
+              uniV3Manager: params.uniswapV3Managers.monoswapV3Manager,
+            })
+          : undefined,
+      thruster:
+        params.logics.thrusterV3Logic &&
+        params.uniswapV3Managers.thrusterV3Manager
+          ? new ThrusterV3Logic({
+              mgv: this,
+              uniV3Logic: params.logics.thrusterV3Logic,
+              uniV3Manager: params.uniswapV3Managers.thrusterV3Manager,
+            })
+          : undefined,
     };
     this.nativeToken = new TokenCalculations(18, 18);
     this.eventEmitter = params.eventEmitter;

@@ -17,6 +17,14 @@
     "restingOrderGasreq": 1300000,
     "takeGasOverhead": 500000
   },
+  "monoswap": {
+    "restingOrderGasreq": 1500000,
+    "takeGasOverhead": 500000
+  },
+  "thruster": {
+    "restingOrderGasreq": 1500000,
+    "takeGasOverhead": 500000
+  },
   "networks": {
     "maticmum": {
       "simple": {
@@ -33,6 +41,14 @@
       },
       "zeroLend": {
         "restingOrderGasreq": 1300000,
+        "takeGasOverhead": 500000
+      },
+      "monoswap": {
+        "restingOrderGasreq": 1500000,
+        "takeGasOverhead": 500000
+      },
+      "thruster": {
+        "restingOrderGasreq": 1500000,
         "takeGasOverhead": 500000
       },
       "restingOrderGaspriceFactor": 6
