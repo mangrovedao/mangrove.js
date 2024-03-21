@@ -1,5 +1,5 @@
 import Mangrove from "./mangrove";
-import KandelSeeder from "./kandel/kandelSeeder";
+import KandelSeeder, { KandelType } from "./kandel/kandelSeeder";
 import KandelFarm from "./kandel/kandelFarm";
 import Market from "./market";
 import KandelDistributionHelper from "./kandel/kandelDistributionHelper";
@@ -10,6 +10,7 @@ import GeometricKandelInstance from "./kandel/geometricKandel/geometricKandelIns
 import GeometricKandelDistributionHelper from "./kandel/geometricKandel/geometricKandelDistributionHelper";
 import GeneralKandelDistributionHelper from "./kandel/generalKandelDistributionHelper";
 import configuration from "./configuration";
+import SmartKandelInstance from "./kandel/smartKandelInstance";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace KandelStrategies {}
@@ -45,7 +46,9 @@ class KandelStrategies {
    * @returns A new KandelInstance.
    * @dev If a factory function is provided for the market, then remember to disconnect market when no longer needed.
    */
-  public instance(params: {
+  public instance<
+    TkandelType extends KandelType | undefined = KandelType | undefined,
+  >(params: {
     address: string;
     market:
       | Market
@@ -54,7 +57,10 @@ class KandelStrategies {
           quoteAddress: string,
           tickSpacing: number,
         ) => Promise<Market>);
-  }) {
+    type?: TkandelType;
+  }): Promise<
+    TkandelType extends "smart" ? SmartKandelInstance : GeometricKandelInstance
+  > {
     const market =
       params.market ??
       ((baseAddress: string, quoteAddress: string, tickSpacing: number) => {
@@ -79,11 +85,19 @@ class KandelStrategies {
         });
       });
 
+    if (params.type === "smart") {
+      return SmartKandelInstance.create({
+        address: params.address,
+        signer: this.mgv.signer,
+        market,
+      });
+    }
+
     return GeometricKandelInstance.create({
       address: params.address,
       signer: this.mgv.signer,
       market,
-    });
+    }) as any;
   }
 
   /** Creates a generator for generating Kandel distributions for the given market.

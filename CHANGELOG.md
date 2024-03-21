@@ -1,5 +1,7 @@
 # Next version
 
+- Add Smart Kandel for retrieval
+
 # 2.0.5-44
 
 - Add Smart kandels to SDK
