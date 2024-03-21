@@ -1,5 +1,7 @@
 # Next version
 
+# 2.0.5-45
+
 - Add Smart Kandel for retrieval
 
 # 2.0.5-44
