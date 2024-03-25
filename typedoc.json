@@ -55,6 +55,7 @@
     "MangroveAmplifier",
     "OrbitLogic",
     "ZeroLendLogic",
+    "PacFinanceLogic",
     "TAaveId",
     "SmartKandelSeeder",
     "KandelType",

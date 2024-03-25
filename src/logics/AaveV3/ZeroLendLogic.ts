@@ -1,6 +1,6 @@
-import { Prettify } from "../util/types";
+import { Prettify } from "../../util/types";
 import { BaseAaveLogic } from "./BaseAaveLogic";
-import { typechain } from "../types";
+import { typechain } from "../../types";
 
 /**
  * @title ZeroLendLogic

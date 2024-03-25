@@ -1,5 +1,7 @@
 # Next version
 
+- Add Pac finance logic
+
 # 2.0.5-46
 
 - Bump deployments version
