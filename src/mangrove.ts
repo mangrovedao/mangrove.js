@@ -36,17 +36,18 @@ import { onEthersError } from "./util/ethersErrorHandler";
 import EventEmitter from "events";
 import { OLKeyStruct } from "./types/typechain/Mangrove";
 import { Density } from "./util/Density";
-import { SimpleAaveLogic } from "./logics/SimpleAaveLogic";
+import { SimpleAaveLogic } from "./logics/AaveV3/SimpleAaveLogic";
 import {
   AbstractRoutingLogic,
   IDsDictFromLogics,
 } from "./logics/AbstractRoutingLogic";
 import { SimpleLogic } from "./logics/SimpleLogic";
 import { OrbitLogic } from "./logics/OrbitLogic";
-import { ZeroLendLogic } from "./logics/ZeroLendLogic";
+import { ZeroLendLogic } from "./logics/AaveV3/ZeroLendLogic";
 import { NonceManager } from "@ethersproject/experimental";
 import { MonoswapV3Logic } from "./logics/UniV3/MonoswapV3Logic";
 import { ThrusterV3Logic } from "./logics/UniV3/ThrusterV3Logic";
+import { PacFinanceLogic } from "./logics/AaveV3/PacFinanceLogic";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 namespace Mangrove {
@@ -156,6 +157,7 @@ class Mangrove {
     | ZeroLendLogic
     | MonoswapV3Logic
     | ThrusterV3Logic
+    | PacFinanceLogic
   >;
 
   static devNode: DevNode;
@@ -309,6 +311,25 @@ class Mangrove {
       });
     }
 
+    let pacFinanceLogicAddress: string | undefined;
+    let pacFinanceLogic: typechain.SimpleAaveLogic | undefined;
+
+    try {
+      pacFinanceLogicAddress = Mangrove.getAddress(
+        "PacFinanceLogic",
+        network.name,
+      );
+
+      pacFinanceLogic = typechain.SimpleAaveLogic__factory.connect(
+        pacFinanceLogicAddress,
+        signer,
+      );
+    } catch {
+      logger.warn("No PacFinanceLogic address found, PacFinance disabled", {
+        contextInfo: "mangrove.base",
+      });
+    }
+
     let monoswapV3LogicAddress: string | undefined;
     let monoswapV3Logic: typechain.UniswapV3RoutingLogic | undefined;
     let monoswapV3ManagerAddress: string | undefined;
@@ -404,6 +425,7 @@ class Mangrove {
         zeroLend: zeroLendLogic,
         monoswapV3Logic: monoswapV3Logic,
         thrusterV3Logic: thrusterV3Logic,
+        pacFinance: pacFinanceLogic,
       },
       uniswapV3Managers: {
         monoswapV3Manager,
@@ -468,6 +490,7 @@ class Mangrove {
       zeroLend?: typechain.SimpleAaveLogic;
       monoswapV3Logic?: typechain.UniswapV3RoutingLogic;
       thrusterV3Logic?: typechain.UniswapV3RoutingLogic;
+      pacFinance?: typechain.SimpleAaveLogic;
     };
     uniswapV3Managers: {
       monoswapV3Manager?: typechain.UniswapV3Manager;
@@ -532,6 +555,12 @@ class Mangrove {
               uniV3Manager: params.uniswapV3Managers.thrusterV3Manager,
             })
           : undefined,
+      pacFinance: params.logics.pacFinance
+        ? new PacFinanceLogic({
+            mgv: this,
+            aaveLogic: params.logics.pacFinance,
+          })
+        : undefined,
     };
     this.nativeToken = new TokenCalculations(18, 18);
     this.eventEmitter = params.eventEmitter;

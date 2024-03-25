@@ -208,6 +208,7 @@ contract EmptyChainDeployer is Deployer, OrbitDeployer, Univ3Deployer {
     );
     fork.set("SimpleAaveLogic", address(simpleAaveLogic));
     fork.set("ZeroLendLogic", address(simpleAaveLogic));
+    fork.set("PacFinanceLogic", address(simpleAaveLogic));
 
     broadcast();
     OrbitLogic orbitLogic = new OrbitLogic(spaceStation);
