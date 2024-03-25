@@ -1268,13 +1268,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mangrovedao/mangrove-deployments@npm:^2.2.4-2":
-  version: 2.2.4-2
-  resolution: "@mangrovedao/mangrove-deployments@npm:2.2.4-2"
+"@mangrovedao/mangrove-deployments@npm:^2.2.4-3":
+  version: 2.2.4-3
+  resolution: "@mangrovedao/mangrove-deployments@npm:2.2.4-3"
   dependencies:
     "@mangrovedao/context-addresses": ^1.3.2
     semver: ^7.5.4
-  checksum: 77a8c68084d019d6411b925c39aa925484e44939251a018a9efc3cf11436dc8fbea3e7c71e2408d590a823b61dc24c1c5730234a3a4fb717cb0a6e1320566ab6
+  checksum: c17624659c810ffe7d25372231c71d9bcc785ec6bdded28c33a2ba7a179e5f5367859f2adbe819d2589ef7b3b4c55cf4e173794247cae4c2cdcf0bed1bb5612f
   languageName: node
   linkType: hard
 
@@ -1301,7 +1301,7 @@ __metadata:
     "@ethersproject/providers": ^5.7.2
     "@mangrovedao/context-addresses": ^1.3.4
     "@mangrovedao/mangrove-core": ^2.1.1
-    "@mangrovedao/mangrove-deployments": ^2.2.4-2
+    "@mangrovedao/mangrove-deployments": ^2.2.4-3
     "@mangrovedao/mangrove-strats": ^2.1.0-7
     "@mangrovedao/reliable-event-subscriber": 1.1.30
     "@typechain/ethers-v5": ^11.1.2
