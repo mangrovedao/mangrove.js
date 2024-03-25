@@ -1,5 +1,7 @@
 # Next version
 
+- Bump deployments version
+
 # 2.0.5-45
 
 - Add Smart Kandel for retrieval
