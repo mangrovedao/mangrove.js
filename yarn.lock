@@ -6805,9 +6805,9 @@ __metadata:
   linkType: hard
 
 "transparent-proxy@npm:^1.12.1":
-  version: 1.13.1
-  resolution: "transparent-proxy@npm:1.13.1"
-  checksum: ccd58f5a13ba52eb4f65633c97e7158cbac53d0437d1188b491d9fc3ffe942b1525875f144dbf653f4e22f32a07873131d77d260643b6a667cdd9e2637302c7d
+  version: 1.15.1
+  resolution: "transparent-proxy@npm:1.15.1"
+  checksum: ae2f560312a55323739aeb4eb531cdad2a9556ea3cc1239aecc1bf40186b8ab6f4f4225071bc5e2711086f53c3d7b988ceae9e690ed934cbde05ecec48d1ecf4
   languageName: node
   linkType: hard
 
