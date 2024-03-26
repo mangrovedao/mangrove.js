@@ -1,5 +1,7 @@
 # Next version
 
+- Add mumbai addresses.
+
 # 2.0.5-47
 
 - Add Pac finance logic
